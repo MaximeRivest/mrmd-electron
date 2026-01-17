@@ -1339,6 +1339,7 @@
 
         // Destroy existing editor
         if (state.editor) {
+          detachSyncStatusHandlers();
           state.editor.destroy?.();
           state.editor = null;
           document.getElementById('editor').innerHTML = '';
@@ -1366,6 +1367,7 @@
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
+        attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
 
         // Update UI
@@ -1625,17 +1627,22 @@
     let syncHealthy = true;
     let lastBackupTime = null;
     let watchdogInterval = null;
+    let syncWarningTimer = null;
+    let syncWarningReason = null;
+    let syncProvider = null;
+    let syncStatusHandler = null;
+    let syncErrorHandler = null;
+    let syncHasEverConnected = false;
+
+    const SYNC_CONNECT_GRACE_MS = 10000;
+    const SYNC_RECONNECT_GRACE_MS = 5000;
 
     // Handle sync server death notification from main process
     electronAPI.onSyncServerDied((data) => {
       console.error('SYNC SERVER DIED:', data);
       syncHealthy = false;
-
-      // Show warning banner immediately
-      showSyncWarning(data);
-
-      // Save backup immediately
-      saveLocalBackup('sync-died');
+      clearSyncWarningTimer();
+      triggerSyncWarning(data?.reason || 'exited', 'sync-died');
 
       // Play alert sound (if available)
       try {
@@ -1648,8 +1655,9 @@
     function showSyncWarning(data) {
       const banner = document.getElementById('sync-warning-banner');
       const details = document.getElementById('sync-warning-details');
+      const reason = data && data.reason ? data.reason : 'connection lost';
 
-      details.textContent = ` Sync server ${data.reason}. Your current changes exist only in memory!`;
+      details.textContent = ` Sync server ${reason}. Your current changes exist only in memory!`;
       banner.classList.add('visible');
 
       // Also update status bar
@@ -1663,12 +1671,86 @@
       document.getElementById('sync-warning-banner').classList.remove('visible');
     }
 
+    function clearSyncWarningTimer() {
+      if (syncWarningTimer) {
+        clearTimeout(syncWarningTimer);
+        syncWarningTimer = null;
+      }
+    }
+
+    function triggerSyncWarning(reason, backupReason = 'sync-offline') {
+      clearSyncWarningTimer();
+      syncHealthy = false;
+      showSyncWarning({ reason });
+      saveLocalBackup(backupReason);
+    }
+
+    function scheduleSyncWarning(reason, delayMs) {
+      syncWarningReason = reason;
+      if (syncWarningTimer) return;
+
+      syncWarningTimer = setTimeout(() => {
+        syncWarningTimer = null;
+        triggerSyncWarning(syncWarningReason);
+      }, delayMs);
+    }
+
+    function detachSyncStatusHandlers() {
+      if (!syncProvider) return;
+
+      if (syncStatusHandler) {
+        syncProvider.off('status', syncStatusHandler);
+      }
+      if (syncErrorHandler) {
+        syncProvider.off('connection-error', syncErrorHandler);
+      }
+
+      syncProvider = null;
+      syncStatusHandler = null;
+      syncErrorHandler = null;
+      syncHasEverConnected = false;
+      clearSyncWarningTimer();
+    }
+
+    function attachSyncStatusHandlers(editor) {
+      detachSyncStatusHandlers();
+      if (!editor || !editor.provider) return;
+
+      syncProvider = editor.provider;
+      syncHasEverConnected = false;
+
+      syncStatusHandler = ({ status }) => {
+        if (status === 'connected') {
+          syncHasEverConnected = true;
+          syncHealthy = true;
+          clearSyncWarningTimer();
+          hideSyncWarning();
+          return;
+        }
+
+        const delayMs = syncHasEverConnected ? SYNC_RECONNECT_GRACE_MS : SYNC_CONNECT_GRACE_MS;
+        const reason = status === 'connecting' ? 'reconnecting' : 'connection lost';
+        scheduleSyncWarning(reason, delayMs);
+      };
+
+      syncErrorHandler = (event) => {
+        console.error('Sync connection error:', event?.message || event);
+        triggerSyncWarning('connection error', 'sync-connection-error');
+      };
+
+      syncProvider.on('status', syncStatusHandler);
+      syncProvider.on('connection-error', syncErrorHandler);
+
+      // Guard against cases where the provider never reaches "connected"
+      scheduleSyncWarning('connection not established', SYNC_CONNECT_GRACE_MS);
+    }
+
     function saveLocalBackup(reason) {
       if (!state.editor || !state.currentFile) return;
 
       try {
         // Get current content from the editor
-        const content = state.editor.getText ? state.editor.getText() : '';
+        const content = state.editor.getContent ? state.editor.getContent() : '';
         if (!content) return;
 
         const backup = {
@@ -1706,7 +1788,7 @@
       }
 
       try {
-        const content = state.editor.getText ? state.editor.getText() : '';
+        const content = state.editor.getContent ? state.editor.getContent() : '';
         navigator.clipboard.writeText(content).then(() => {
           alert(`Copied ${content.length} characters to clipboard!`);
         }).catch(e => {
@@ -1724,7 +1806,7 @@
       }
 
       try {
-        const content = state.editor.getText ? state.editor.getText() : '';
+        const content = state.editor.getContent ? state.editor.getContent() : '';
         const filename = state.currentFile.split('/').pop().replace(/\.md$/, '') + '-backup-' + Date.now() + '.md';
 
         const blob = new Blob([content], { type: 'text/markdown' });

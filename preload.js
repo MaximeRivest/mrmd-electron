@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
    * The callback receives: { projectDir, exitCode, signal, timestamp, reason }
    */
   onSyncServerDied: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners('sync-server-died');
     ipcRenderer.on('sync-server-died', (event, data) => callback(data));
   },
 });

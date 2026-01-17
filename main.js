@@ -449,6 +449,8 @@ function notifySyncDied(projectDir, exitCode, signal) {
   // Notify ALL windows - any of them might have the affected document open
   for (const win of windows) {
     try {
+      const state = windowStates.get(win.id);
+      if (!state || state.projectDir !== projectDir) continue;
       win.webContents.send('sync-server-died', message);
     } catch (e) {
       // Window might be destroyed
@@ -496,6 +498,7 @@ async function getSyncServer(projectDir) {
     '--i-know-what-i-am-doing',
     projectDir,
   ], { stdio: ['pipe', 'pipe', 'pipe'] });
+  proc.expectedExit = false;
 
   proc.stdout.on('data', (d) => console.log(`[sync:${port}]`, d.toString().trim()));
   proc.stderr.on('data', (d) => console.error(`[sync:${port}]`, d.toString().trim()));
@@ -503,11 +506,12 @@ async function getSyncServer(projectDir) {
   // DATA LOSS PREVENTION: Notify renderer immediately when sync dies
   proc.on('exit', (code, signal) => {
     console.log(`[sync:${port}] Exited with code ${code}, signal ${signal}`);
+    console.log(`[sync:${port}] expectedExit=${proc.expectedExit}, will notify=${!proc.expectedExit}`);
     syncServers.delete(dirHash);
 
-    // If this was an unexpected exit (not graceful shutdown), notify the UI
-    // code === 0 means graceful shutdown, anything else is a problem
-    if (code !== 0) {
+    // If this was an unexpected exit (not a local, intentional shutdown),
+    // notify the UI even if the server exited cleanly.
+    if (!proc.expectedExit) {
       notifySyncDied(projectDir, code, signal);
     }
   });
@@ -527,6 +531,7 @@ function releaseSyncServer(projectDir) {
   server.refCount--;
   if (server.refCount <= 0 && server.owned && server.proc) {
     console.log(`[sync] Stopping server for ${projectDir}`);
+    server.proc.expectedExit = true;
     server.proc.kill('SIGTERM');
     syncServers.delete(dirHash);
   }
