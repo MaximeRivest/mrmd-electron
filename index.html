@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' ws://127.0.0.1:* http://127.0.0.1:*">
+  <title>mrmd</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* Theme variables - will be set by applyTheme() */
+    :root {
+      --bg: var(--mrmd-bg, #0d1117);
+      --bg-secondary: var(--mrmd-panel-bg, #161b22);
+      --bg-tertiary: var(--mrmd-hover-bg, #21262d);
+      --border: var(--mrmd-border, #30363d);
+      --text: var(--mrmd-fg, #c9d1d9);
+      --text-muted: var(--mrmd-fg-muted, #8b949e);
+      --text-dim: var(--mrmd-fg-dim, #6e7681);
+      --accent: var(--mrmd-accent, #58a6ff);
+      --success: var(--mrmd-success, #3fb950);
+      --warning: var(--mrmd-warning, #d29922);
+      --error: var(--mrmd-error, #f85149);
+
+      /* Soft interaction colors */
+      --hover-bg: rgba(255, 255, 255, 0.04);
+      --selected-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--editor-background, var(--bg));
+      color: var(--text);
+      font-family: var(--mrmd-ui-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+      font-size: var(--mrmd-ui-font-size, 13px);
+    }
+
+    /* Custom scrollbar - subtle */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* Titlebar */
+    .titlebar {
+      -webkit-app-region: drag;
+      height: 38px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .titlebar-title {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* Main content */
+    .content {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      background: var(--editor-background, var(--bg));
+    }
+
+    #editor-container {
+      width: 100%;
+      max-width: 800px;
+      min-height: 100%;
+      padding: 40px 20px 40px 20px;
+      padding-right: 10px; /* Account for scrollbar */
+      display: none;
+    }
+
+    #editor {
+      min-height: 100%;
+      border-radius: 0;
+      overflow: visible;
+    }
+
+    /* Status bar */
+    .status-bar {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 12px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: -4px -8px;
+      border-radius: 4px;
+    }
+
+    .status-item:hover { background: var(--hover-bg); }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      opacity: 0.5;
+    }
+
+    .status-dot.ready { background: var(--success); opacity: 0.8; }
+    .status-dot.loading { background: var(--warning); opacity: 0.8; }
+    .status-dot.error { background: var(--error); opacity: 0.8; }
+
+    .status-spacer { flex: 1; }
+
+    .status-file {
+      color: var(--text-dim);
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-theme {
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: -4px -8px;
+      border-radius: 4px;
+    }
+    .status-theme:hover { background: var(--hover-bg); }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 10vh;
+      z-index: 1000;
+    }
+
+    .modal-overlay.visible { display: flex; }
+
+    /* File Picker Modal */
+    .file-picker {
+      width: 640px;
+      max-height: 70vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .picker-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .picker-icon {
+      color: var(--text-dim);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .picker-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .picker-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .picker-input::placeholder { color: var(--text-dim); }
+
+    .picker-hint {
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 2px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+    }
+
+    .picker-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .picker-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px 16px;
+    }
+
+    .picker-section {
+      margin-bottom: 20px;
+    }
+
+    .picker-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .picker-section-title {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 8px 6px;
+      margin-bottom: 0;
+    }
+
+    .picker-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      gap: 12px;
+    }
+
+    .picker-item:hover { background: var(--hover-bg); }
+    .picker-item.selected { background: var(--selected-bg); }
+
+    .picker-item-icon {
+      width: 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .picker-item-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .picker-item-path {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .picker-item-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .picker-preview {
+      width: 260px;
+      border-left: 1px solid var(--border);
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .preview-content {
+      flex: 1;
+      padding: 0 16px 16px;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    .picker-footer {
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 16px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .picker-footer kbd {
+      background: var(--bg-tertiary);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    /* Venv Selector Modal */
+    .venv-picker {
+      width: 420px;
+      max-height: 60vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .venv-picker .picker-header {
+      padding: 16px 20px;
+      border-bottom: none;
+    }
+
+    .venv-picker .picker-list {
+      padding: 8px 12px 16px;
+    }
+
+    .venv-picker .picker-section {
+      margin-bottom: 20px;
+    }
+
+    .venv-picker .picker-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .venv-picker .picker-section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 0 8px 8px;
+      margin-bottom: 0;
+    }
+
+    .venv-picker .picker-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      opacity: 0.6;
+    }
+
+    .venv-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      gap: 12px;
+    }
+
+    .venv-item:hover { background: var(--hover-bg); }
+    .venv-item.selected { background: var(--selected-bg); }
+
+    .venv-item-info { flex: 1; min-width: 0; }
+
+    .venv-item-name {
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .venv-item-path {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: inherit;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .venv-item-version {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: none;
+      padding: 0;
+    }
+
+    .venv-item-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .venv-item-badge.warning {
+      background: color-mix(in srgb, var(--warning) 15%, transparent);
+      color: var(--warning);
+    }
+
+    .venv-item-badge.danger {
+      background: color-mix(in srgb, var(--error) 15%, transparent);
+      color: var(--error);
+    }
+
+    .picker-custom-path {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .picker-custom-path input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .picker-custom-path input:focus {
+      border-color: var(--accent);
+    }
+
+    .picker-custom-path input::placeholder {
+      color: var(--text-dim);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Match highlight */
+    .match {
+      color: var(--accent);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="titlebar">
+      <span class="titlebar-title" id="titlebar-title">mrmd</span>
+    </div>
+
+    <div class="content">
+      <div id="editor-container">
+        <div id="editor"></div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-item" id="status-python" onclick="showVenvPicker()">
+        <span class="status-dot" id="python-dot"></span>
+        <span id="python-label">python</span>
+      </div>
+      <div class="status-item" id="status-ai">
+        <span class="status-dot" id="ai-dot"></span>
+        <span>ai</span>
+      </div>
+      <div class="status-spacer"></div>
+      <span class="status-file" id="status-file"></span>
+      <span class="status-theme" id="status-theme" onclick="cycleTheme()">github</span>
+      <span class="status-shortcut" onclick="showFilePicker()">Ctrl+P</span>
+    </div>
+  </div>
+
+  <!-- File Picker Modal -->
+  <div class="modal-overlay" id="file-picker-overlay">
+    <div class="file-picker">
+      <div class="picker-header">
+        <span class="picker-icon"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4"/><path d="M10 10l3.5 3.5"/></svg></span>
+        <input type="text" class="picker-input" id="file-search" placeholder="Find file..." autocomplete="off" spellcheck="false">
+        <span class="picker-hint">esc</span>
+      </div>
+      <div class="picker-body">
+        <div class="picker-list" id="file-list"></div>
+        <div class="picker-preview">
+          <div class="preview-header">Preview</div>
+          <div class="preview-content" id="preview-content">Select a file to preview</div>
+        </div>
+      </div>
+      <div class="picker-footer">
+        <span><kbd>↑↓</kbd> navigate</span>
+        <span><kbd>⏎</kbd> open</span>
+        <span><kbd>Esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Venv Picker Modal -->
+  <div class="modal-overlay" id="venv-picker-overlay">
+    <div class="venv-picker">
+      <div class="picker-header">
+        <span class="picker-icon"><svg viewBox="0 0 16 16"><path d="M8 1L14.5 5v6L8 15L1.5 11V5L8 1z"/></svg></span>
+        <input type="text" class="picker-input" id="venv-search" placeholder="Search environments..." autocomplete="off" spellcheck="false">
+        <span class="picker-hint">esc</span>
+      </div>
+      <div class="picker-list" id="venv-list" style="max-height: 400px;"></div>
+      <div class="picker-custom-path">
+        <input type="text" id="custom-python-path" placeholder="Or enter path to Python environment..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="picker-footer">
+        <span><kbd>↑↓</kbd> navigate</span>
+        <span><kbd>⏎</kbd> select</span>
+        <span><kbd>⇧⏎</kbd> new</span>
+        <span><kbd>esc</kbd> close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load mrmd-editor -->
+  <script src="../mrmd-editor/dist/mrmd.iife.js"></script>
+
+  <script>
+    // =========================================================================
+    // STATE
+    // =========================================================================
+
+    const state = {
+      files: [],
+      filteredFiles: [],
+      recentFiles: [],
+      selectedFileIndex: 0,
+      previewRequestId: 0,
+      venvs: [],
+      filteredVenvs: [],
+      filteredRuntimes: [],
+      selectedVenvIndex: 0,
+      venvQuery: '',
+      runningRuntimes: [],
+      pythonPort: null,
+      pythonVenv: null,
+      aiPort: null,
+      currentFile: null,
+      projectDir: null,
+      editor: null,
+      drive: null,
+    };
+
+    // =========================================================================
+    // FUZZY MATCHING (fzf-style with path support)
+    // =========================================================================
+
+    function fuzzyMatch(pattern, str) {
+      if (!pattern) return { score: 0, matches: [] };
+
+      const pLower = pattern.toLowerCase();
+      const sLower = str.toLowerCase();
+      let pi = 0;
+      let score = 0;
+      const matches = [];
+      let prevMatch = -1;
+      let consecutive = 0;
+
+      for (let si = 0; si < str.length && pi < pattern.length; si++) {
+        if (sLower[si] === pLower[pi]) {
+          matches.push(si);
+
+          // Scoring
+          if (prevMatch === si - 1) {
+            consecutive++;
+            score += 2 + consecutive;
+          } else {
+            consecutive = 0;
+            score += 1;
+          }
+
+          // Bonus for word boundaries
+          if (si === 0 || '/._-'.includes(str[si - 1])) {
+            score += 5;
+          }
+
+          // Bonus for uppercase after lowercase (camelCase)
+          if (si > 0 && str[si] === str[si].toUpperCase() && str[si - 1] === str[si - 1].toLowerCase()) {
+            score += 3;
+          }
+
+          prevMatch = si;
+          pi++;
+        }
+      }
+
+      if (pi !== pattern.length) return { score: 0, matches: [] };
+      return { score, matches };
+    }
+
+    // Match against full path, return separate matches for name and dir
+    function fuzzyMatchPath(pattern, fullPath) {
+      // Create display path (~/Projects/foo/file.md)
+      const displayPath = fullPath.replace(/^\/home\/[^/]+/, '~');
+      const lastSlash = displayPath.lastIndexOf('/');
+      const dir = lastSlash >= 0 ? displayPath.slice(0, lastSlash) : '';
+      const name = lastSlash >= 0 ? displayPath.slice(lastSlash + 1) : displayPath;
+
+      if (!pattern) return { score: 0, nameMatches: [], dirMatches: [], displayPath, dir, name };
+
+      // Try matching filename first (higher priority)
+      const nameResult = fuzzyMatch(pattern, name);
+      if (nameResult.score > 0) {
+        return {
+          score: nameResult.score * 2,  // Filename matches worth more
+          nameMatches: nameResult.matches,
+          dirMatches: [],
+          displayPath,
+          dir,
+          name,
+        };
+      }
+
+      // Try matching full path
+      const pathResult = fuzzyMatch(pattern, displayPath);
+      if (pathResult.score > 0) {
+        // Split matches into dir and name portions
+        const nameMatches = [];
+        const dirMatches = [];
+        for (const idx of pathResult.matches) {
+          if (idx <= lastSlash) {
+            dirMatches.push(idx);
+          } else {
+            nameMatches.push(idx - lastSlash - 1);
+          }
+        }
+        return {
+          score: pathResult.score,
+          nameMatches,
+          dirMatches,
+          displayPath,
+          dir,
+          name,
+        };
+      }
+
+      return { score: 0, nameMatches: [], dirMatches: [], displayPath, dir, name };
+    }
+
+    function highlightMatches(str, matches) {
+      if (!matches || !matches.length) return escapeHtml(str);
+
+      let result = '';
+      let lastIndex = 0;
+      const sortedMatches = [...matches].sort((a, b) => a - b);
+
+      for (const idx of sortedMatches) {
+        if (idx >= str.length) continue;
+        result += escapeHtml(str.slice(lastIndex, idx));
+        result += `<span class="match">${escapeHtml(str[idx])}</span>`;
+        lastIndex = idx + 1;
+      }
+
+      result += escapeHtml(str.slice(lastIndex));
+      return result;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // =========================================================================
+    // FILE PICKER
+    // =========================================================================
+
+    function showFilePicker() {
+      document.getElementById('file-picker-overlay').classList.add('visible');
+      const input = document.getElementById('file-search');
+      input.value = '';
+      input.focus();
+
+      // Load recent files first
+      loadRecentFiles();
+
+      // Start scanning
+      electronAPI.scanFiles();
+    }
+
+    function hideFilePicker() {
+      document.getElementById('file-picker-overlay').classList.remove('visible');
+    }
+
+    async function loadRecentFiles() {
+      const recent = await electronAPI.getRecent();
+      state.recentFiles = recent.files || [];
+      filterFiles('');
+    }
+
+    function filterFiles(query, { preserveSelection = false } = {}) {
+      // Remember current selection before filtering
+      const previousSelectedPath = state.filteredFiles[state.selectedFileIndex]?.path;
+
+      const results = [];
+
+      // Score all files
+      const allFiles = [...new Set([...state.recentFiles.map(f => f.path), ...state.files])];
+
+      for (const filePath of allFiles) {
+        const matchResult = fuzzyMatchPath(query, filePath);
+        const isRecent = state.recentFiles.some(f => f.path === filePath);
+        const recentEntry = state.recentFiles.find(f => f.path === filePath);
+
+        // Include if no query OR if has a match
+        if (!query || matchResult.score > 0) {
+          results.push({
+            path: filePath,
+            name: matchResult.name,
+            dir: matchResult.dir,
+            score: matchResult.score + (isRecent ? 100 : 0),
+            nameMatches: matchResult.nameMatches,
+            dirMatches: matchResult.dirMatches,
+            isRecent,
+            opened: recentEntry?.opened,
+          });
+        }
+      }
+
+      // Sort by score
+      results.sort((a, b) => b.score - a.score);
+
+      state.filteredFiles = results.slice(0, 100);
+
+      // Restore selection if preserving, otherwise reset to 0
+      let newSelectedIndex = 0;
+      if (preserveSelection && previousSelectedPath) {
+        const foundIndex = state.filteredFiles.findIndex(f => f.path === previousSelectedPath);
+        if (foundIndex !== -1) {
+          newSelectedIndex = foundIndex;
+        }
+      }
+
+      const selectionChanged = state.filteredFiles[newSelectedIndex]?.path !== previousSelectedPath;
+      state.selectedFileIndex = newSelectedIndex;
+      renderFileList();
+
+      // Only load preview if selection changed or no previous selection
+      if (state.filteredFiles.length > 0 && (!preserveSelection || selectionChanged)) {
+        loadPreview(state.filteredFiles[newSelectedIndex].path);
+      }
+    }
+
+    function renderFileList() {
+      const list = document.getElementById('file-list');
+      const recent = state.filteredFiles.filter(f => f.isRecent);
+      const other = state.filteredFiles.filter(f => !f.isRecent);
+
+      let html = '';
+
+      if (recent.length > 0) {
+        html += '<div class="picker-section"><div class="picker-section-title">Recent</div>';
+        recent.forEach((f, i) => {
+          html += renderFileItem(f, i);
+        });
+        html += '</div>';
+      }
+
+      if (other.length > 0) {
+        html += '<div class="picker-section"><div class="picker-section-title">Files</div>';
+        other.forEach((f, i) => {
+          html += renderFileItem(f, recent.length + i);
+        });
+        html += '</div>';
+      }
+
+      if (state.filteredFiles.length === 0) {
+        html = '<div class="empty-state">No files found</div>';
+      }
+
+      list.innerHTML = html;
+    }
+
+    function renderFileItem(file, index) {
+      const selected = index === state.selectedFileIndex ? 'selected' : '';
+      const timeAgo = file.opened ? formatTimeAgo(new Date(file.opened)) : '';
+
+      return `
+        <div class="picker-item ${selected}" data-index="${index}" data-path="${file.path}"
+             onclick="selectFileItem(${index})" ondblclick="openSelectedFile()">
+          <span class="picker-item-icon">${file.isRecent ? '●' : '○'}</span>
+          <span class="picker-item-name">${highlightMatches(file.name, file.nameMatches)}</span>
+          <span class="picker-item-path">${highlightMatches(file.dir, file.dirMatches)}</span>
+          ${timeAgo ? `<span class="picker-item-meta">${timeAgo}</span>` : ''}
+        </div>
+      `;
+    }
+
+    function selectFileItem(index) {
+      state.selectedFileIndex = index;
+      renderFileList();
+      if (state.filteredFiles[index]) {
+        loadPreview(state.filteredFiles[index].path);
+      }
+
+      // Scroll selected item into view
+      const selected = document.querySelector('#file-list .picker-item.selected');
+      if (selected) {
+        selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    async function loadPreview(filePath) {
+      const preview = document.getElementById('preview-content');
+      preview.textContent = 'Loading...';
+
+      // Track request ID to prevent race conditions
+      const requestId = ++state.previewRequestId;
+      const result = await electronAPI.readPreview(filePath, 40);
+
+      // Only update if this is still the current request
+      if (requestId !== state.previewRequestId) return;
+
+      if (result.success) {
+        preview.textContent = result.preview || '(empty file)';
+      } else {
+        preview.textContent = 'Failed to load preview';
+      }
+    }
+
+    async function openSelectedFile() {
+      if (state.filteredFiles.length === 0) return;
+
+      const file = state.filteredFiles[state.selectedFileIndex];
+      hideFilePicker();
+      await openFile(file.path);
+    }
+
+    // =========================================================================
+    // VENV PICKER
+    // =========================================================================
+
+    async function showVenvPicker() {
+      document.getElementById('venv-picker-overlay').classList.add('visible');
+      state.venvs = [];
+      state.filteredVenvs = [];
+      state.filteredRuntimes = [];
+      state.runningRuntimes = [];
+      state.selectedVenvIndex = 0;
+      state.venvQuery = '';
+
+      const input = document.getElementById('venv-search');
+      input.value = '';
+      input.focus();
+
+      document.getElementById('custom-python-path').value = '';
+
+      renderVenvList();
+
+      // Load running runtimes first (instant)
+      const { runtimes } = await electronAPI.listRuntimes();
+      state.runningRuntimes = runtimes.filter(r => r.alive);
+      filterVenvs(state.venvQuery);
+
+      // Start discovery
+      electronAPI.discoverVenvs(state.projectDir);
+    }
+
+    function hideVenvPicker() {
+      document.getElementById('venv-picker-overlay').classList.remove('visible');
+    }
+
+    function filterVenvs(query) {
+      state.venvQuery = query;
+      const q = query.toLowerCase();
+
+      // Filter runtimes
+      state.filteredRuntimes = state.runningRuntimes.filter(rt => {
+        if (!q) return true;
+        return rt.id.toLowerCase().includes(q) ||
+               (rt.venv || '').toLowerCase().includes(q);
+      });
+
+      // Filter venvs
+      state.filteredVenvs = state.venvs.filter(v => {
+        if (!q) return true;
+        return v.projectName.toLowerCase().includes(q) ||
+               v.path.toLowerCase().includes(q) ||
+               (v.pythonVersion || '').toLowerCase().includes(q);
+      });
+
+      // Sort to match render order
+      const sourceOrder = { system: 0, project: 1, recent: 2, conda: 3, pyenv: 4, discovered: 5 };
+      state.filteredVenvs.sort((a, b) => {
+        return (sourceOrder[a.source] ?? 6) - (sourceOrder[b.source] ?? 6);
+      });
+
+      state.selectedVenvIndex = 0;
+      renderVenvList();
+    }
+
+    function addVenv(venv) {
+      // Avoid duplicates
+      if (!state.venvs.some(v => v.path === venv.path)) {
+        state.venvs.push(venv);
+        // Sort: project first, then recent, then discovered
+        state.venvs.sort((a, b) => {
+          const order = { project: 0, recent: 1, discovered: 2 };
+          return (order[a.source] || 3) - (order[b.source] || 3);
+        });
+        filterVenvs(state.venvQuery);
+      }
+    }
+
+    function renderVenvList() {
+      const list = document.getElementById('venv-list');
+
+      // Still loading
+      if (state.runningRuntimes.length === 0 && state.venvs.length === 0) {
+        list.innerHTML = '<div class="empty-state">Searching...</div>';
+        return;
+      }
+
+      // No matches for search
+      if (state.filteredRuntimes.length === 0 && state.filteredVenvs.length === 0) {
+        list.innerHTML = '<div class="empty-state">No matching environments</div>';
+        return;
+      }
+
+      let html = '';
+      let globalIndex = 0;
+
+      // Running runtimes section
+      if (state.filteredRuntimes.length > 0) {
+        html += '<div class="picker-section"><div class="picker-section-title">Running</div>';
+        state.filteredRuntimes.forEach((rt) => {
+          html += renderRuntimeItem(rt, globalIndex++);
+        });
+        html += '</div>';
+      }
+
+      const bySource = { system: [], project: [], recent: [], conda: [], pyenv: [], discovered: [] };
+      state.filteredVenvs.forEach(v => {
+        (bySource[v.source] || bySource.discovered).push(v);
+      });
+
+      // Render sections in order
+      const sections = [
+        { key: 'system', title: 'System' },
+        { key: 'project', title: 'Project' },
+        { key: 'recent', title: 'Recent' },
+        { key: 'conda', title: 'Conda' },
+        { key: 'pyenv', title: 'Pyenv' },
+        { key: 'discovered', title: 'Discovered' },
+      ];
+
+      for (const { key, title } of sections) {
+        if (bySource[key].length > 0) {
+          html += `<div class="picker-section"><div class="picker-section-title">${title}</div>`;
+          bySource[key].forEach(v => {
+            html += renderVenvItem(v, globalIndex++);
+          });
+          html += '</div>';
+        }
+      }
+
+      list.innerHTML = html;
+    }
+
+    function renderRuntimeItem(runtime, index) {
+      const selected = index === state.selectedVenvIndex ? 'selected' : '';
+      const venvDir = (runtime.venv || '').replace(/^\/home\/[^/]+/, '~');
+
+      return `
+        <div class="venv-item ${selected}" data-index="${index}" data-runtime-id="${runtime.id}"
+             onclick="selectVenvItem(${index})" ondblclick="attachToRuntime('${runtime.id}')">
+          <div class="venv-item-info">
+            <div class="venv-item-name">${runtime.id}</div>
+            <div class="venv-item-path">${venvDir} • port ${runtime.port}</div>
+          </div>
+          <span class="venv-item-version">pid ${runtime.pid}</span>
+          <span class="venv-item-badge danger" onclick="event.stopPropagation(); killRuntimeAction('${runtime.id}')"
+                style="cursor:pointer;">stop</span>
+        </div>
+      `;
+    }
+
+    function renderVenvItem(venv, index) {
+      const selected = index === state.selectedVenvIndex ? 'selected' : '';
+      const dir = venv.path.replace(/^\/home\/[^/]+/, '~');
+      const isValid = venv.hasPython !== false;
+
+      // Status: nothing if ready, "install" if needs mrmd-python, "invalid" if broken
+      let status = '';
+      if (!isValid) {
+        status = '<span class="venv-item-badge" style="opacity:0.5">broken</span>';
+      } else if (!venv.hasMrmdPython) {
+        status = '<span class="venv-item-badge warning">install</span>';
+      }
+
+      return `
+        <div class="venv-item ${selected}" data-index="${index}" data-path="${venv.path}"
+             onclick="selectVenvItem(${index})" ondblclick="selectVenv()" style="${!isValid ? 'opacity:0.5' : ''}">
+          <div class="venv-item-info">
+            <div class="venv-item-name">${venv.projectName}</div>
+            <div class="venv-item-path">${dir}</div>
+          </div>
+          ${venv.pythonVersion ? `<span class="venv-item-version">${venv.pythonVersion}</span>` : ''}
+          ${status}
+        </div>
+      `;
+    }
+
+    function selectVenvItem(index) {
+      state.selectedVenvIndex = index;
+      renderVenvList();
+
+      // Scroll selected item into view
+      const selected = document.querySelector('#venv-list .venv-item.selected');
+      if (selected) {
+        selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    async function selectVenv() {
+      const numRuntimes = state.filteredRuntimes.length;
+
+      // Check if selected item is a running runtime
+      if (state.selectedVenvIndex < numRuntimes) {
+        const runtime = state.filteredRuntimes[state.selectedVenvIndex];
+        return attachToRuntime(runtime.id);
+      }
+
+      // Otherwise it's a venv
+      const venvIndex = state.selectedVenvIndex - numRuntimes;
+      if (venvIndex >= state.filteredVenvs.length) return;
+
+      const venv = state.filteredVenvs[venvIndex];
+
+      // Check if valid
+      if (venv.hasPython === false) {
+        alert('This venv is invalid (no Python found). Please select a different one.');
+        return;
+      }
+
+      hideVenvPicker();
+
+      // Check if needs install
+      if (!venv.hasMrmdPython) {
+        updatePythonStatus('loading', 'Installing...');
+        try {
+          const installResult = await electronAPI.installMrmdPython(venv.path);
+          if (!installResult.success) {
+            updatePythonStatus('error', 'Install failed');
+            alert('Failed to install mrmd-python: ' + installResult.error);
+            return;
+          }
+        } catch (e) {
+          updatePythonStatus('error', 'Install failed');
+          alert('Failed to install mrmd-python: ' + e.message);
+          return;
+        }
+      }
+
+      // Start runtime
+      updatePythonStatus('loading', 'Starting...');
+      try {
+        const result = await electronAPI.startPython(venv.path);
+
+        if (result.success) {
+          state.pythonPort = result.port;
+          state.pythonVenv = { ...venv, runtimeId: result.runtimeId };
+          const statusLabel = result.reused ? `${result.runtimeId} (reused)` : result.runtimeId;
+          updatePythonStatus('ready', statusLabel);
+          console.log(`Python ready: ${result.runtimeId} on port ${result.port}${result.reused ? ' (reused)' : ''}`);
+
+          // Register runtime with existing editor if open
+          if (state.editor && state.currentFile) {
+            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const pythonClient = new mrmd.MRPClient(
+              `http://127.0.0.1:${result.port}/mrp/v1`,
+              { session: docName, languages: ['python', 'py', 'python3'] }
+            );
+            state.editor.registerRuntime('python', pythonClient);
+            console.log('Registered Python runtime with existing editor');
+          }
+        } else {
+          updatePythonStatus('error', 'Failed');
+          alert('Failed to start Python: ' + result.error);
+        }
+      } catch (e) {
+        updatePythonStatus('error', 'Failed');
+        alert('Failed to start Python: ' + e.message);
+      }
+    }
+
+    async function attachToRuntime(runtimeId) {
+      console.log('Attaching to runtime:', runtimeId);
+      hideVenvPicker();
+      updatePythonStatus('loading', 'Attaching...');
+
+      try {
+        const result = await electronAPI.attachRuntime(runtimeId);
+        if (result.success) {
+          state.pythonPort = result.port;
+          state.pythonVenv = { name: runtimeId, path: result.venv };
+          updatePythonStatus('ready', runtimeId);
+          console.log('Attached to runtime on port', result.port);
+
+          // Register runtime with existing editor if open
+          if (state.editor && state.currentFile) {
+            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const pythonClient = new mrmd.MRPClient(
+              `http://127.0.0.1:${result.port}/mrp/v1`,
+              { session: docName, languages: ['python', 'py', 'python3'] }
+            );
+            state.editor.registerRuntime('python', pythonClient);
+            console.log('Registered Python runtime with existing editor');
+          }
+        } else {
+          updatePythonStatus('error', 'Failed');
+          alert('Failed to attach: ' + result.error);
+        }
+      } catch (e) {
+        updatePythonStatus('error', 'Failed');
+        alert('Failed to attach: ' + e.message);
+      }
+    }
+
+    async function startNewRuntime(venvPath) {
+      console.log('Starting NEW runtime for:', venvPath);
+      hideVenvPicker();
+      updatePythonStatus('loading', 'Starting new...');
+
+      try {
+        const result = await electronAPI.startPython(venvPath, true); // forceNew = true
+
+        if (result.success) {
+          state.pythonPort = result.port;
+          state.pythonVenv = { path: venvPath, runtimeId: result.runtimeId };
+          updatePythonStatus('ready', result.runtimeId);
+          console.log(`New Python runtime: ${result.runtimeId} on port ${result.port}`);
+
+          // Register runtime with existing editor if open
+          if (state.editor && state.currentFile) {
+            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const pythonClient = new mrmd.MRPClient(
+              `http://127.0.0.1:${result.port}/mrp/v1`,
+              { session: docName, languages: ['python', 'py', 'python3'] }
+            );
+            state.editor.registerRuntime('python', pythonClient);
+            console.log('Registered new Python runtime with editor');
+          }
+        } else {
+          updatePythonStatus('error', 'Failed');
+          alert('Failed to start Python: ' + result.error);
+        }
+      } catch (e) {
+        updatePythonStatus('error', 'Failed');
+        alert('Failed to start Python: ' + e.message);
+      }
+    }
+
+    async function killRuntimeAction(runtimeId) {
+      const result = await electronAPI.killRuntime(runtimeId);
+      if (result.success) {
+        // Remove from running runtimes and re-filter
+        state.runningRuntimes = state.runningRuntimes.filter(r => r.id !== runtimeId);
+        filterVenvs(state.venvQuery);
+
+        // If we were using this runtime, clear state
+        if (state.pythonVenv && state.pythonVenv.runtimeId === runtimeId) {
+          state.pythonPort = null;
+          state.pythonVenv = null;
+          updatePythonStatus('', 'python');
+        }
+      }
+    }
+
+    // =========================================================================
+    // OPEN FILE
+    // =========================================================================
+
+    async function openFile(filePath) {
+      console.log('Opening file:', filePath);
+      document.getElementById('titlebar-title').textContent = 'Opening...';
+
+      try {
+        const result = await electronAPI.openFile(filePath);
+
+        if (!result.success) {
+          alert('Failed to open file: ' + (result.error || 'Unknown error'));
+          return;
+        }
+
+        const { syncPort, docName, projectDir } = result;
+        state.projectDir = projectDir;
+
+        console.log('Sync on port', syncPort, 'doc:', docName);
+
+        // Create drive
+        if (state.drive) state.drive.destroy?.();
+        state.drive = mrmd.drive(`ws://127.0.0.1:${syncPort}`);
+
+        // Destroy existing editor
+        if (state.editor) {
+          state.editor.destroy?.();
+          state.editor = null;
+          document.getElementById('editor').innerHTML = '';
+        }
+
+        // Editor options
+        const currentTheme = THEMES[currentThemeIndex];
+        const editorOptions = {
+          theme: currentTheme,
+          cellControls: {
+            enabled: true,
+            position: 'line-start',
+            buttons: { run: true, stop: true, clear: true },
+          },
+        };
+
+        // Add Python runtime if available
+        if (state.pythonPort) {
+          const pythonClient = new mrmd.MRPClient(
+            `http://127.0.0.1:${state.pythonPort}/mrp/v1`,
+            { session: docName, languages: ['python', 'py', 'python3'] }
+          );
+          editorOptions.runtimes = { python: pythonClient };
+        }
+
+        // Open document
+        state.editor = await state.drive.open(docName, '#editor', editorOptions);
+        state.currentFile = filePath;
+
+        // Update UI
+        document.getElementById('editor-container').style.display = 'block';
+        document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
+        document.getElementById('status-file').textContent = filePath.replace(/^\/home\/[^/]+/, '~');
+
+        console.log('File opened successfully');
+
+        // Auto-discover venvs for this project
+        discoverProjectVenv(projectDir);
+
+      } catch (e) {
+        console.error('Error opening file:', e);
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function discoverProjectVenv(projectDir) {
+      // If no python yet, check for obvious venv
+      if (!state.pythonPort) {
+        const venvPaths = [
+          projectDir + '/.venv',
+          projectDir + '/venv',
+          projectDir + '/env',
+        ];
+
+        for (const vp of venvPaths) {
+          // We can't check fs directly, but we can try to start and see
+          // For now, just trigger discovery
+        }
+
+        // Start venv discovery in background
+        electronAPI.discoverVenvs(projectDir);
+      }
+    }
+
+    // =========================================================================
+    // STATUS BAR
+    // =========================================================================
+
+    function updatePythonStatus(status, label) {
+      document.getElementById('python-dot').className = 'status-dot ' + status;
+      document.getElementById('python-label').textContent = label || 'python';
+    }
+
+    function updateAiStatus(status) {
+      document.getElementById('ai-dot').className = 'status-dot ' + status;
+    }
+
+    // =========================================================================
+    // THEME MANAGEMENT
+    // =========================================================================
+
+    const THEMES = ['github', 'midnight', 'nord', 'daylight'];
+    let currentThemeIndex = 0;
+
+    function applyTheme(themeName) {
+      const theme = mrmd.getTheme(themeName);
+      if (!theme) {
+        console.error('Theme not found:', themeName);
+        return;
+      }
+
+      // Apply all theme variables to :root
+      const root = document.documentElement;
+      for (const [key, value] of Object.entries(theme)) {
+        if (key.startsWith('--')) {
+          root.style.setProperty(key, value);
+        }
+      }
+
+      // Update status bar
+      document.getElementById('status-theme').textContent = themeName;
+
+      // Update editor if exists
+      if (state.editor && state.editor.setTheme) {
+        state.editor.setTheme(themeName);
+      }
+
+      // Save preference
+      localStorage.setItem('mrmd-theme', themeName);
+      console.log('Applied theme:', themeName);
+    }
+
+    function cycleTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
+      applyTheme(THEMES[currentThemeIndex]);
+    }
+
+    function loadSavedTheme() {
+      const saved = localStorage.getItem('mrmd-theme') || 'github';
+      currentThemeIndex = THEMES.indexOf(saved);
+      if (currentThemeIndex < 0) currentThemeIndex = 0;
+      applyTheme(THEMES[currentThemeIndex]);
+    }
+
+    // =========================================================================
+    // UTILITIES
+    // =========================================================================
+
+    function formatTimeAgo(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      if (seconds < 60) return 'just now';
+      if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+      if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+      if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+      return date.toLocaleDateString();
+    }
+
+    // =========================================================================
+    // KEYBOARD NAVIGATION
+    // =========================================================================
+
+    document.addEventListener('keydown', (e) => {
+      const filePickerVisible = document.getElementById('file-picker-overlay').classList.contains('visible');
+      const venvPickerVisible = document.getElementById('venv-picker-overlay').classList.contains('visible');
+
+      // Global shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        if (!filePickerVisible) showFilePicker();
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r' && !e.shiftKey) {
+        e.preventDefault();
+        if (!venvPickerVisible) showVenvPicker();
+        return;
+      }
+
+      // File picker navigation
+      if (filePickerVisible) {
+        if (e.key === 'Escape') {
+          hideFilePicker();
+          return;
+        }
+
+        if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n') || (e.ctrlKey && e.key === 'j')) {
+          e.preventDefault();
+          if (state.selectedFileIndex < state.filteredFiles.length - 1) {
+            selectFileItem(state.selectedFileIndex + 1);
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowUp' || (e.ctrlKey && e.key === 'p') || (e.ctrlKey && e.key === 'k')) {
+          e.preventDefault();
+          if (state.selectedFileIndex > 0) {
+            selectFileItem(state.selectedFileIndex - 1);
+          }
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          openSelectedFile();
+          return;
+        }
+      }
+
+      // Venv picker navigation
+      if (venvPickerVisible) {
+        if (e.key === 'Escape') {
+          hideVenvPicker();
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const totalItems = state.filteredRuntimes.length + state.filteredVenvs.length;
+          if (state.selectedVenvIndex < totalItems - 1) {
+            selectVenvItem(state.selectedVenvIndex + 1);
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (state.selectedVenvIndex > 0) {
+            selectVenvItem(state.selectedVenvIndex - 1);
+          }
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Shift+Enter: force new runtime for selected venv
+            const numRuntimes = state.filteredRuntimes.length;
+            const venvIndex = state.selectedVenvIndex - numRuntimes;
+            if (venvIndex >= 0 && venvIndex < state.filteredVenvs.length) {
+              startNewRuntime(state.filteredVenvs[venvIndex].path);
+            }
+          } else {
+            selectVenv();
+          }
+          return;
+        }
+      }
+    });
+
+    // File search input handler
+    document.getElementById('file-search').addEventListener('input', (e) => {
+      filterFiles(e.target.value);
+    });
+
+    document.getElementById('venv-search').addEventListener('input', (e) => {
+      filterVenvs(e.target.value);
+    });
+
+    document.getElementById('custom-python-path').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const customPath = e.target.value.trim();
+        if (customPath) {
+          // Expand ~ to home directory
+          const expandedPath = customPath.replace(/^~/, '');
+          startNewRuntime(expandedPath.startsWith('/') ? expandedPath : customPath);
+        }
+      }
+      if (e.key === 'Escape') {
+        hideVenvPicker();
+      }
+    });
+
+    // =========================================================================
+    // IPC EVENT HANDLERS
+    // =========================================================================
+
+    electronAPI.onFilesUpdate((data) => {
+      state.files = data.files;
+      const query = document.getElementById('file-search').value;
+      filterFiles(query, { preserveSelection: true });
+    });
+
+    electronAPI.onVenvFound((venv) => {
+      addVenv(venv);
+    });
+
+    electronAPI.onVenvScanDone(() => {
+      console.log('Venv scan complete');
+    });
+
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+
+    async function init() {
+      console.log('mrmd-electron ready');
+
+      // Load saved theme (must be after mrmd.js is loaded)
+      loadSavedTheme();
+
+      // Start AI in background
+      electronAPI.getAi().then(result => {
+        if (result.success) {
+          state.aiPort = result.port;
+          updateAiStatus('ready');
+        }
+      });
+
+      // Show file picker on start
+      setTimeout(showFilePicker, 100);
+    }
+
+    init();
+  </script>
+</body>
+</html>
