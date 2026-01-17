@@ -41,4 +41,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // AI server
   getAi: () => ipcRenderer.invoke('get-ai'),
+
+  // ==========================================================================
+  // DATA LOSS PREVENTION
+  // ==========================================================================
+  // Added after investigating unexplained data loss on 2026-01-16.
+  // When sync server crashes, the renderer MUST be notified immediately
+  // so it can warn the user and attempt to save a local backup.
+  // ==========================================================================
+
+  /**
+   * Register callback for when sync server dies unexpectedly.
+   * CRITICAL: This is the primary safeguard against silent data loss.
+   * The callback receives: { projectDir, exitCode, signal, timestamp, reason }
+   */
+  onSyncServerDied: (callback) => {
+    ipcRenderer.on('sync-server-died', (event, data) => callback(data));
+  },
 });

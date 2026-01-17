@@ -497,9 +497,97 @@
       color: var(--accent);
       font-weight: 500;
     }
+
+    /* =========================================================================
+       DATA LOSS PREVENTION - Warning Banner
+       =========================================================================
+       Added after investigating unexplained data loss on 2026-01-16.
+       When sync server crashes, this banner is shown IMMEDIATELY to warn
+       the user that their changes are NOT being saved.
+       ========================================================================= */
+    .sync-warning-banner {
+      display: none;
+      position: fixed;
+      top: 38px; /* Below titlebar */
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg, #dc2626, #b91c1c);
+      color: white;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: pulse-warning 2s ease-in-out infinite;
+    }
+
+    .sync-warning-banner.visible {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sync-warning-banner .warning-icon {
+      font-size: 20px;
+    }
+
+    .sync-warning-banner .warning-message {
+      flex: 1;
+    }
+
+    .sync-warning-banner .warning-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sync-warning-banner button {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .sync-warning-banner button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .sync-warning-banner button.primary {
+      background: white;
+      color: #dc2626;
+      border-color: white;
+    }
+
+    @keyframes pulse-warning {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
   </style>
 </head>
 <body>
+  <!-- =======================================================================
+       DATA LOSS PREVENTION - Sync Warning Banner
+       =======================================================================
+       Added after investigating unexplained data loss on 2026-01-16.
+       This banner is shown when the sync server crashes to immediately
+       alert the user that their changes are NOT being saved.
+       ======================================================================= -->
+  <div class="sync-warning-banner" id="sync-warning-banner">
+    <span class="warning-icon">⚠️</span>
+    <span class="warning-message">
+      <strong>SYNC OFFLINE - CHANGES NOT BEING SAVED!</strong>
+      <span id="sync-warning-details"></span>
+    </span>
+    <div class="warning-actions">
+      <button onclick="copyBackupToClipboard()">Copy Content</button>
+      <button onclick="downloadBackup()">Download Backup</button>
+      <button class="primary" onclick="attemptRecovery()">Try to Recover</button>
+    </div>
+  </div>
+
   <div class="app">
     <div class="titlebar">
       <span class="titlebar-title" id="titlebar-title">mrmd</span>
@@ -1523,6 +1611,187 @@
     });
 
     // =========================================================================
+    // DATA LOSS PREVENTION
+    // =========================================================================
+    // Added after investigating unexplained data loss on 2026-01-16.
+    // The sync server crashed with OOM, but the editor kept running with no
+    // indication that changes weren't being saved. User lost ~2.5 hours of work.
+    // These safeguards ensure:
+    // 1. User is immediately warned when sync fails
+    // 2. Content is automatically backed up to localStorage
+    // 3. User can easily recover their content
+    // =========================================================================
+
+    let syncHealthy = true;
+    let lastBackupTime = null;
+    let watchdogInterval = null;
+
+    // Handle sync server death notification from main process
+    electronAPI.onSyncServerDied((data) => {
+      console.error('SYNC SERVER DIED:', data);
+      syncHealthy = false;
+
+      // Show warning banner immediately
+      showSyncWarning(data);
+
+      // Save backup immediately
+      saveLocalBackup('sync-died');
+
+      // Play alert sound (if available)
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQAAe8Te3JZfGBBPsOT/1GscAGTC/tuoXgAAfsT/26deBzSG0+3ZmmQlPnK96uypcTtMdbLt6qx1P0x0tezrrHU/THS07OusdD9Mc7Xs66x0P0xztezrrHQ/THS17Ousc0BNdLXs66xzP0xztOzrrHM/THOz6+urcz9Mc7Tr7KtzP0xztOvrrHM/THO16+yrcz5Mc7Xr66tzP0xztevrrHM/THO16+uscz9MdLXr66xzP0x0tevsq3M/THO16+yrcz9MdLXr7KtzP0x0tevsq3M/THS16+yrcz5MdLXr7KtzP0x0tevsq3M/');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch (e) {}
+    });
+
+    function showSyncWarning(data) {
+      const banner = document.getElementById('sync-warning-banner');
+      const details = document.getElementById('sync-warning-details');
+
+      details.textContent = ` Sync server ${data.reason}. Your current changes exist only in memory!`;
+      banner.classList.add('visible');
+
+      // Also update status bar
+      const syncDot = document.querySelector('.status-dot');
+      if (syncDot) {
+        syncDot.className = 'status-dot error';
+      }
+    }
+
+    function hideSyncWarning() {
+      document.getElementById('sync-warning-banner').classList.remove('visible');
+    }
+
+    function saveLocalBackup(reason) {
+      if (!state.editor || !state.currentFile) return;
+
+      try {
+        // Get current content from the editor
+        const content = state.editor.getText ? state.editor.getText() : '';
+        if (!content) return;
+
+        const backup = {
+          file: state.currentFile,
+          content: content,
+          timestamp: new Date().toISOString(),
+          reason: reason,
+          charCount: content.length,
+        };
+
+        // Save to localStorage with timestamp key for history
+        const backupKey = `mrmd-backup-${Date.now()}`;
+        localStorage.setItem(backupKey, JSON.stringify(backup));
+
+        // Also save as "latest" for quick access
+        localStorage.setItem('mrmd-backup-latest', JSON.stringify(backup));
+
+        // Keep only last 10 backups
+        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('mrmd-backup-') && k !== 'mrmd-backup-latest');
+        if (allKeys.length > 10) {
+          allKeys.sort().slice(0, allKeys.length - 10).forEach(k => localStorage.removeItem(k));
+        }
+
+        lastBackupTime = new Date();
+        console.log(`Backup saved: ${content.length} chars at ${lastBackupTime.toISOString()} (${reason})`);
+      } catch (e) {
+        console.error('Failed to save backup:', e);
+      }
+    }
+
+    function copyBackupToClipboard() {
+      if (!state.editor) {
+        alert('No editor content to copy');
+        return;
+      }
+
+      try {
+        const content = state.editor.getText ? state.editor.getText() : '';
+        navigator.clipboard.writeText(content).then(() => {
+          alert(`Copied ${content.length} characters to clipboard!`);
+        }).catch(e => {
+          alert('Failed to copy: ' + e.message);
+        });
+      } catch (e) {
+        alert('Failed to get content: ' + e.message);
+      }
+    }
+
+    function downloadBackup() {
+      if (!state.editor || !state.currentFile) {
+        alert('No content to download');
+        return;
+      }
+
+      try {
+        const content = state.editor.getText ? state.editor.getText() : '';
+        const filename = state.currentFile.split('/').pop().replace(/\.md$/, '') + '-backup-' + Date.now() + '.md';
+
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        console.log(`Downloaded backup: ${filename} (${content.length} chars)`);
+      } catch (e) {
+        alert('Failed to download: ' + e.message);
+      }
+    }
+
+    async function attemptRecovery() {
+      if (!state.currentFile) {
+        alert('No file is currently open');
+        return;
+      }
+
+      console.log('Attempting recovery...');
+
+      // Save a backup first before any recovery attempt
+      saveLocalBackup('pre-recovery');
+
+      try {
+        // Try to reopen the file (this will start a new sync server)
+        await openFile(state.currentFile);
+
+        // If successful, hide the warning
+        hideSyncWarning();
+        syncHealthy = true;
+
+        alert('Recovery successful! Your document has been reconnected.');
+      } catch (e) {
+        alert('Recovery failed: ' + e.message + '\n\nPlease use Copy Content or Download Backup to save your work.');
+      }
+    }
+
+    // Watchdog: periodically check sync health and save backups
+    function startWatchdog() {
+      if (watchdogInterval) return;
+
+      watchdogInterval = setInterval(() => {
+        // Save periodic backup if we have content (every 60 seconds)
+        if (state.editor && state.currentFile) {
+          saveLocalBackup('periodic');
+        }
+
+        // TODO: Add WebSocket ping to sync server to detect silent disconnects
+        // This would catch cases where the sync server is still running but
+        // the WebSocket connection was silently dropped.
+      }, 60000); // Every 60 seconds
+
+      console.log('Watchdog started: periodic backups every 60s');
+    }
+
+    function stopWatchdog() {
+      if (watchdogInterval) {
+        clearInterval(watchdogInterval);
+        watchdogInterval = null;
+      }
+    }
+
+    // =========================================================================
     // INITIALIZATION
     // =========================================================================
 
@@ -1539,6 +1808,9 @@
           updateAiStatus('ready');
         }
       });
+
+      // DATA LOSS PREVENTION: Start watchdog for periodic backups
+      startWatchdog();
 
       // Show file picker on start
       setTimeout(showFilePicker, 100);

@@ -420,6 +420,42 @@ function getVenvInfo(venvPath) {
 
 const syncServers = new Map();
 
+// =============================================================================
+// DATA LOSS PREVENTION
+// =============================================================================
+// Added after investigating unexplained data loss on 2026-01-16.
+// The sync server (mrmd-sync) crashed with OOM, but the editor kept running,
+// giving no indication that changes weren't being saved. User lost ~2.5 hours
+// of work. These safeguards ensure users are immediately warned if sync fails.
+// See: https://github.com/MaximeRivest/mrmd-electron/issues/1 (if created)
+// =============================================================================
+
+/**
+ * Notify all windows that a sync server died unexpectedly.
+ * This is CRITICAL for data loss prevention - users must know immediately
+ * when their changes are no longer being saved.
+ */
+function notifySyncDied(projectDir, exitCode, signal) {
+  const message = {
+    projectDir,
+    exitCode,
+    signal,
+    timestamp: new Date().toISOString(),
+    reason: exitCode === null ? 'crashed (likely OOM)' : `exited with code ${exitCode}`,
+  };
+
+  console.error(`[sync] CRITICAL: Sync server died for ${projectDir}:`, message.reason);
+
+  // Notify ALL windows - any of them might have the affected document open
+  for (const win of windows) {
+    try {
+      win.webContents.send('sync-server-died', message);
+    } catch (e) {
+      // Window might be destroyed
+    }
+  }
+}
+
 async function getSyncServer(projectDir) {
   const dirHash = computeDirHash(projectDir);
 
@@ -450,7 +486,11 @@ async function getSyncServer(projectDir) {
   const port = await findFreePort();
   console.log(`[sync] Starting server for ${projectDir} on port ${port}...`);
 
+  // DATA LOSS PREVENTION: Limit memory to 512MB to fail fast instead of
+  // consuming all system memory and crashing unpredictably after hours.
+  // Better to restart early than lose hours of work.
   const proc = spawn('node', [
+    '--max-old-space-size=512',
     path.join(MRMD_PACKAGES, 'mrmd-sync/bin/cli.js'),
     '--port', port.toString(),
     '--i-know-what-i-am-doing',
@@ -459,9 +499,17 @@ async function getSyncServer(projectDir) {
 
   proc.stdout.on('data', (d) => console.log(`[sync:${port}]`, d.toString().trim()));
   proc.stderr.on('data', (d) => console.error(`[sync:${port}]`, d.toString().trim()));
-  proc.on('exit', (code) => {
-    console.log(`[sync:${port}] Exited with code ${code}`);
+
+  // DATA LOSS PREVENTION: Notify renderer immediately when sync dies
+  proc.on('exit', (code, signal) => {
+    console.log(`[sync:${port}] Exited with code ${code}, signal ${signal}`);
     syncServers.delete(dirHash);
+
+    // If this was an unexpected exit (not graceful shutdown), notify the UI
+    // code === 0 means graceful shutdown, anything else is a problem
+    if (code !== 0) {
+      notifySyncDied(projectDir, code, signal);
+    }
   });
 
   await waitForPort(port);
