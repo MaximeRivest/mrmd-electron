@@ -1717,7 +1717,8 @@
       if (!editor || !editor.provider) return;
 
       syncProvider = editor.provider;
-      syncHasEverConnected = false;
+      const initialConnected = !!(syncProvider.wsconnected || syncProvider.synced);
+      syncHasEverConnected = initialConnected;
 
       syncStatusHandler = ({ status }) => {
         if (status === 'connected') {
@@ -1741,8 +1742,14 @@
       syncProvider.on('status', syncStatusHandler);
       syncProvider.on('connection-error', syncErrorHandler);
 
-      // Guard against cases where the provider never reaches "connected"
-      scheduleSyncWarning('connection not established', SYNC_CONNECT_GRACE_MS);
+      if (initialConnected) {
+        syncHealthy = true;
+        clearSyncWarningTimer();
+        hideSyncWarning();
+      } else {
+        // Guard against cases where the provider never reaches "connected"
+        scheduleSyncWarning('connection not established', SYNC_CONNECT_GRACE_MS);
+      }
     }
 
     function saveLocalBackup(reason) {
