@@ -104,6 +104,82 @@
       overflow: visible;
     }
 
+    /* Navigation Sidebar */
+    .nav-sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: none;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .nav-sidebar.visible {
+      display: flex;
+    }
+
+    .nav-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-tree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      gap: 8px;
+    }
+
+    .nav-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .nav-item.selected {
+      background: var(--selected-bg);
+    }
+
+    .nav-item.folder {
+      color: var(--text-muted);
+    }
+
+    .nav-item-icon {
+      font-size: 12px;
+      width: 16px;
+      text-align: center;
+    }
+
+    .nav-item-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-children {
+      margin-left: 16px;
+    }
+
+    .nav-children.collapsed {
+      display: none;
+    }
+
     /* Status bar */
     .status-bar {
       background: var(--bg-secondary);
@@ -594,6 +670,16 @@
     </div>
 
     <div class="content">
+      <!-- Project Navigation Sidebar -->
+      <div id="nav-sidebar" class="nav-sidebar">
+        <div class="nav-header">
+          <span class="nav-title" id="nav-title">No Project</span>
+        </div>
+        <div class="nav-tree" id="nav-tree">
+          <!-- Nav tree renders here -->
+        </div>
+      </div>
+
       <div id="editor-container">
         <div id="editor"></div>
       </div>
@@ -686,6 +772,8 @@
       projectDir: null,
       editor: null,
       drive: null,
+      // New: Project state
+      project: null,  // ProjectInfo from service
     };
 
     // =========================================================================
@@ -1313,6 +1401,79 @@
     }
 
     // =========================================================================
+    // PROJECT NAVIGATION
+    // =========================================================================
+
+    function renderNavTree(nodes, parentEl, projectRoot, depth = 0) {
+      for (const node of nodes) {
+        const item = document.createElement('div');
+        item.className = 'nav-item' + (node.isFolder ? ' folder' : '');
+        item.dataset.path = node.path;
+        item.style.paddingLeft = (16 + depth * 16) + 'px';
+
+        const icon = document.createElement('span');
+        icon.className = 'nav-item-icon';
+        icon.textContent = node.isFolder ? '📁' : '📄';
+
+        const label = document.createElement('span');
+        label.className = 'nav-item-label';
+        label.textContent = node.title;
+
+        item.appendChild(icon);
+        item.appendChild(label);
+
+        // Click handler
+        if (!node.isFolder) {
+          item.onclick = () => {
+            const fullPath = projectRoot + '/' + node.path;
+            openFile(fullPath);
+          };
+        }
+
+        parentEl.appendChild(item);
+
+        // Recurse for children
+        if (node.children && node.children.length > 0) {
+          renderNavTree(node.children, parentEl, projectRoot, depth + 1);
+        }
+      }
+    }
+
+    function updateNavSidebar(project, currentFilePath) {
+      const sidebar = document.getElementById('nav-sidebar');
+      const title = document.getElementById('nav-title');
+      const tree = document.getElementById('nav-tree');
+
+      if (!project) {
+        sidebar.classList.remove('visible');
+        return;
+      }
+
+      // Show sidebar
+      sidebar.classList.add('visible');
+      title.textContent = project.config?.name || 'Project';
+
+      // Clear and render tree
+      tree.innerHTML = '';
+      renderNavTree(project.navTree, tree, project.root, 0);
+
+      // Highlight current file
+      if (currentFilePath) {
+        const relativePath = currentFilePath.replace(project.root + '/', '');
+        const items = tree.querySelectorAll('.nav-item');
+        items.forEach(item => {
+          if (item.dataset.path === relativePath) {
+            item.classList.add('selected');
+          } else {
+            item.classList.remove('selected');
+          }
+        });
+      }
+
+      console.log('Nav sidebar updated:', project.navTree.length, 'top-level items');
+    }
+
+    // =========================================================================
     // OPEN FILE
     // =========================================================================
 
@@ -1321,6 +1482,22 @@
       document.getElementById('titlebar-title').textContent = 'Opening...';
 
       try {
+        // === NEW: Get project info from service ===
+        const project = await electronAPI.project.get(filePath);
+        state.project = project;
+
+        if (project) {
+          console.log('Project detected:', project.root);
+          console.log('Config:', project.config);
+          console.log('Files:', project.files.length);
+          console.log('NavTree:', project.navTree);
+          updateNavSidebar(project, filePath);
+        } else {
+          console.log('No project found (standalone file)');
+          updateNavSidebar(null);
+        }
+        // === END NEW ===
+
         const result = await electronAPI.openFile(filePath);
 
         if (!result.success) {

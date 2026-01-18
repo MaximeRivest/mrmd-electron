@@ -1,0 +1,244 @@
+/**
+ * Preload script - IPC bridge between main and renderer
+ */
+
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Recent files/venvs
+  getRecent: () => ipcRenderer.invoke('get-recent'),
+
+  // File scanning (legacy - use file.scan for projects)
+  scanFiles: (searchDir) => ipcRenderer.invoke('scan-files', { searchDir }),
+  onFilesUpdate: (callback) => {
+    ipcRenderer.on('files-update', (event, data) => callback(data));
+  },
+
+  // Venv discovery
+  discoverVenvs: (projectDir) => ipcRenderer.invoke('discover-venvs', { projectDir }),
+  onVenvFound: (callback) => {
+    ipcRenderer.on('venv-found', (event, data) => callback(data));
+  },
+  onVenvScanDone: (callback) => {
+    ipcRenderer.on('venv-scan-done', () => callback());
+  },
+
+  // File info
+  readPreview: (filePath, lines) => ipcRenderer.invoke('read-preview', { filePath, lines }),
+  getFileInfo: (filePath) => ipcRenderer.invoke('get-file-info', { filePath }),
+
+  // Python management (legacy - use session.* for projects)
+  installMrmdPython: (venvPath) => ipcRenderer.invoke('install-mrmd-python', { venvPath }),
+  startPython: (venvPath, forceNew = false) => ipcRenderer.invoke('start-python', { venvPath, forceNew }),
+
+  // Runtime management (legacy)
+  listRuntimes: () => ipcRenderer.invoke('list-runtimes'),
+  killRuntime: (runtimeId) => ipcRenderer.invoke('kill-runtime', { runtimeId }),
+  attachRuntime: (runtimeId) => ipcRenderer.invoke('attach-runtime', { runtimeId }),
+
+  // Open file (legacy - use project.get + session.forDocument for projects)
+  openFile: (filePath) => ipcRenderer.invoke('open-file', { filePath }),
+
+  // AI server
+  getAi: () => ipcRenderer.invoke('get-ai'),
+
+  // ==========================================================================
+  // PROJECT SERVICE API
+  // ==========================================================================
+
+  project: {
+    /**
+     * Get project info for a file path
+     * @param {string} filePath - Absolute path to any file
+     * @returns {Promise<ProjectInfo | null>}
+     */
+    get: (filePath) => ipcRenderer.invoke('project:get', { filePath }),
+
+    /**
+     * Create a new mrmd project
+     * @param {string} targetPath - Where to create the project
+     * @returns {Promise<ProjectInfo>}
+     */
+    create: (targetPath) => ipcRenderer.invoke('project:create', { targetPath }),
+
+    /**
+     * Get navigation tree for a project
+     * @param {string} projectRoot - Project root path
+     * @returns {Promise<NavNode[]>}
+     */
+    nav: (projectRoot) => ipcRenderer.invoke('project:nav', { projectRoot }),
+
+    /**
+     * Invalidate cached project info
+     * @param {string} projectRoot - Project root path
+     */
+    invalidate: (projectRoot) => ipcRenderer.invoke('project:invalidate', { projectRoot }),
+  },
+
+  // ==========================================================================
+  // SESSION SERVICE API
+  // ==========================================================================
+
+  session: {
+    /**
+     * List all running sessions
+     * @returns {Promise<SessionInfo[]>}
+     */
+    list: () => ipcRenderer.invoke('session:list'),
+
+    /**
+     * Start a new session
+     * @param {object} config - Session config { name, venv, cwd }
+     * @returns {Promise<SessionInfo>}
+     */
+    start: (config) => ipcRenderer.invoke('session:start', { config }),
+
+    /**
+     * Stop a session
+     * @param {string} sessionName - Session name to stop
+     * @returns {Promise<boolean>}
+     */
+    stop: (sessionName) => ipcRenderer.invoke('session:stop', { sessionName }),
+
+    /**
+     * Restart a session
+     * @param {string} sessionName - Session name to restart
+     * @returns {Promise<SessionInfo>}
+     */
+    restart: (sessionName) => ipcRenderer.invoke('session:restart', { sessionName }),
+
+    /**
+     * Get or create session for a document
+     * @param {string} documentPath - Path to document
+     * @returns {Promise<SessionInfo | null>}
+     */
+    forDocument: (documentPath) => ipcRenderer.invoke('session:forDocument', { documentPath }),
+  },
+
+  // ==========================================================================
+  // FILE SERVICE API
+  // ==========================================================================
+
+  file: {
+    /**
+     * Scan files in a directory
+     * @param {string} root - Directory to scan
+     * @param {object} options - { includeHidden, extensions, maxDepth }
+     * @returns {Promise<string[]>}
+     */
+    scan: (root, options) => ipcRenderer.invoke('file:scan', { root, options }),
+
+    /**
+     * Create a file
+     * @param {string} filePath - Absolute path
+     * @param {string} content - File content
+     */
+    create: (filePath, content) => ipcRenderer.invoke('file:create', { filePath, content }),
+
+    /**
+     * Create a file within a project (handles FSML ordering)
+     * @param {string} projectRoot - Project root
+     * @param {string} relativePath - Desired relative path
+     * @param {string} content - File content
+     * @returns {Promise<{ success, path?, error? }>}
+     */
+    createInProject: (projectRoot, relativePath, content) =>
+      ipcRenderer.invoke('file:createInProject', { projectRoot, relativePath, content }),
+
+    /**
+     * Move/rename a file (with automatic refactoring)
+     * @param {string} projectRoot - Project root
+     * @param {string} fromPath - Source relative path
+     * @param {string} toPath - Destination relative path
+     * @returns {Promise<{ movedFile, updatedFiles }>}
+     */
+    move: (projectRoot, fromPath, toPath) =>
+      ipcRenderer.invoke('file:move', { projectRoot, fromPath, toPath }),
+
+    /**
+     * Delete a file
+     * @param {string} filePath - Absolute path
+     */
+    delete: (filePath) => ipcRenderer.invoke('file:delete', { filePath }),
+
+    /**
+     * Read a file
+     * @param {string} filePath - Absolute path
+     * @returns {Promise<{ success, content?, error? }>}
+     */
+    read: (filePath) => ipcRenderer.invoke('file:read', { filePath }),
+
+    /**
+     * Write a file
+     * @param {string} filePath - Absolute path
+     * @param {string} content - Content to write
+     */
+    write: (filePath, content) => ipcRenderer.invoke('file:write', { filePath, content }),
+  },
+
+  // ==========================================================================
+  // ASSET SERVICE API
+  // ==========================================================================
+
+  asset: {
+    /**
+     * List all assets in a project
+     * @param {string} projectRoot - Project root
+     * @returns {Promise<AssetInfo[]>}
+     */
+    list: (projectRoot) => ipcRenderer.invoke('asset:list', { projectRoot }),
+
+    /**
+     * Save an asset (handles deduplication)
+     * @param {string} projectRoot - Project root
+     * @param {Uint8Array} file - File content
+     * @param {string} filename - Desired filename
+     * @returns {Promise<{ path, deduplicated }>}
+     */
+    save: (projectRoot, file, filename) =>
+      ipcRenderer.invoke('asset:save', { projectRoot, file: Array.from(file), filename }),
+
+    /**
+     * Get relative path from document to asset
+     * @param {string} assetPath - Asset path relative to _assets/
+     * @param {string} documentPath - Document path relative to project root
+     * @returns {Promise<string>}
+     */
+    relativePath: (assetPath, documentPath) =>
+      ipcRenderer.invoke('asset:relativePath', { assetPath, documentPath }),
+
+    /**
+     * Find orphaned assets
+     * @param {string} projectRoot - Project root
+     * @returns {Promise<string[]>}
+     */
+    orphans: (projectRoot) => ipcRenderer.invoke('asset:orphans', { projectRoot }),
+
+    /**
+     * Delete an asset
+     * @param {string} projectRoot - Project root
+     * @param {string} assetPath - Asset path relative to _assets/
+     */
+    delete: (projectRoot, assetPath) =>
+      ipcRenderer.invoke('asset:delete', { projectRoot, assetPath }),
+  },
+
+  // ==========================================================================
+  // DATA LOSS PREVENTION
+  // ==========================================================================
+  // Added after investigating unexplained data loss on 2026-01-16.
+  // When sync server crashes, the renderer MUST be notified immediately
+  // so it can warn the user and attempt to save a local backup.
+  // ==========================================================================
+
+  /**
+   * Register callback for when sync server dies unexpectedly.
+   * CRITICAL: This is the primary safeguard against silent data loss.
+   * The callback receives: { projectDir, exitCode, signal, timestamp, reason }
+   */
+  onSyncServerDied: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners('sync-server-died');
+    ipcRenderer.on('sync-server-died', (event, data) => callback(data));
+  },
+});

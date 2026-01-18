@@ -8,13 +8,22 @@
  * - mrmd-ai: SHARED (stateless)
  */
 
-const { app, BrowserWindow, ipcMain } = require('electron');
-const { spawn, execSync } = require('child_process');
-const crypto = require('crypto');
-const path = require('path');
-const fs = require('fs');
-const net = require('net');
-const os = require('os');
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { spawn, execSync } from 'child_process';
+import crypto from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import net from 'net';
+import os from 'os';
+import { fileURLToPath } from 'url';
+
+// Services
+import { ProjectService, SessionService, FileService, AssetService } from './src/services/index.js';
+import { Project } from 'mrmd-project';
+
+// ESM __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // PATHS & CONFIG
@@ -29,6 +38,15 @@ const RUNTIMES_DIR = path.join(os.homedir(), '.mrmd', 'runtimes');
 if (!fs.existsSync(CONFIG_DIR)) {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
 }
+
+// ============================================================================
+// SERVICES
+// ============================================================================
+
+const projectService = new ProjectService();
+const sessionService = new SessionService();
+const fileService = new FileService(projectService);
+const assetService = new AssetService(fileService);
 
 // ============================================================================
 // RECENT FILES/VENVS PERSISTENCE
@@ -908,6 +926,234 @@ ipcMain.handle('get-ai', async () => {
 });
 
 // ============================================================================
+// PROJECT SERVICE IPC HANDLERS
+// ============================================================================
+
+// Get project for a file
+ipcMain.handle('project:get', async (event, { filePath }) => {
+  try {
+    return await projectService.getProject(filePath);
+  } catch (e) {
+    console.error('[project:get] Error:', e.message);
+    return null;
+  }
+});
+
+// Create new project
+ipcMain.handle('project:create', async (event, { targetPath }) => {
+  try {
+    return await projectService.createProject(targetPath);
+  } catch (e) {
+    console.error('[project:create] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get navigation tree
+ipcMain.handle('project:nav', async (event, { projectRoot }) => {
+  try {
+    const project = await projectService.getProject(projectRoot);
+    return project?.navTree || [];
+  } catch (e) {
+    console.error('[project:nav] Error:', e.message);
+    return [];
+  }
+});
+
+// Invalidate project cache
+ipcMain.handle('project:invalidate', (event, { projectRoot }) => {
+  projectService.invalidate(projectRoot);
+  return { success: true };
+});
+
+// ============================================================================
+// SESSION SERVICE IPC HANDLERS
+// ============================================================================
+
+// List all sessions
+ipcMain.handle('session:list', () => {
+  return sessionService.list();
+});
+
+// Start session
+ipcMain.handle('session:start', async (event, { config }) => {
+  try {
+    return await sessionService.start(config);
+  } catch (e) {
+    console.error('[session:start] Error:', e.message);
+    throw e;
+  }
+});
+
+// Stop session
+ipcMain.handle('session:stop', async (event, { sessionName }) => {
+  return sessionService.stop(sessionName);
+});
+
+// Restart session
+ipcMain.handle('session:restart', async (event, { sessionName }) => {
+  try {
+    return await sessionService.restart(sessionName);
+  } catch (e) {
+    console.error('[session:restart] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get or create session for document
+ipcMain.handle('session:forDocument', async (event, { documentPath }) => {
+  try {
+    const project = await projectService.getProject(documentPath);
+    if (!project) return null;
+
+    // Parse frontmatter from document
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    return await sessionService.getForDocument(
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+  } catch (e) {
+    console.error('[session:forDocument] Error:', e.message);
+    return null;
+  }
+});
+
+// ============================================================================
+// FILE SERVICE IPC HANDLERS
+// ============================================================================
+
+// Scan files in directory
+ipcMain.handle('file:scan', async (event, { root, options }) => {
+  try {
+    return await fileService.scan(root, options);
+  } catch (e) {
+    console.error('[file:scan] Error:', e.message);
+    return [];
+  }
+});
+
+// Create file
+ipcMain.handle('file:create', async (event, { filePath, content }) => {
+  try {
+    await fileService.createFile(filePath, content);
+    return { success: true };
+  } catch (e) {
+    console.error('[file:create] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// Create file in project (with FSML ordering)
+ipcMain.handle('file:createInProject', async (event, { projectRoot, relativePath, content }) => {
+  try {
+    const actualPath = await fileService.createInProject(projectRoot, relativePath, content);
+    return { success: true, path: actualPath };
+  } catch (e) {
+    console.error('[file:createInProject] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// Move file (with refactoring)
+ipcMain.handle('file:move', async (event, { projectRoot, fromPath, toPath }) => {
+  try {
+    return await fileService.move(projectRoot, fromPath, toPath);
+  } catch (e) {
+    console.error('[file:move] Error:', e.message);
+    throw e;
+  }
+});
+
+// Delete file
+ipcMain.handle('file:delete', async (event, { filePath }) => {
+  try {
+    await fileService.delete(filePath);
+    return { success: true };
+  } catch (e) {
+    console.error('[file:delete] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// Read file
+ipcMain.handle('file:read', async (event, { filePath }) => {
+  try {
+    const content = await fileService.read(filePath);
+    return { success: true, content };
+  } catch (e) {
+    console.error('[file:read] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// Write file
+ipcMain.handle('file:write', async (event, { filePath, content }) => {
+  try {
+    await fileService.write(filePath, content);
+    return { success: true };
+  } catch (e) {
+    console.error('[file:write] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============================================================================
+// ASSET SERVICE IPC HANDLERS
+// ============================================================================
+
+// List assets in project
+ipcMain.handle('asset:list', async (event, { projectRoot }) => {
+  try {
+    return await assetService.list(projectRoot);
+  } catch (e) {
+    console.error('[asset:list] Error:', e.message);
+    return [];
+  }
+});
+
+// Save asset (with deduplication)
+ipcMain.handle('asset:save', async (event, { projectRoot, file, filename }) => {
+  try {
+    // Convert from array/Uint8Array to Buffer
+    const buffer = Buffer.from(file);
+    return await assetService.save(projectRoot, buffer, filename);
+  } catch (e) {
+    console.error('[asset:save] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get relative path from document to asset
+ipcMain.handle('asset:relativePath', (event, { assetPath, documentPath }) => {
+  return assetService.getRelativePath(assetPath, documentPath);
+});
+
+// Find orphaned assets
+ipcMain.handle('asset:orphans', async (event, { projectRoot }) => {
+  try {
+    return await assetService.findOrphans(projectRoot);
+  } catch (e) {
+    console.error('[asset:orphans] Error:', e.message);
+    return [];
+  }
+});
+
+// Delete asset
+ipcMain.handle('asset:delete', async (event, { projectRoot, assetPath }) => {
+  try {
+    await assetService.delete(projectRoot, assetPath);
+    return { success: true };
+  } catch (e) {
+    console.error('[asset:delete] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============================================================================
 // WINDOW MANAGEMENT
 // ============================================================================
 
@@ -918,7 +1164,7 @@ function createWindow() {
     backgroundColor: '#0d1117',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -959,6 +1205,9 @@ app.on('window-all-closed', () => {
   for (const [windowId] of windowStates) {
     cleanupWindow(windowId);
   }
+
+  // Shutdown new session service
+  sessionService.shutdown();
 
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');
