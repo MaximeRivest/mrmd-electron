@@ -97,12 +97,49 @@ class FileService {
    * @param {string} content - File content
    * @returns {Promise<string>} Actual relative path (may have order prefix)
    */
+  // Files that should never have order prefixes added
+  static UNORDERED_FILES = new Set([
+    'readme.md',
+    'readme',
+    'license.md',
+    'license',
+    'license.txt',
+    'changelog.md',
+    'changelog',
+    'contributing.md',
+    'contributing',
+    'mrmd.md',
+    'index.md',
+    '.gitignore',
+    '.gitattributes',
+  ]);
+
+  /**
+   * Check if a filename should bypass FSML ordering
+   */
+  static shouldBypassOrdering(filename) {
+    const lower = filename.toLowerCase();
+    return FileService.UNORDERED_FILES.has(lower) || lower.startsWith('_');
+  }
+
   async createInProject(projectRoot, relativePath, content = '') {
     // Get the directory
     const dir = path.dirname(relativePath);
     const dirPath = dir ? path.join(projectRoot, dir) : projectRoot;
 
     let finalPath = relativePath;
+    const filename = path.basename(relativePath);
+
+    // Skip ordering for special files (README.md, LICENSE, etc.)
+    if (FileService.shouldBypassOrdering(filename)) {
+      const fullPath = path.join(projectRoot, finalPath);
+      await this.createFile(fullPath, content);
+
+      if (this.projectService) {
+        this.projectService.invalidate(projectRoot);
+      }
+      return finalPath;
+    }
 
     // Check if directory exists and has ordered files
     if (await this.dirExists(dirPath)) {
@@ -124,7 +161,6 @@ class FileService {
 
         // If folder has ordered files and new file doesn't have order, add one
         if (hasOrderedFiles) {
-          const filename = path.basename(relativePath);
           const parsed = FSML.parsePath(filename);
 
           if (parsed.order === null) {
@@ -152,7 +188,56 @@ class FileService {
   }
 
   /**
-   * Move/rename a file with automatic refactoring
+   * Reorder a file/folder using FSML conventions (for drag-drop)
+   *
+   * Uses FSML.computeReorder() with sibling information to properly
+   * shift all numbered items and maintain FSML ordering.
+   *
+   * @param {string} projectRoot - Project root path
+   * @param {string} sourcePath - Source relative path
+   * @param {string} targetPath - Target relative path (drop target)
+   * @param {'before' | 'after' | 'inside'} position - Drop position
+   * @returns {Promise<RefactorResult>}
+   */
+  async reorder(projectRoot, sourcePath, targetPath, position) {
+    // 1. Scan all files to get siblings for shift calculation (include hidden for complete refactoring)
+    const allFiles = await this.scan(projectRoot, { includeHidden: true });
+
+    // 2. Use FSML.computeReorder with siblings for proper shift computation
+    const { newPath, renames } = FSML.computeReorder(sourcePath, targetPath, position, allFiles);
+
+    console.log(`[FileService.reorder] ${sourcePath} -> ${newPath} (${position})`);
+    console.log(`[FileService.reorder] Renames needed:`, renames);
+
+    // 3. If no renames needed, nothing to do
+    if (renames.length === 0) {
+      console.log(`[FileService.reorder] No changes needed`);
+      return { movedFile: sourcePath, updatedFiles: [] };
+    }
+
+    const updatedFiles = [];
+
+    // 4. Execute renames in order (already sorted by computeReorder to avoid collisions)
+    for (const rename of renames) {
+      try {
+        const result = await this.move(projectRoot, rename.from, rename.to);
+        updatedFiles.push(...result.updatedFiles);
+      } catch (e) {
+        console.error(`[FileService.reorder] Failed to rename ${rename.from} -> ${rename.to}:`, e.message);
+        // Continue with other renames - partial success is better than nothing
+      }
+    }
+
+    // 5. Invalidate project cache
+    if (this.projectService) {
+      this.projectService.invalidate(projectRoot);
+    }
+
+    return { movedFile: newPath, updatedFiles: [...new Set(updatedFiles)] };
+  }
+
+  /**
+   * Move/rename a file or folder with automatic refactoring
    *
    * @param {string} projectRoot - Project root path
    * @param {string} fromPath - Source relative path
@@ -160,10 +245,30 @@ class FileService {
    * @returns {Promise<RefactorResult>}
    */
   async move(projectRoot, fromPath, toPath) {
+    const fullFromPath = path.join(projectRoot, fromPath);
+    const fullToPath = path.join(projectRoot, toPath);
+
+    // Check if source exists
+    let stat;
+    try {
+      stat = await fsPromises.stat(fullFromPath);
+    } catch (e) {
+      // Source doesn't exist - might have been renamed already in a batch
+      console.log(`[FileService.move] Source doesn't exist (may have been renamed): ${fromPath}`);
+      return { movedFile: toPath, updatedFiles: [] };
+    }
+
+    // Check if source is a directory
+    const isDirectory = stat.isDirectory();
+
+    if (isDirectory) {
+      return this.moveDirectory(projectRoot, fromPath, toPath);
+    }
+
     const updatedFiles = [];
 
-    // 1. Read all .md files in project
-    const files = await this.scan(projectRoot);
+    // 1. Read all .md files in project (include hidden folders for complete refactoring)
+    const files = await this.scan(projectRoot, { includeHidden: true });
 
     // 2. For each file, check if it references the moved file
     for (const file of files) {
@@ -189,7 +294,6 @@ class FileService {
     }
 
     // 3. Read the file being moved
-    const fullFromPath = path.join(projectRoot, fromPath);
     let movingContent;
     try {
       movingContent = await fsPromises.readFile(fullFromPath, 'utf8');
@@ -206,7 +310,6 @@ class FileService {
     );
 
     // 5. Actually move the file
-    const fullToPath = path.join(projectRoot, toPath);
     await fsPromises.mkdir(path.dirname(fullToPath), { recursive: true });
     await fsPromises.writeFile(fullToPath, updatedMovingContent);
     await fsPromises.unlink(fullFromPath);
@@ -223,12 +326,105 @@ class FileService {
   }
 
   /**
-   * Delete a file
+   * Move/rename a directory with automatic refactoring
+   *
+   * @param {string} projectRoot - Project root path
+   * @param {string} fromPath - Source relative path (folder)
+   * @param {string} toPath - Destination relative path (folder)
+   * @returns {Promise<RefactorResult>}
+   */
+  async moveDirectory(projectRoot, fromPath, toPath) {
+    const fullFromPath = path.join(projectRoot, fromPath);
+    const fullToPath = path.join(projectRoot, toPath);
+    const updatedFiles = [];
+
+    // 1. Get all files in the project (include hidden for complete refactoring)
+    const allFiles = await this.scan(projectRoot, { includeHidden: true });
+
+    // 2. Build list of files being moved and their new paths
+    const movedFiles = [];
+    for (const file of allFiles) {
+      if (file.startsWith(fromPath + '/') || file === fromPath) {
+        const newPath = file.replace(fromPath, toPath);
+        movedFiles.push({ from: file, to: newPath });
+      }
+    }
+
+    // 3. Update links in files NOT being moved that reference moved files
+    for (const file of allFiles) {
+      if (file.startsWith(fromPath + '/')) continue; // Skip files being moved
+
+      const fullPath = path.join(projectRoot, file);
+      let content;
+      try {
+        content = await fsPromises.readFile(fullPath, 'utf8');
+      } catch {
+        continue;
+      }
+
+      // Update all links to moved files
+      let updatedContent = content;
+      for (const moved of movedFiles) {
+        updatedContent = Links.refactor(updatedContent, [
+          { from: moved.from, to: moved.to },
+        ], file);
+      }
+
+      if (updatedContent !== content) {
+        await fsPromises.writeFile(fullPath, updatedContent);
+        updatedFiles.push(file);
+      }
+    }
+
+    // 4. Update asset paths in files being moved
+    for (const moved of movedFiles) {
+      const fullPath = path.join(projectRoot, moved.from);
+      let content;
+      try {
+        content = await fsPromises.readFile(fullPath, 'utf8');
+      } catch {
+        continue;
+      }
+
+      const updatedContent = Assets.refactorPaths(
+        content,
+        moved.from,
+        moved.to,
+        '_assets'
+      );
+
+      if (updatedContent !== content) {
+        await fsPromises.writeFile(fullPath, updatedContent);
+      }
+    }
+
+    // 5. Actually move the directory
+    await fsPromises.mkdir(path.dirname(fullToPath), { recursive: true });
+    await fsPromises.rename(fullFromPath, fullToPath);
+
+    // 6. Clean up empty directories
+    await this.removeEmptyDirs(path.dirname(fullFromPath), projectRoot);
+
+    // 7. Invalidate project cache
+    if (this.projectService) {
+      this.projectService.invalidate(projectRoot);
+    }
+
+    return { movedFile: toPath, updatedFiles };
+  }
+
+  /**
+   * Delete a file or directory
    *
    * @param {string} filePath - Absolute path to delete
    */
   async delete(filePath) {
-    await fsPromises.unlink(filePath);
+    const stat = await fsPromises.stat(filePath);
+    if (stat.isDirectory()) {
+      await fsPromises.rm(filePath, { recursive: true });
+    } else {
+      await fsPromises.unlink(filePath);
+    }
   }
 
   /**

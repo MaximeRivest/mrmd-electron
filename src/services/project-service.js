@@ -13,6 +13,7 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
+import chokidar from 'chokidar';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,7 +106,7 @@ class ProjectService {
   }
 
   /**
-   * Watch project for changes
+   * Watch project for changes (cross-platform using chokidar)
    *
    * @param {string} projectRoot - Project root path
    * @param {Function} onChange - Callback when files change
@@ -117,18 +118,32 @@ class ProjectService {
       this.watchers.get(projectRoot).close();
     }
 
-    const watcher = fs.watch(projectRoot, { recursive: true }, (eventType, filename) => {
-      // Ignore hidden files and _assets
-      if (!filename || filename.startsWith('.') || filename.startsWith('_')) {
-        return;
-      }
+    // Use chokidar for cross-platform recursive watching
+    const watcher = chokidar.watch(projectRoot, {
+      ignored: [
+        /(^|[\/\\])\../, // Hidden files
+        /(^|[\/\\])_/,   // Underscore prefixed (assets, etc.)
+        /node_modules/,
+        /\.git/,
+      ],
+      persistent: true,
+      ignoreInitial: true,
+      depth: 10,
+    });
 
+    const handleChange = (filePath) => {
       // Only care about .md files and directories
-      if (filename.endsWith('.md') || !filename.includes('.')) {
+      if (filePath.endsWith('.md') || !path.extname(filePath)) {
         this.invalidate(projectRoot);
         onChange();
       }
-    });
+    };
+
+    watcher.on('add', handleChange);
+    watcher.on('change', handleChange);
+    watcher.on('unlink', handleChange);
+    watcher.on('addDir', handleChange);
+    watcher.on('unlinkDir', handleChange);
 
     this.watchers.set(projectRoot, watcher);
 
@@ -222,15 +237,23 @@ class ProjectService {
    */
   async installMrmdPython(venvPath) {
     const pythonPath = path.join(venvPath, 'bin', 'python');
-    const mrmdPythonPkg = path.join(path.dirname(path.dirname(__dirname)), 'mrmd-python');
+
+    // Check for local development override (MRMD_PYTHON_DEV=/path/to/mrmd-python)
+    const localDev = process.env.MRMD_PYTHON_DEV;
+
+    const args = ['pip', 'install', '--python', pythonPath];
+    if (localDev) {
+      // Development: install from local path in editable mode
+      args.push('-e', localDev);
+      console.log('[project] Installing mrmd-python from local:', localDev);
+    } else {
+      // Production: install from PyPI
+      args.push('mrmd-python');
+      console.log('[project] Installing mrmd-python from PyPI');
+    }
 
     return new Promise((resolve, reject) => {
-      // Use uv pip install for speed
-      const proc = spawn('uv', [
-        'pip', 'install',
-        '--python', pythonPath,
-        '-e', mrmdPythonPkg,
-      ], {
+      const proc = spawn('uv', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 

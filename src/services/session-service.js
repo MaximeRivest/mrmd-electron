@@ -105,10 +105,17 @@ class SessionService {
       }
     }
 
-    // 2. Validate venv
+    // 2. Validate venv and auto-install mrmd-python if needed
     const mrmdPythonPath = path.join(config.venv, 'bin', 'mrmd-python');
     if (!fs.existsSync(mrmdPythonPath)) {
-      throw new Error(`mrmd-python not installed in ${config.venv}`);
+      console.log(`[session] mrmd-python not found in ${config.venv}, installing...`);
+      await this.installMrmdPython(config.venv);
+
+      // Verify installation succeeded
+      if (!fs.existsSync(mrmdPythonPath)) {
+        throw new Error(`Failed to install mrmd-python in ${config.venv}`);
+      }
+      console.log(`[session] mrmd-python installed successfully`);
     }
 
     // 3. Find free port
@@ -250,16 +257,30 @@ class SessionService {
   /**
    * Get or create session for a document
    *
+   * Returns the resolved session config, optionally with running session info.
+   * Always returns config so renderer can show start button even when not auto-started.
+   *
    * @param {string} documentPath - Path to document
    * @param {object} projectConfig - Project configuration
    * @param {object|null} frontmatter - Document frontmatter
    * @param {string} projectRoot - Project root path
-   * @returns {Promise<SessionInfo>}
+   * @returns {Promise<SessionConfig>} Resolved session config with optional session info
    */
   async getForDocument(documentPath, projectConfig, frontmatter, projectRoot) {
     // Use mrmd-project to resolve session config
     const merged = Project.mergeConfig(projectConfig, frontmatter);
     const resolved = Project.resolveSession(documentPath, projectRoot, merged);
+
+    // Build result with config info
+    const result = {
+      name: resolved.name,
+      venv: resolved.venv,
+      cwd: resolved.cwd,
+      autoStart: resolved.autoStart,
+      alive: false,
+      pid: null,
+      port: null,
+    };
 
     // Check if session exists and is alive
     const existing = this.sessions.get(resolved.name);
@@ -267,7 +288,11 @@ class SessionService {
       // Verify still alive
       try {
         process.kill(existing.pid, 0);
-        return existing;
+        result.alive = true;
+        result.pid = existing.pid;
+        result.port = existing.port;
+        result.startedAt = existing.startedAt;
+        return result;
       } catch {
         // Dead, clean up
         this.sessions.delete(resolved.name);
@@ -277,10 +302,19 @@ class SessionService {
 
     // Auto-start if configured
     if (resolved.autoStart) {
-      return this.start(resolved);
+      try {
+        const started = await this.start(resolved);
+        result.alive = true;
+        result.pid = started.pid;
+        result.port = started.port;
+        result.startedAt = started.startedAt;
+      } catch (e) {
+        console.error('[session] Auto-start failed:', e.message);
+        result.error = e.message;
+      }
     }
 
-    return null;
+    return result;
   }
 
   /**
@@ -326,6 +360,95 @@ class SessionService {
       };
 
       check();
+    });
+  }
+
+  /**
+   * Find uv binary in common locations
+   * @returns {string|null} Path to uv or null if not found
+   */
+  findUv() {
+    const locations = [
+      '/usr/local/bin/uv',
+      '/usr/bin/uv',
+      path.join(os.homedir(), '.local', 'bin', 'uv'),
+      path.join(os.homedir(), '.cargo', 'bin', 'uv'),
+    ];
+
+    for (const loc of locations) {
+      if (fs.existsSync(loc)) {
+        return loc;
+      }
+    }
+
+    // Try PATH
+    try {
+      const { execSync } = require('child_process');
+      const result = execSync('which uv', { encoding: 'utf8' }).trim();
+      if (result && fs.existsSync(result)) {
+        return result;
+      }
+    } catch {
+      // uv not in PATH
+    }
+
+    return null;
+  }
+
+  /**
+   * Install mrmd-python in a virtual environment using uv
+   * @param {string} venvPath - Path to the virtual environment
+   * @returns {Promise<void>}
+   */
+  async installMrmdPython(venvPath) {
+    // Try uv first (preferred), fall back to pip
+    const uvPath = this.findUv();
+    const pipPath = path.join(venvPath, 'bin', 'pip');
+
+    let cmd, args;
+    if (uvPath) {
+      cmd = uvPath;
+      args = ['pip', 'install', '--python', path.join(venvPath, 'bin', 'python'), 'mrmd-python'];
+    } else if (fs.existsSync(pipPath)) {
+      cmd = pipPath;
+      args = ['install', 'mrmd-python'];
+    } else {
+      throw new Error(`Neither uv nor pip found for ${venvPath}`);
+    }
+
+    return new Promise((resolve, reject) => {
+      console.log(`[session] Running: ${cmd} ${args.join(' ')}`);
+
+      const proc = spawn(cmd, args, {
+        cwd: path.dirname(venvPath),
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, VIRTUAL_ENV: venvPath },
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (d) => {
+        stdout += d.toString();
+        console.log(`[pip]`, d.toString().trim());
+      });
+
+      proc.stderr.on('data', (d) => {
+        stderr += d.toString();
+        console.error(`[pip]`, d.toString().trim());
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`pip install failed (code ${code}): ${stderr || stdout}`));
+        }
+      });
+
+      proc.on('error', (err) => {
+        reject(new Error(`Failed to run pip: ${err.message}`));
+      });
     });
   }
 

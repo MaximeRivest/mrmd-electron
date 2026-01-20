@@ -69,6 +69,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     .titlebar-title {
@@ -77,12 +78,39 @@
       font-weight: 400;
     }
 
+    .titlebar-btn {
+      -webkit-app-region: no-drag;
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .titlebar-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .titlebar-btn.active {
+      color: var(--accent);
+    }
+
     /* Main content */
     .content {
       flex: 1;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
+      align-items: stretch;
       overflow-y: auto;
       overflow-x: hidden;
       position: relative;
@@ -90,12 +118,18 @@
     }
 
     #editor-container {
-      width: 100%;
-      max-width: 800px;
+      flex: 1;
       min-height: 100%;
       padding: 40px 20px 40px 20px;
       padding-right: 10px; /* Account for scrollbar */
       display: none;
+      overflow-y: auto;
+    }
+
+    /* Center the editor within its container */
+    #editor-container > #editor {
+      max-width: 800px;
+      margin: 0 auto;
     }
 
     #editor {
@@ -121,48 +155,136 @@
     .nav-header {
       padding: 12px 16px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .nav-title {
+      flex: 1;
       font-size: 12px;
       font-weight: 500;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      cursor: pointer;
+      padding: 2px 4px;
+      margin: -2px -4px;
+      border-radius: 3px;
+    }
+
+    .nav-title:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+    }
+
+    .nav-action {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .nav-action:hover {
+      background: var(--hover-bg);
+      color: var(--text);
     }
 
     .nav-tree {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 0;
+      padding: 12px 0;
     }
 
+    /* Documentation-style navigation */
     .nav-item {
       display: flex;
       align-items: center;
       padding: 6px 16px;
       cursor: pointer;
       font-size: 13px;
-      color: var(--text);
-      gap: 8px;
+      color: var(--text-muted);
+      gap: 6px;
+      user-select: none;
+      border-left: 2px solid transparent;
+      margin-left: 0;
+      transition: color 0.1s, border-color 0.1s, background 0.1s;
     }
 
     .nav-item:hover {
+      color: var(--text);
       background: var(--hover-bg);
     }
 
     .nav-item.selected {
-      background: var(--selected-bg);
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: rgba(88, 166, 255, 0.08);
     }
 
+    .nav-item.selected .nav-item-label {
+      font-weight: 500;
+    }
+
+    /* Folder/section headers */
     .nav-item.folder {
-      color: var(--text-muted);
+      color: var(--text);
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-top: 16px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      border-left-color: transparent !important;
+      background: transparent !important;
     }
 
-    .nav-item-icon {
-      font-size: 12px;
-      width: 16px;
-      text-align: center;
+    .nav-item.folder:first-child {
+      margin-top: 0;
+    }
+
+    .nav-item.folder:hover {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .nav-item.folder.selected {
+      color: var(--text);
+    }
+
+    /* Expand/collapse arrow - subtle */
+    .nav-expand {
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: var(--text-dim);
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    .nav-item:hover .nav-expand {
+      opacity: 1;
+    }
+
+    .nav-expand.expanded {
+      transform: rotate(90deg);
+    }
+
+    .nav-expand.hidden {
+      width: 14px; /* Keep spacing consistent */
+      visibility: hidden;
     }
 
     .nav-item-label {
@@ -172,12 +294,111 @@
       text-overflow: ellipsis;
     }
 
+    /* Nested items get more indent */
+    .nav-children .nav-item:not(.folder) {
+      font-size: 13px;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      margin-top: 0;
+    }
+
+    /* Inline rename input */
+    .nav-rename-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: 2px;
+      padding: 2px 4px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      min-width: 0;
+    }
+
     .nav-children {
-      margin-left: 16px;
+      /* Children are indented via padding-left on items */
     }
 
     .nav-children.collapsed {
       display: none;
+    }
+
+    /* Drag and drop states */
+    .nav-item.dragging {
+      opacity: 0.4;
+    }
+
+    .nav-item.drop-target {
+      background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+      border-left-color: var(--accent) !important;
+    }
+
+    .nav-item.drop-above::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      right: 0;
+      top: -1px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+    }
+
+    .nav-item.drop-below::after {
+      content: '';
+      position: absolute;
+      left: 16px;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    /* Context menu */
+    .nav-context-menu {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 0;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      display: none;
+    }
+
+    .nav-context-menu.visible {
+      display: block;
+    }
+
+    .nav-context-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-context-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .nav-context-item.danger {
+      color: var(--error);
+    }
+
+    .nav-context-separator {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
     }
 
     /* Status bar */
@@ -216,6 +437,8 @@
     .status-dot.loading { background: var(--warning); opacity: 0.8; }
     .status-dot.error { background: var(--error); opacity: 0.8; }
 
+    /* Session controls moved to CodeLens in editor */
+
     .status-spacer { flex: 1; }
 
     .status-file {
@@ -234,6 +457,549 @@
       border-radius: 4px;
     }
     .status-theme:hover { background: var(--hover-bg); }
+
+    /* Table of Contents Sidebar (Right) */
+    .toc-sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      display: none;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: calc(100vh - 38px); /* Subtract titlebar */
+      overflow: hidden;
+    }
+
+    .toc-sidebar.visible {
+      display: flex;
+    }
+
+    .toc-header {
+      padding: 20px 16px 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .toc-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0 20px 0;
+    }
+
+    .toc-item {
+      display: block;
+      padding: 6px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      text-decoration: none;
+      line-height: 1.4;
+      transition: color 0.1s, border-color 0.1s, background 0.1s;
+    }
+
+    .toc-item:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+    }
+
+    .toc-item.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    /* Indent based on heading level */
+    .toc-item[data-level="1"] { padding-left: 16px; }
+    .toc-item[data-level="2"] { padding-left: 16px; }
+    .toc-item[data-level="3"] { padding-left: 28px; font-size: 12px; }
+    .toc-item[data-level="4"] { padding-left: 40px; font-size: 12px; }
+    .toc-item[data-level="5"] { padding-left: 52px; font-size: 12px; }
+    .toc-item[data-level="6"] { padding-left: 64px; font-size: 12px; }
+
+    .toc-empty {
+      padding: 16px;
+      color: var(--text-dim);
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    /* =========================================================================
+       SIDE RAIL SYSTEM
+       A floating toggle button that expands into a side rail with tool panels
+       ========================================================================= */
+
+    /* Side rail - the vertical bar with icons */
+    .side-rail {
+      position: fixed;
+      top: 38px; /* Below titlebar */
+      right: 0;
+      bottom: 0;
+      width: 48px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+    }
+
+    .side-rail.open {
+      transform: translateX(0);
+    }
+
+    /* When rail is open, shift content left to make room */
+    .content.rail-open {
+      margin-right: 48px;
+      transition: margin-right 0.2s ease;
+    }
+
+    /* Rail icon buttons */
+    .rail-btn {
+      width: 48px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      position: relative;
+      transition: color 0.1s, background 0.1s;
+    }
+
+    .rail-btn:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+    }
+
+    .rail-btn.active {
+      color: var(--accent);
+    }
+
+    /* Active indicator dot */
+    .rail-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Spacer to push items to bottom */
+    .rail-spacer {
+      flex: 1;
+    }
+
+    /* Rail section divider */
+    .rail-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 8px;
+    }
+
+    /* Panel overlay - slides in from right */
+    .rail-panel {
+      position: fixed;
+      top: 38px;
+      right: 48px; /* Next to rail */
+      bottom: 0;
+      width: 280px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 99;
+      transform: translateX(calc(100% + 48px));
+      transition: transform 0.2s ease;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .rail-panel.open {
+      transform: translateX(0);
+    }
+
+    /* Panel header */
+    .rail-panel-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .rail-panel-title {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text);
+    }
+
+    .rail-panel-close {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .rail-panel-close:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .rail-panel-refresh {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: transform 0.3s;
+    }
+
+    .rail-panel-refresh:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .rail-panel-refresh:active {
+      transform: rotate(180deg);
+    }
+
+    /* Panel content */
+    .rail-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+    }
+
+    /* Panel section */
+    .rail-panel-section {
+      padding: 0 16px;
+      margin-bottom: 16px;
+    }
+
+    .rail-panel-section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+    }
+
+    /* Panel list items */
+    .rail-panel-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      margin: 0 -12px;
+      border-radius: 4px;
+      cursor: pointer;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+      transition: background 0.1s;
+    }
+
+    .rail-panel-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .rail-panel-item-icon {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .rail-panel-item-label {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rail-panel-item-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Variable item style (for Variables panel) */
+    .var-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 16px;
+      gap: 8px;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+      transition: background 0.1s;
+    }
+
+    .var-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .var-item-color {
+      width: 4px;
+      height: 16px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .var-item-name {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .var-item-type {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* AI Command items */
+    .ai-cmd {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      gap: 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.1s;
+    }
+
+    .ai-cmd:hover {
+      background: var(--hover-bg);
+    }
+
+    .ai-cmd.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .ai-cmd.loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .ai-cmd.loading .ai-cmd-icon {
+      animation: ai-cmd-pulse 1s infinite;
+    }
+
+    @keyframes ai-cmd-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .ai-cmd-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .ai-cmd-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .ai-cmd-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .ai-panel-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255, 193, 7, 0.1);
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .ai-status-icon {
+      color: #ffc107;
+    }
+
+    .ai-juice-selector {
+      display: flex;
+      gap: 4px;
+      padding: 8px 16px;
+    }
+
+    .ai-juice-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .ai-juice-btn:hover {
+      background: var(--hover-bg);
+      border-color: var(--text-muted);
+    }
+
+    .ai-juice-btn.selected {
+      background: var(--accent-bg, rgba(59, 130, 246, 0.15));
+      border-color: var(--accent, #3b82f6);
+    }
+
+    .ai-progress {
+      padding: 12px 16px;
+      background: var(--hover-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ai-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .ai-progress-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      animation: ai-progress-pulse 1.5s infinite;
+    }
+
+    @keyframes ai-progress-pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    .ai-progress-model {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .ai-progress-models {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .ai-progress-chip {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .ai-progress-chip.running {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: var(--accent, #3b82f6);
+      color: var(--accent, #3b82f6);
+      animation: ai-progress-pulse 1s infinite;
+    }
+
+    .ai-progress-chip.done {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .ai-progress-chip.pending {
+      opacity: 0.5;
+    }
+
+    /* Setup hints banner */
+    .setup-hints {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+    }
+
+    .setup-hint {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--hover-bg);
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .setup-hint:last-child {
+      margin-bottom: 0;
+    }
+
+    .hint-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .hint-text {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .hint-action {
+      padding: 4px 10px;
+      font-size: 12px;
+      background: var(--accent, #3b82f6);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .hint-action:hover {
+      opacity: 0.9;
+    }
+
+    .hint-dismiss {
+      padding: 2px 6px;
+      font-size: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .hint-dismiss:hover {
+      background: var(--border);
+      color: var(--text);
+    }
 
     /* Modal overlay */
     .modal-overlay {
@@ -347,7 +1113,13 @@
     }
 
     .picker-item:hover { background: var(--hover-bg); }
-    .picker-item.selected { background: var(--selected-bg); }
+    .picker-item.selected {
+      background: var(--accent);
+      background: rgba(88, 166, 255, 0.15);
+    }
+    .picker-item.selected .picker-item-name {
+      color: var(--accent);
+    }
 
     .picker-item-icon {
       width: 16px;
@@ -422,6 +1194,64 @@
       border-radius: 3px;
       font-family: inherit;
       font-size: 10px;
+    }
+
+    /* Folder context bar */
+    .picker-context {
+      padding: 8px 20px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .picker-context-path {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .picker-context-hint {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* Create options */
+    .picker-create-section {
+      border-top: 1px solid var(--border);
+      margin-top: 12px;
+      padding-top: 12px;
+    }
+
+    .picker-item.create {
+      color: var(--accent);
+    }
+
+    .picker-item.create .picker-item-icon {
+      color: var(--accent);
+    }
+
+    .picker-item.folder .picker-item-icon {
+      color: var(--text-dim);
+    }
+
+    .picker-item-action {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    /* Mode indicator */
+    .picker-mode {
+      font-size: 10px;
+      padding: 2px 8px;
+      background: var(--accent);
+      color: var(--bg);
+      border-radius: 4px;
+      font-weight: 500;
     }
 
     /* Venv Selector Modal */
@@ -667,38 +1497,270 @@
   <div class="app">
     <div class="titlebar">
       <span class="titlebar-title" id="titlebar-title">mrmd</span>
+      <button class="titlebar-btn rail-toggle" id="rail-toggle" title="Toggle tools (Ctrl+\)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="3" y1="4" x2="13" y2="4"/>
+          <line x1="3" y1="8" x2="13" y2="8"/>
+          <line x1="3" y1="12" x2="13" y2="12"/>
+        </svg>
+      </button>
     </div>
 
     <div class="content">
       <!-- Project Navigation Sidebar -->
       <div id="nav-sidebar" class="nav-sidebar">
         <div class="nav-header">
-          <span class="nav-title" id="nav-title">No Project</span>
+          <span class="nav-title" id="nav-title" title="Click to open project config">No Project</span>
+          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)">⚙</button>
+          <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
         </div>
         <div class="nav-tree" id="nav-tree">
           <!-- Nav tree renders here -->
         </div>
       </div>
 
+      <!-- Nav Context Menu -->
+      <div class="nav-context-menu" id="nav-context-menu">
+        <div class="nav-context-item" data-action="new-file">New File</div>
+        <div class="nav-context-item" data-action="new-folder">New Folder</div>
+        <div class="nav-context-separator"></div>
+        <div class="nav-context-item" data-action="rename">Rename</div>
+        <div class="nav-context-item" data-action="reveal">Reveal in File Manager</div>
+        <div class="nav-context-separator"></div>
+        <div class="nav-context-item danger" data-action="delete">Delete</div>
+      </div>
+
       <div id="editor-container">
+        <!-- Setup hints banner -->
+        <div id="setup-hints" class="setup-hints" style="display: none;">
+          <div class="setup-hint" id="hint-no-project">
+            <span class="hint-icon">📁</span>
+            <span class="hint-text">This folder isn't an mrmd project yet</span>
+            <button class="hint-action" onclick="initializeProject()">Initialize Project</button>
+            <button class="hint-dismiss" onclick="dismissHint('no-project')">×</button>
+          </div>
+          <div class="setup-hint" id="hint-no-session">
+            <span class="hint-icon">⚡</span>
+            <span class="hint-text">No Python session configured</span>
+            <button class="hint-action" onclick="insertSessionConfig()">Add Session Config</button>
+            <button class="hint-dismiss" onclick="dismissHint('no-session')">×</button>
+          </div>
+          <div class="setup-hint" id="hint-no-venv">
+            <span class="hint-icon">🐍</span>
+            <span class="hint-text">No virtual environment found</span>
+            <button class="hint-action" onclick="showVenvPicker()">Select venv</button>
+            <button class="hint-dismiss" onclick="dismissHint('no-venv')">×</button>
+          </div>
+        </div>
         <div id="editor"></div>
+      </div>
+
+      <!-- Table of Contents Sidebar -->
+      <div id="toc-sidebar" class="toc-sidebar">
+        <div class="toc-header">On This Page</div>
+        <div class="toc-list" id="toc-list">
+          <div class="toc-empty">No headings found</div>
+        </div>
       </div>
     </div>
 
-    <div class="status-bar">
-      <div class="status-item" id="status-python" onclick="showVenvPicker()">
-        <span class="status-dot" id="python-dot"></span>
-        <span id="python-label">python</span>
-      </div>
-      <div class="status-item" id="status-ai">
-        <span class="status-dot" id="ai-dot"></span>
-        <span>ai</span>
-      </div>
-      <div class="status-spacer"></div>
-      <span class="status-file" id="status-file"></span>
-      <span class="status-theme" id="status-theme" onclick="cycleTheme()">github</span>
-      <span class="status-shortcut" onclick="showFilePicker()">Ctrl+P</span>
+    <!-- Side Rail -->
+    <div class="side-rail" id="side-rail">
+      <!-- Tool buttons -->
+      <button class="rail-btn" data-panel="variables" title="Variables (λ)">λ</button>
+      <button class="rail-btn" data-panel="ai" title="AI Commands (✨)">✨</button>
+      <button class="rail-btn" data-panel="help" title="Help (?)">?</button>
+
+      <div class="rail-spacer"></div>
+
+      <div class="rail-divider"></div>
+      <button class="rail-btn" data-panel="settings" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="2"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.5 2.5l1.5 1.5M12 12l1.5 1.5M2.5 13.5l1.5-1.5M12 4l1.5-1.5"/>
+        </svg>
+      </button>
     </div>
+
+    <!-- Panel: Variables -->
+    <div class="rail-panel" id="panel-variables">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Variables</span>
+        <button class="rail-panel-refresh" id="variables-refresh" title="Refresh">↻</button>
+        <button class="rail-panel-close" data-close-panel="variables">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Environment</div>
+          <div id="variables-list">
+            <div class="var-item">
+              <div class="var-item-color" style="background: var(--text-dim);"></div>
+              <span class="var-item-name">No session</span>
+              <span class="var-item-type">Start a runtime to see variables</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Help -->
+    <div class="rail-panel" id="panel-help">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Help</span>
+        <button class="rail-panel-close" data-close-panel="help">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Keyboard Shortcuts</div>
+          <div class="rail-panel-item">
+            <span class="rail-panel-item-label">Run cell</span>
+            <span class="rail-panel-item-meta">Ctrl+Enter</span>
+          </div>
+          <div class="rail-panel-item">
+            <span class="rail-panel-item-label">Run all cells</span>
+            <span class="rail-panel-item-meta">Ctrl+Shift+Enter</span>
+          </div>
+          <div class="rail-panel-item">
+            <span class="rail-panel-item-label">Open file</span>
+            <span class="rail-panel-item-meta">Ctrl+P</span>
+          </div>
+          <div class="rail-panel-item">
+            <span class="rail-panel-item-label">Toggle rail</span>
+            <span class="rail-panel-item-meta">Ctrl+\</span>
+          </div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Tips</div>
+          <div class="rail-panel-item">
+            <div class="rail-panel-item-icon"></div>
+            <span class="rail-panel-item-label">Use ```python to create code cells</span>
+          </div>
+          <div class="rail-panel-item">
+            <div class="rail-panel-item-icon"></div>
+            <span class="rail-panel-item-label">Click the play button to run code</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Settings -->
+    <div class="rail-panel" id="panel-settings">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Settings</span>
+        <button class="rail-panel-close" data-close-panel="settings">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Appearance</div>
+          <div class="rail-panel-item" onclick="cycleTheme()">
+            <span class="rail-panel-item-label">Theme</span>
+            <span class="rail-panel-item-meta" id="settings-theme">github</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: AI Commands -->
+    <div class="rail-panel" id="panel-ai">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">AI Commands</span>
+        <button class="rail-panel-close" data-close-panel="ai">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div id="ai-panel-status" class="ai-panel-status" style="display: none;">
+          <span class="ai-status-icon">⚠</span>
+          <span class="ai-status-text">AI server not connected</span>
+        </div>
+        <div id="ai-progress" class="ai-progress" style="display: none;">
+          <div class="ai-progress-header">
+            <span class="ai-progress-title">Working...</span>
+            <span class="ai-progress-model" id="ai-progress-model"></span>
+          </div>
+          <div class="ai-progress-models" id="ai-progress-models"></div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Quality</div>
+          <div class="ai-juice-selector">
+            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap">⚡</button>
+            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality">⚖️</button>
+            <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning">🧠</button>
+            <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model">🚀</button>
+            <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model">🔥</button>
+          </div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Text</div>
+          <div class="ai-cmd" data-cmd="fix-grammar">
+            <span class="ai-cmd-icon">✓</span>
+            <span class="ai-cmd-label">Fix Grammar</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+          <div class="ai-cmd" data-cmd="fix-transcription">
+            <span class="ai-cmd-icon">🎤</span>
+            <span class="ai-cmd-label">Fix Transcription</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+          <div class="ai-cmd" data-cmd="finish-sentence">
+            <span class="ai-cmd-icon">→</span>
+            <span class="ai-cmd-label">Complete Sentence</span>
+            <span class="ai-cmd-hint">cursor</span>
+          </div>
+          <div class="ai-cmd" data-cmd="finish-paragraph">
+            <span class="ai-cmd-icon">¶</span>
+            <span class="ai-cmd-label">Complete Paragraph</span>
+            <span class="ai-cmd-hint">cursor</span>
+          </div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Code</div>
+          <div class="ai-cmd" data-cmd="finish-code-line">
+            <span class="ai-cmd-icon">→</span>
+            <span class="ai-cmd-label">Complete Line</span>
+            <span class="ai-cmd-hint">cursor</span>
+          </div>
+          <div class="ai-cmd" data-cmd="finish-code-section">
+            <span class="ai-cmd-icon">⇢</span>
+            <span class="ai-cmd-label">Complete Section</span>
+            <span class="ai-cmd-hint">cursor</span>
+          </div>
+          <div class="ai-cmd" data-cmd="document-code">
+            <span class="ai-cmd-icon">📝</span>
+            <span class="ai-cmd-label">Add Docstrings</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+          <div class="ai-cmd" data-cmd="add-types">
+            <span class="ai-cmd-icon">T</span>
+            <span class="ai-cmd-label">Add Type Hints</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+          <div class="ai-cmd" data-cmd="improve-names">
+            <span class="ai-cmd-icon">N</span>
+            <span class="ai-cmd-label">Improve Names</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+          <div class="ai-cmd" data-cmd="refactor">
+            <span class="ai-cmd-icon">♻</span>
+            <span class="ai-cmd-label">Refactor Code</span>
+            <span class="ai-cmd-hint">selection</span>
+          </div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Document</div>
+          <div class="ai-cmd" data-cmd="document-continue">
+            <span class="ai-cmd-icon">📄</span>
+            <span class="ai-cmd-label">Continue Document</span>
+            <span class="ai-cmd-hint">append</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Hidden elements for JavaScript compatibility -->
+  <div style="display: none;">
+    <span id="status-file"></span>
+    <span id="status-theme">github</span>
   </div>
 
   <!-- File Picker Modal -->
@@ -706,8 +1768,14 @@
     <div class="file-picker">
       <div class="picker-header">
         <span class="picker-icon"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4"/><path d="M10 10l3.5 3.5"/></svg></span>
-        <input type="text" class="picker-input" id="file-search" placeholder="Find file..." autocomplete="off" spellcheck="false">
+        <input type="text" class="picker-input" id="file-search" placeholder="Find or create file... (type path to create)" autocomplete="off" spellcheck="false">
+        <span class="picker-mode" id="picker-mode" style="display: none;">PATH</span>
         <span class="picker-hint">esc</span>
+      </div>
+      <div class="picker-context" id="picker-context" style="display: none;">
+        <span>IN:</span>
+        <span class="picker-context-path" id="picker-context-path"></span>
+        <span class="picker-context-hint">[Backspace to go up]</span>
       </div>
       <div class="picker-body">
         <div class="picker-list" id="file-list"></div>
@@ -716,9 +1784,11 @@
           <div class="preview-content" id="preview-content">Select a file to preview</div>
         </div>
       </div>
-      <div class="picker-footer">
+      <div class="picker-footer" id="picker-footer">
         <span><kbd>↑↓</kbd> navigate</span>
         <span><kbd>⏎</kbd> open</span>
+        <span><kbd>⌘⏎</kbd> create</span>
+        <span><kbd>Tab</kbd> complete</span>
         <span><kbd>Esc</kbd> close</span>
       </div>
     </div>
@@ -772,9 +1842,103 @@
       projectDir: null,
       editor: null,
       drive: null,
+      homeDir: null,  // Will be set on init
       // New: Project state
       project: null,  // ProjectInfo from service
+      // Enhanced file picker state
+      pickerMode: 'fuzzy',  // 'fuzzy' | 'path' | 'create-file' | 'create-project'
+      folderContext: null,  // Current folder being browsed (absolute path)
+      createTarget: null,   // Path to create (file or project)
+      // Session state (new)
+      session: {
+        name: null,           // e.g., "thesis:default"
+        status: 'none',       // 'none' | 'starting' | 'connected' | 'error'
+        config: null,         // Resolved session config from Project.resolveSession
+        info: null,           // SessionInfo from SessionService (pid, port, etc.)
+      },
     };
+
+    // =========================================================================
+    // FILE PICKER MODE DETECTION
+    // =========================================================================
+
+    /**
+     * Detects the picker mode based on query string.
+     * Returns: { mode: 'fuzzy'|'path', mayCreate: boolean, isFile: boolean, basePath: string|null }
+     */
+    function detectPickerMode(query) {
+      // Empty query = fuzzy with recents
+      if (!query || !query.trim()) {
+        return { mode: 'fuzzy', mayCreate: false, isFile: false, basePath: null };
+      }
+
+      // Path prefixes trigger path mode
+      if (query.match(/^[.~\/]/)) {
+        const endsWithMd = query.toLowerCase().endsWith('.md');
+        const endsWithSlash = query.endsWith('/');
+        const hasExtension = query.includes('.') && !query.endsWith('.');
+
+        // Determine base path
+        let basePath = null;
+        if (query.startsWith('~/')) {
+          basePath = query.replace('~', state.homeDir || '/home');
+        } else if (query.startsWith('/')) {
+          basePath = query;
+        } else if (query.startsWith('./') || query.startsWith('../')) {
+          // Relative to current file's directory or project root
+          const baseDir = state.project?.root || (state.currentFile ? state.currentFile.replace(/\/[^/]+$/, '') : null);
+          if (baseDir) {
+            basePath = resolvePath(query, baseDir);
+          }
+        }
+
+        if (endsWithMd) {
+          return { mode: 'path', mayCreate: true, isFile: true, basePath };
+        }
+
+        if (endsWithSlash || !hasExtension) {
+          return { mode: 'path', mayCreate: true, isFile: false, basePath };
+        }
+
+        return { mode: 'path', mayCreate: false, isFile: false, basePath };
+      }
+
+      // Check if query looks like it wants to create something
+      // (no matches and valid filename pattern)
+      const looksLikeFilename = /^[\w-]+\.md$/i.test(query);
+      const looksLikeFolderName = /^[\w-]+$/.test(query) && !query.includes('.');
+
+      return {
+        mode: 'fuzzy',
+        mayCreate: looksLikeFilename || looksLikeFolderName,
+        isFile: looksLikeFilename,
+        basePath: null
+      };
+    }
+
+    /**
+     * Resolve relative path to absolute
+     */
+    function resolvePath(relativePath, basePath) {
+      if (relativePath.startsWith('/')) return relativePath;
+      if (relativePath.startsWith('~/')) {
+        return relativePath.replace('~', state.homeDir || '/home');
+      }
+
+      const parts = basePath.split('/').filter(p => p);
+      const relParts = relativePath.split('/').filter(p => p);
+
+      for (const part of relParts) {
+        if (part === '.') continue;
+        if (part === '..') {
+          parts.pop();
+        } else {
+          parts.push(part);
+        }
+      }
+
+      return '/' + parts.join('/');
+    }
 
     // =========================================================================
     // FUZZY MATCHING (fzf-style with path support)
@@ -913,6 +2077,7 @@
 
     function hideFilePicker() {
       document.getElementById('file-picker-overlay').classList.remove('visible');
+      resetPickerState();
     }
 
     async function loadRecentFiles() {
@@ -925,33 +2090,134 @@
       // Remember current selection before filtering
       const previousSelectedPath = state.filteredFiles[state.selectedFileIndex]?.path;
 
+      // Detect picker mode
+      const modeInfo = detectPickerMode(query);
+      state.pickerMode = modeInfo.mode;
+      state.createTarget = modeInfo.mayCreate ? query : null;
+
+      // Update UI mode indicator
+      const modeEl = document.getElementById('picker-mode');
+      if (modeInfo.mode === 'path') {
+        modeEl.style.display = 'inline';
+        modeEl.textContent = 'PATH';
+      } else {
+        modeEl.style.display = 'none';
+      }
+
+      // Update folder context UI
+      const contextEl = document.getElementById('picker-context');
+      const contextPathEl = document.getElementById('picker-context-path');
+      if (state.folderContext) {
+        contextEl.style.display = 'flex';
+        contextPathEl.textContent = state.folderContext.replace(state.homeDir, '~');
+      } else {
+        contextEl.style.display = 'none';
+      }
+
       const results = [];
 
       // Score all files
       const allFiles = [...new Set([...state.recentFiles.map(f => f.path), ...state.files])];
 
-      for (const filePath of allFiles) {
-        const matchResult = fuzzyMatchPath(query, filePath);
-        const isRecent = state.recentFiles.some(f => f.path === filePath);
-        const recentEntry = state.recentFiles.find(f => f.path === filePath);
+      // Determine effective query for filtering
+      let effectiveQuery = query;
+      if (state.folderContext) {
+        // When in folder context, filter within that folder
+        effectiveQuery = query; // Just use the typed part
+      }
 
-        // Include if no query OR if has a match
-        if (!query || matchResult.score > 0) {
-          results.push({
-            path: filePath,
-            name: matchResult.name,
-            dir: matchResult.dir,
-            score: matchResult.score + (isRecent ? 100 : 0),
-            nameMatches: matchResult.nameMatches,
-            dirMatches: matchResult.dirMatches,
-            isRecent,
-            opened: recentEntry?.opened,
-          });
+      for (const filePath of allFiles) {
+        // In folder context, only show files in that folder
+        if (state.folderContext) {
+          if (!filePath.startsWith(state.folderContext + '/')) continue;
+          // For folder context, match against relative path
+          const relativePath = filePath.slice(state.folderContext.length + 1);
+          const matchResult = fuzzyMatchPath(effectiveQuery, relativePath);
+          const isRecent = state.recentFiles.some(f => f.path === filePath);
+          const recentEntry = state.recentFiles.find(f => f.path === filePath);
+
+          if (!effectiveQuery || matchResult.score > 0) {
+            results.push({
+              path: filePath,
+              name: matchResult.name,
+              dir: matchResult.dir,
+              score: matchResult.score + (isRecent ? 100 : 0),
+              nameMatches: matchResult.nameMatches,
+              dirMatches: matchResult.dirMatches,
+              isRecent,
+              opened: recentEntry?.opened,
+              isFolder: false,
+            });
+          }
+        } else {
+          // Normal mode - match against full path
+          const matchResult = fuzzyMatchPath(effectiveQuery, filePath);
+          const isRecent = state.recentFiles.some(f => f.path === filePath);
+          const recentEntry = state.recentFiles.find(f => f.path === filePath);
+
+          // Include if no query OR if has a match
+          if (!effectiveQuery || matchResult.score > 0) {
+            results.push({
+              path: filePath,
+              name: matchResult.name,
+              dir: matchResult.dir,
+              score: matchResult.score + (isRecent ? 100 : 0),
+              nameMatches: matchResult.nameMatches,
+              dirMatches: matchResult.dirMatches,
+              isRecent,
+              opened: recentEntry?.opened,
+              isFolder: false,
+            });
+          }
         }
       }
 
-      // Sort by score
-      results.sort((a, b) => b.score - a.score);
+      // Also include folders from the file paths (for browsing)
+      const folders = new Set();
+      for (const filePath of allFiles) {
+        const parts = filePath.split('/');
+        let current = '';
+        for (let i = 0; i < parts.length - 1; i++) {
+          current = current ? current + '/' + parts[i] : parts[i];
+          if (current.startsWith('/')) folders.add(current);
+        }
+      }
+
+      // Add folder matches if in path mode or no query
+      if (modeInfo.mode === 'path' || !query) {
+        for (const folderPath of folders) {
+          // In folder context, only show immediate children
+          if (state.folderContext) {
+            if (!folderPath.startsWith(state.folderContext + '/')) continue;
+            const relative = folderPath.slice(state.folderContext.length + 1);
+            if (relative.includes('/')) continue; // Skip nested
+          }
+
+          const matchResult = fuzzyMatchPath(effectiveQuery, folderPath);
+          if (!effectiveQuery || matchResult.score > 0) {
+            // Check if already in results
+            if (!results.some(r => r.path === folderPath)) {
+              results.push({
+                path: folderPath,
+                name: folderPath.split('/').pop(),
+                dir: folderPath.split('/').slice(0, -1).join('/').replace(state.homeDir, '~') || '~',
+                score: matchResult.score,
+                nameMatches: [],
+                dirMatches: [],
+                isRecent: false,
+                isFolder: true,
+              });
+            }
+          }
+        }
+      }
+
+      // Sort by score (folders slightly lower to keep files first)
+      results.sort((a, b) => {
+        if (a.isFolder && !b.isFolder) return 1;
+        if (!a.isFolder && b.isFolder) return -1;
+        return b.score - a.score;
+      });
 
       state.filteredFiles = results.slice(0, 100);
 
@@ -966,39 +2232,104 @@
 
       const selectionChanged = state.filteredFiles[newSelectedIndex]?.path !== previousSelectedPath;
       state.selectedFileIndex = newSelectedIndex;
-      renderFileList();
+      renderFileList(modeInfo);
 
-      // Only load preview if selection changed or no previous selection
-      if (state.filteredFiles.length > 0 && (!preserveSelection || selectionChanged)) {
-        loadPreview(state.filteredFiles[newSelectedIndex].path);
+      // Only load preview if selection changed or no previous selection (and not a folder)
+      const selected = state.filteredFiles[newSelectedIndex];
+      if (selected && !selected.isFolder && (!preserveSelection || selectionChanged)) {
+        loadPreview(selected.path);
       }
     }
 
-    function renderFileList() {
+    function renderFileList(modeInfo = {}) {
       const list = document.getElementById('file-list');
-      const recent = state.filteredFiles.filter(f => f.isRecent);
-      const other = state.filteredFiles.filter(f => !f.isRecent);
+      const query = document.getElementById('file-search').value;
+
+      // Group files
+      const recent = state.filteredFiles.filter(f => f.isRecent && !f.isFolder);
+      const folders = state.filteredFiles.filter(f => f.isFolder);
+      const other = state.filteredFiles.filter(f => !f.isRecent && !f.isFolder);
 
       let html = '';
+      let currentIndex = 0;
 
+      // Recent files
       if (recent.length > 0) {
         html += '<div class="picker-section"><div class="picker-section-title">Recent</div>';
-        recent.forEach((f, i) => {
-          html += renderFileItem(f, i);
+        recent.forEach((f) => {
+          html += renderFileItem(f, currentIndex++);
         });
         html += '</div>';
       }
 
+      // Folders (in path mode or when browsing)
+      if (folders.length > 0) {
+        html += '<div class="picker-section"><div class="picker-section-title">Folders</div>';
+        folders.forEach((f) => {
+          html += renderFileItem(f, currentIndex++);
+        });
+        html += '</div>';
+      }
+
+      // Other files
       if (other.length > 0) {
         html += '<div class="picker-section"><div class="picker-section-title">Files</div>';
-        other.forEach((f, i) => {
-          html += renderFileItem(f, recent.length + i);
+        other.forEach((f) => {
+          html += renderFileItem(f, currentIndex++);
         });
         html += '</div>';
       }
 
-      if (state.filteredFiles.length === 0) {
+      // Empty state
+      if (state.filteredFiles.length === 0 && !modeInfo.mayCreate) {
         html = '<div class="empty-state">No files found</div>';
+      }
+
+      // Create options (at the bottom)
+      if (query && (modeInfo.mayCreate || state.filteredFiles.length === 0)) {
+        html += '<div class="picker-section picker-create-section">';
+
+        // Calculate where the file would be created
+        const createPath = state.folderContext
+          ? `${state.folderContext}/${query.replace(/^\.\//, '')}`
+          : (state.project?.root
+            ? `${state.project.root}/${query.replace(/^\.\//, '')}`
+            : query);
+
+        const displayPath = createPath.replace(state.homeDir, '~');
+
+        if (modeInfo.isFile || query.toLowerCase().endsWith('.md')) {
+          // Create file option
+          const fileName = query.endsWith('.md') ? query : query + '.md';
+          const isSelected = currentIndex === state.selectedFileIndex;
+          html += `
+            <div class="picker-item create ${isSelected ? 'selected' : ''}"
+                 data-index="${currentIndex}" data-action="create-file" data-create-path="${createPath}"
+                 onclick="selectFileItem(${currentIndex})" ondblclick="createNewFile()">
+              <span class="picker-item-icon">✨</span>
+              <span class="picker-item-name">Create: ${fileName}</span>
+              <span class="picker-item-path">${displayPath}</span>
+              ${isSelected ? '<span class="picker-item-action">[Enter]</span>' : ''}
+            </div>
+          `;
+          currentIndex++;
+        } else if (!modeInfo.isFile && query.length > 0) {
+          // Create project option
+          const isSelected = currentIndex === state.selectedFileIndex;
+          html += `
+            <div class="picker-item create ${isSelected ? 'selected' : ''}"
+                 data-index="${currentIndex}" data-action="create-project" data-create-path="${createPath}"
+                 onclick="selectFileItem(${currentIndex})" ondblclick="createNewProject()">
+              <span class="picker-item-icon">✨</span>
+              <span class="picker-item-name">Create PROJECT: ${query}</span>
+              <span class="picker-item-path">with mrmd.md, .venv</span>
+              ${isSelected ? '<span class="picker-item-action">[Enter]</span>' : ''}
+            </div>
+          `;
+          currentIndex++;
+        }
+
+        html += '</div>';
       }
 
       list.innerHTML = html;
@@ -1007,13 +2338,18 @@
     function renderFileItem(file, index) {
       const selected = index === state.selectedFileIndex ? 'selected' : '';
       const timeAgo = file.opened ? formatTimeAgo(new Date(file.opened)) : '';
+      const isFolder = file.isFolder;
+
+      const icon = isFolder ? '📁' : (file.isRecent ? '●' : '○');
+      const classes = `picker-item ${selected} ${isFolder ? 'folder' : ''}`;
 
       return `
-        <div class="picker-item ${selected}" data-index="${index}" data-path="${file.path}"
-             onclick="selectFileItem(${index})" ondblclick="openSelectedFile()">
-          <span class="picker-item-icon">${file.isRecent ? '●' : '○'}</span>
+        <div class="${classes}" data-index="${index}" data-path="${file.path}" ${isFolder ? 'data-folder="true"' : ''}
+             onclick="selectFileItem(${index})" ondblclick="${isFolder ? 'enterFolder' : 'openSelectedFile'}('${file.path.replace(/'/g, "\\'")}')">
+          <span class="picker-item-icon">${icon}</span>
           <span class="picker-item-name">${highlightMatches(file.name, file.nameMatches)}</span>
           <span class="picker-item-path">${highlightMatches(file.dir, file.dirMatches)}</span>
+          ${isFolder ? '<span class="picker-item-action">[Tab to browse]</span>' : ''}
           ${timeAgo ? `<span class="picker-item-meta">${timeAgo}</span>` : ''}
         </div>
       `;
@@ -1052,11 +2388,169 @@
     }
 
     async function openSelectedFile() {
-      if (state.filteredFiles.length === 0) return;
+      const selected = state.filteredFiles[state.selectedFileIndex];
 
-      const file = state.filteredFiles[state.selectedFileIndex];
+      // Check if we're selecting a create option
+      const selectedEl = document.querySelector('#file-list .picker-item.selected');
+      if (selectedEl?.dataset.action === 'create-file') {
+        await createNewFile();
+        return;
+      }
+      if (selectedEl?.dataset.action === 'create-project') {
+        await createNewProject();
+        return;
+      }
+
+      // Handle folder selection (enter folder context)
+      if (selected?.isFolder) {
+        enterFolder(selected.path);
+        return;
+      }
+
+      // Regular file selection
+      if (!selected) return;
       hideFilePicker();
-      await openFile(file.path);
+      await openFile(selected.path);
+    }
+
+    /**
+     * Enter a folder context (browse inside)
+     */
+    function enterFolder(folderPath) {
+      state.folderContext = folderPath;
+      const input = document.getElementById('file-search');
+      input.value = '';
+      input.focus();
+      filterFiles('');
+    }
+
+    /**
+     * Exit folder context (go up one level)
+     */
+    function exitFolderContext() {
+      if (!state.folderContext) return;
+
+      // Go up one level or exit context
+      const parent = state.folderContext.split('/').slice(0, -1).join('/');
+      if (parent && parent !== state.homeDir) {
+        state.folderContext = parent;
+      } else {
+        state.folderContext = null;
+      }
+
+      filterFiles(document.getElementById('file-search').value);
+    }
+
+    /**
+     * Tab completion - complete selected item or enter folder
+     */
+    function tabComplete() {
+      const selected = state.filteredFiles[state.selectedFileIndex];
+      if (!selected) return;
+
+      if (selected.isFolder) {
+        // Enter folder
+        enterFolder(selected.path);
+      } else {
+        // Complete filename in input
+        const input = document.getElementById('file-search');
+        input.value = selected.path.replace(state.homeDir, '~');
+        filterFiles(input.value);
+      }
+    }
+
+    /**
+     * Create a new file
+     */
+    async function createNewFile() {
+      const query = document.getElementById('file-search').value;
+      let fileName = query.endsWith('.md') ? query : query + '.md';
+
+      // Remove path prefixes for display
+      fileName = fileName.replace(/^\.\//, '').replace(/^~\//, '');
+
+      // Determine target path
+      let targetPath;
+      if (state.folderContext) {
+        targetPath = `${state.folderContext}/${fileName}`;
+      } else if (state.project?.root) {
+        // Create in project root
+        targetPath = `${state.project.root}/${fileName}`;
+      } else {
+        // Standalone file - ask for location or use query path
+        const modeInfo = detectPickerMode(query);
+        if (modeInfo.basePath) {
+          targetPath = modeInfo.basePath;
+          if (!targetPath.endsWith('.md')) targetPath += '.md';
+        } else {
+          console.warn('Cannot determine where to create file');
+          return;
+        }
+      }
+
+      console.log('Creating file:', targetPath);
+
+      try {
+        // Use the file service
+        await electronAPI.file.create(targetPath, '');
+        hideFilePicker();
+        await openFile(targetPath);
+      } catch (e) {
+        console.error('Failed to create file:', e);
+        alert('Failed to create file: ' + e.message);
+      }
+    }
+
+    /**
+     * Create a new project
+     */
+    async function createNewProject() {
+      const query = document.getElementById('file-search').value;
+
+      // Remove path prefixes
+      let projectName = query.replace(/^\.\//, '').replace(/^~\//, '').replace(/\/$/, '');
+
+      // Determine target path
+      let targetPath;
+      if (state.folderContext) {
+        targetPath = `${state.folderContext}/${projectName}`;
+      } else {
+        const modeInfo = detectPickerMode(query);
+        if (modeInfo.basePath) {
+          targetPath = modeInfo.basePath;
+        } else if (state.homeDir) {
+          // Default to ~/Projects/<name> or just home/<name>
+          targetPath = `${state.homeDir}/Projects/${projectName}`;
+        } else {
+          console.warn('Cannot determine where to create project');
+          return;
+        }
+      }
+
+      console.log('Creating project:', targetPath);
+
+      try {
+        // Use the project service
+        const project = await electronAPI.project.create(targetPath);
+
+        hideFilePicker();
+
+        // Open the project's index file
+        const indexPath = `${targetPath}/01-index.md`;
+        await openFile(indexPath);
+      } catch (e) {
+        console.error('Failed to create project:', e);
+        alert('Failed to create project: ' + e.message);
+      }
+    }
+
+    /**
+     * Reset picker state when hiding
+     */
+    function resetPickerState() {
+      state.folderContext = null;
+      state.pickerMode = 'fuzzy';
+      state.createTarget = null;
     }
 
     // =========================================================================
@@ -1401,48 +2895,551 @@
     }
 
     // =========================================================================
-    // PROJECT NAVIGATION
+    // PROJECT NAVIGATION (FSML Implementation)
     // =========================================================================
 
-    function renderNavTree(nodes, parentEl, projectRoot, depth = 0) {
+    // Navigation state
+    const navState = {
+      expandedFolders: new Set(),
+      dragging: null,        // Path being dragged
+      renaming: null,        // Path being renamed
+      contextTarget: null,   // Path for context menu
+    };
+
+    /**
+     * Toggle folder expanded state
+     */
+    function toggleFolder(folderPath) {
+      if (navState.expandedFolders.has(folderPath)) {
+        navState.expandedFolders.delete(folderPath);
+      } else {
+        navState.expandedFolders.add(folderPath);
+      }
+      renderNavTreeFull();
+    }
+
+    /**
+     * Expand all ancestors of a path
+     */
+    function expandToPath(filePath) {
+      const parts = filePath.split('/');
+      let current = '';
+      for (let i = 0; i < parts.length - 1; i++) {
+        current = current ? `${current}/${parts[i]}` : parts[i];
+        navState.expandedFolders.add(current);
+      }
+    }
+
+    /**
+     * Get current file's relative path
+     */
+    function getCurrentRelativePath() {
+      if (!state.currentFile || !state.project?.root) return null;
+      return state.currentFile.replace(state.project.root + '/', '');
+    }
+
+    /**
+     * Render the navigation tree
+     */
+    function renderNavTree(nodes, container, depth = 0) {
+      const currentRelPath = getCurrentRelativePath();
+
       for (const node of nodes) {
+        const isExpanded = navState.expandedFolders.has(node.path);
+        const isSelected = node.path === currentRelPath;
+        const isRenaming = node.path === navState.renaming;
+        const hasChildren = node.children && node.children.length > 0;
+
+        // Create item
         const item = document.createElement('div');
-        item.className = 'nav-item' + (node.isFolder ? ' folder' : '');
+        item.className = 'nav-item' + (node.isFolder ? ' folder' : '') + (isSelected ? ' selected' : '');
         item.dataset.path = node.path;
-        item.style.paddingLeft = (16 + depth * 16) + 'px';
+        item.dataset.isFolder = node.isFolder ? 'true' : 'false';
+        item.style.paddingLeft = (8 + depth * 16) + 'px';
+        item.draggable = !isRenaming;
 
-        const icon = document.createElement('span');
-        icon.className = 'nav-item-icon';
-        icon.textContent = node.isFolder ? '📁' : '📄';
-
-        const label = document.createElement('span');
-        label.className = 'nav-item-label';
-        label.textContent = node.title;
-
-        item.appendChild(icon);
-        item.appendChild(label);
-
-        // Click handler
-        if (!node.isFolder) {
-          item.onclick = () => {
-            const fullPath = projectRoot + '/' + node.path;
-            openFile(fullPath);
+        // Expand arrow (for folders with children, or spacing placeholder for files)
+        const expand = document.createElement('span');
+        const showExpand = node.isFolder && hasChildren;
+        expand.className = 'nav-expand' + (isExpanded ? ' expanded' : '') + (!showExpand ? ' hidden' : '');
+        expand.textContent = '›';
+        if (showExpand) {
+          expand.onclick = (e) => {
+            e.stopPropagation();
+            toggleFolder(node.path);
           };
         }
+        item.appendChild(expand);
 
-        parentEl.appendChild(item);
+        // Label or rename input
+        if (isRenaming) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'nav-rename-input';
+          input.value = node.title;
+          input.dataset.path = node.path;
+          input.onclick = (e) => e.stopPropagation();
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              finishRename(node.path, input.value);
+            } else if (e.key === 'Escape') {
+              cancelRename();
+            }
+          };
+          input.onblur = () => {
+            // Small delay to allow click events to fire first
+            setTimeout(() => {
+              if (navState.renaming === node.path) {
+                finishRename(node.path, input.value);
+              }
+            }, 100);
+          };
+          item.appendChild(input);
+          // Focus after render
+          setTimeout(() => {
+            input.focus();
+            input.select();
+          }, 0);
+        } else {
+          const label = document.createElement('span');
+          label.className = 'nav-item-label';
+          label.textContent = node.title;
+          item.appendChild(label);
+        }
 
-        // Recurse for children
-        if (node.children && node.children.length > 0) {
-          renderNavTree(node.children, parentEl, projectRoot, depth + 1);
+        // Click handler
+        item.onclick = (e) => {
+          if (e.target.classList.contains('nav-expand')) return;
+          if (node.isFolder) {
+            toggleFolder(node.path);
+          } else {
+            const fullPath = state.project.root + '/' + node.path;
+            openFile(fullPath);
+          }
+        };
+
+        // Double-click to rename
+        item.ondblclick = (e) => {
+          if (e.target.classList.contains('nav-expand')) return;
+          e.preventDefault();
+          startRename(node.path);
+        };
+
+        // Right-click context menu
+        item.oncontextmenu = (e) => {
+          e.preventDefault();
+          showNavContextMenu(e.clientX, e.clientY, node.path, node.isFolder);
+        };
+
+        // Drag handlers
+        item.ondragstart = (e) => {
+          navState.dragging = node.path;
+          item.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', node.path);
+        };
+
+        item.ondragend = () => {
+          navState.dragging = null;
+          clearDropTargets();
+        };
+
+        item.ondragover = (e) => {
+          e.preventDefault();
+          if (navState.dragging === node.path) return;
+
+          clearDropTargets();
+
+          // Determine drop position based on mouse position
+          const rect = item.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const height = rect.height;
+
+          if (node.isFolder && y > height * 0.25 && y < height * 0.75) {
+            // Drop INTO folder (middle zone)
+            item.classList.add('drop-target');
+          } else if (y < height * 0.5) {
+            // Drop ABOVE
+            item.classList.add('drop-above');
+          } else {
+            // Drop BELOW
+            item.classList.add('drop-below');
+          }
+
+          e.dataTransfer.dropEffect = 'move';
+        };
+
+        item.ondragleave = () => {
+          item.classList.remove('drop-target', 'drop-above', 'drop-below');
+        };
+
+        item.ondrop = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const fromPath = navState.dragging;
+          if (!fromPath || fromPath === node.path) {
+            clearDropTargets();
+            return;
+          }
+
+          // Determine drop type
+          const rect = item.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const height = rect.height;
+
+          let dropType = 'below';
+          if (node.isFolder && y > height * 0.25 && y < height * 0.75) {
+            dropType = 'into';
+          } else if (y < height * 0.5) {
+            dropType = 'above';
+          }
+
+          clearDropTargets();
+          navState.dragging = null;
+
+          await handleNavDrop(fromPath, node.path, dropType, node.isFolder);
+        };
+
+        container.appendChild(item);
+
+        // Render children if expanded
+        if (hasChildren && isExpanded) {
+          const childContainer = document.createElement('div');
+          childContainer.className = 'nav-children';
+          childContainer.dataset.parent = node.path;
+          container.appendChild(childContainer);
+          renderNavTree(node.children, childContainer, depth + 1);
         }
       }
     }
 
+    /**
+     * Clear all drop target classes
+     */
+    function clearDropTargets() {
+      document.querySelectorAll('.nav-item.drop-target, .nav-item.drop-above, .nav-item.drop-below, .nav-item.dragging')
+        .forEach(el => el.classList.remove('drop-target', 'drop-above', 'drop-below', 'dragging'));
+    }
+
+    /**
+     * Handle drop operation - reorder file with FSML conventions
+     *
+     * Uses FileService.reorder() which leverages FSML.computeNewPath()
+     * to handle proper FSML ordering and sibling renumbering.
+     */
+    async function handleNavDrop(fromPath, toPath, dropType, toIsFolder) {
+      if (!state.project?.root) return;
+
+      // Don't drop on self
+      if (fromPath === toPath) {
+        console.log('Nav drop: same item, skipping');
+        return;
+      }
+
+      // Map dropType to FSML position
+      let position;
+      if (dropType === 'into' && toIsFolder) {
+        position = 'inside';
+      } else if (dropType === 'above') {
+        position = 'before';
+      } else {
+        position = 'after';
+      }
+
+      console.log(`Nav drop: ${fromPath} -> ${toPath} (${position})`);
+
+      try {
+        // Use FileService.reorder which uses FSML.computeNewPath for proper ordering
+        const result = await electronAPI.file.reorder(
+          state.project.root,
+          fromPath,
+          toPath,
+          position
+        );
+
+        console.log('Reorder result:', result);
+
+        // Refresh project data
+        const project = await electronAPI.project.get(state.currentFile);
+        state.project = project;
+
+        // Update the current file path if it was moved
+        if (state.currentFile && state.currentFile.includes(fromPath)) {
+          const newCurrentFile = state.currentFile.replace(fromPath, result.movedFile);
+          state.currentFile = newCurrentFile;
+        }
+
+        renderNavTreeFull();
+      } catch (e) {
+        console.error('Reorder failed:', e);
+        alert('Failed to reorder: ' + e.message);
+      }
+    }
+
+    /**
+     * Start inline rename
+     */
+    function startRename(path) {
+      navState.renaming = path;
+      renderNavTreeFull();
+    }
+
+    /**
+     * Cancel rename
+     */
+    function cancelRename() {
+      navState.renaming = null;
+      renderNavTreeFull();
+    }
+
+    /**
+     * Finish rename - move file to new name
+     */
+    async function finishRename(oldPath, newTitle) {
+      if (!navState.renaming || !state.project?.root) {
+        navState.renaming = null;
+        return;
+      }
+
+      navState.renaming = null;
+
+      // Parse the old path to get directory and extract order prefix
+      const lastSlash = oldPath.lastIndexOf('/');
+      const dir = lastSlash >= 0 ? oldPath.substring(0, lastSlash) : '';
+      const oldFilename = lastSlash >= 0 ? oldPath.substring(lastSlash + 1) : oldPath;
+
+      // Extract order prefix if present (e.g., "01-" from "01-intro.md")
+      const orderMatch = oldFilename.match(/^(\d+-)/);
+      const orderPrefix = orderMatch ? orderMatch[1] : '';
+
+      // Build new filename
+      const extension = oldFilename.endsWith('.md') ? '.md' : '';
+      const isFolder = !oldFilename.includes('.');
+
+      // Convert title to filename (lowercase, replace spaces with hyphens)
+      const newSlug = newTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const newFilename = orderPrefix + newSlug + (isFolder ? '' : extension);
+      const newPath = dir ? `${dir}/${newFilename}` : newFilename;
+
+      if (newPath === oldPath) {
+        renderNavTreeFull();
+        return;
+      }
+
+      console.log(`Rename: ${oldPath} -> ${newPath}`);
+
+      try {
+        const result = await electronAPI.file.move(state.project.root, oldPath, newPath);
+
+        // Update current file if it was renamed
+        if (state.currentFile && state.currentFile.endsWith(oldPath)) {
+          state.currentFile = state.project.root + '/' + result.movedFile;
+        }
+
+        // Refresh project
+        const project = await electronAPI.project.get(state.currentFile || state.project.root + '/mrmd.md');
+        state.project = project;
+
+        renderNavTreeFull();
+      } catch (e) {
+        console.error('Rename failed:', e);
+        alert('Failed to rename: ' + e.message);
+        renderNavTreeFull();
+      }
+    }
+
+    /**
+     * Show context menu
+     */
+    function showNavContextMenu(x, y, path, isFolder) {
+      navState.contextTarget = { path, isFolder };
+
+      const menu = document.getElementById('nav-context-menu');
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.classList.add('visible');
+
+      // Close on click outside
+      const closeHandler = (e) => {
+        if (!menu.contains(e.target)) {
+          hideNavContextMenu();
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    }
+
+    /**
+     * Hide context menu
+     */
+    function hideNavContextMenu() {
+      document.getElementById('nav-context-menu').classList.remove('visible');
+      navState.contextTarget = null;
+    }
+
+    /**
+     * Handle context menu action
+     */
+    async function handleNavContextAction(action) {
+      const target = navState.contextTarget;
+      hideNavContextMenu();
+
+      if (!target || !state.project?.root) return;
+
+      switch (action) {
+        case 'new-file':
+          await createNavFile(target.isFolder ? target.path : getParentPath(target.path));
+          break;
+        case 'new-folder':
+          await createNavFolder(target.isFolder ? target.path : getParentPath(target.path));
+          break;
+        case 'rename':
+          startRename(target.path);
+          break;
+        case 'reveal':
+          const fullPath = state.project.root + '/' + target.path;
+          electronAPI.shell.showItemInFolder(fullPath);
+          break;
+        case 'delete':
+          await deleteNavItem(target.path);
+          break;
+      }
+    }
+
+    /**
+     * Get parent path
+     */
+    function getParentPath(path) {
+      const lastSlash = path.lastIndexOf('/');
+      return lastSlash >= 0 ? path.substring(0, lastSlash) : '';
+    }
+
+    /**
+     * Create new file in nav with default name, then start inline rename
+     */
+    async function createNavFile(parentPath) {
+      // Use default name - user can rename inline after creation
+      const fileName = 'untitled.md';
+      const relativePath = parentPath ? `${parentPath}/${fileName}` : fileName;
+
+      try {
+        const result = await electronAPI.file.createInProject(state.project.root, relativePath, '# Untitled\n');
+
+        if (!result.success) {
+          console.error('Create file failed:', result.error);
+          return;
+        }
+
+        const actualPath = result.path;
+
+        // Expand parent folder
+        if (parentPath) {
+          navState.expandedFolders.add(parentPath);
+        }
+
+        // Refresh project
+        const project = await electronAPI.project.get(state.currentFile);
+        state.project = project;
+
+        // Start inline rename for the new file
+        navState.renaming = actualPath;
+        renderNavTreeFull();
+
+        // Open the new file
+        await openFile(state.project.root + '/' + actualPath);
+      } catch (e) {
+        console.error('Create file failed:', e);
+      }
+    }
+
+    /**
+     * Create new folder in nav with default name, then start inline rename
+     */
+    async function createNavFolder(parentPath) {
+      // Use default name
+      const name = 'new-folder';
+      const folderPath = parentPath ? `${parentPath}/${name}` : name;
+      const indexPath = `${folderPath}/index.md`;
+
+      try {
+        const result = await electronAPI.file.createInProject(state.project.root, indexPath, `# New Folder\n`);
+
+        if (!result.success) {
+          console.error('Create folder failed:', result.error);
+          return;
+        }
+
+        // Extract actual folder path from the result (in case FSML added ordering prefix)
+        const actualIndexPath = result.path;
+        const actualFolderPath = actualIndexPath.replace(/\/index\.md$/, '');
+
+        // Expand parent and new folder
+        if (parentPath) {
+          navState.expandedFolders.add(parentPath);
+        }
+        navState.expandedFolders.add(actualFolderPath);
+
+        // Refresh project
+        const project = await electronAPI.project.get(state.currentFile);
+        state.project = project;
+
+        // Start inline rename for the new folder
+        navState.renaming = actualFolderPath;
+        renderNavTreeFull();
+      } catch (e) {
+        console.error('Create folder failed:', e);
+      }
+    }
+
+    /**
+     * Delete nav item
+     */
+    async function deleteNavItem(path) {
+      const isFolder = !path.includes('.') || path.endsWith('/');
+      const confirmMsg = isFolder
+        ? `Delete folder "${path}" and all its contents?`
+        : `Delete "${path}"?`;
+
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const fullPath = state.project.root + '/' + path;
+        await electronAPI.file.delete(fullPath);
+
+        // If we deleted the current file, clear it
+        if (state.currentFile && state.currentFile.startsWith(fullPath)) {
+          // Try to open another file or just clear
+          state.currentFile = null;
+        }
+
+        // Refresh
+        const project = await electronAPI.project.get(state.project.root + '/mrmd.md');
+        state.project = project;
+        renderNavTreeFull();
+      } catch (e) {
+        console.error('Delete failed:', e);
+        alert('Failed to delete: ' + e.message);
+      }
+    }
+
+    /**
+     * Full render of nav tree
+     */
+    function renderNavTreeFull() {
+      const tree = document.getElementById('nav-tree');
+      if (!tree || !state.project?.navTree) return;
+
+      tree.innerHTML = '';
+      renderNavTree(state.project.navTree, tree, 0);
+    }
+
+    /**
+     * Update the navigation sidebar
+     */
     function updateNavSidebar(project, currentFilePath) {
       const sidebar = document.getElementById('nav-sidebar');
       const title = document.getElementById('nav-title');
-      const tree = document.getElementById('nav-tree');
 
       if (!project) {
         sidebar.classList.remove('visible');
@@ -1453,31 +3450,52 @@
       sidebar.classList.add('visible');
       title.textContent = project.config?.name || 'Project';
 
-      // Clear and render tree
-      tree.innerHTML = '';
-      renderNavTree(project.navTree, tree, project.root, 0);
-
-      // Highlight current file
+      // Auto-expand to current file
       if (currentFilePath) {
         const relativePath = currentFilePath.replace(project.root + '/', '');
-        const items = tree.querySelectorAll('.nav-item');
-        items.forEach(item => {
-          if (item.dataset.path === relativePath) {
-            item.classList.add('selected');
-          } else {
-            item.classList.remove('selected');
-          }
-        });
+        expandToPath(relativePath);
       }
+
+      // Render tree
+      renderNavTreeFull();
 
       console.log('Nav sidebar updated:', project.navTree.length, 'top-level items');
     }
+
+    // Context menu click handler
+    document.getElementById('nav-context-menu').addEventListener('click', (e) => {
+      const item = e.target.closest('.nav-context-item');
+      if (item) {
+        handleNavContextAction(item.dataset.action);
+      }
+    });
+
+    // Header config button - opens mrmd.md
+    document.getElementById('nav-config-btn').addEventListener('click', () => {
+      if (state.project?.root) {
+        openFile(state.project.root + '/mrmd.md');
+      }
+    });
+
+    // Also make project title clickable to open config
+    document.getElementById('nav-title').addEventListener('click', () => {
+      if (state.project?.root) {
+        openFile(state.project.root + '/mrmd.md');
+      }
+    });
+
+    // Header new button
+    document.getElementById('nav-new-btn').addEventListener('click', () => {
+      createNavFile('');
+    });
 
     // =========================================================================
     // OPEN FILE
     // =========================================================================
 
     async function openFile(filePath) {
+      // Normalize path - remove double slashes
+      filePath = filePath.replace(/\/+/g, '/');
       console.log('Opening file:', filePath);
       document.getElementById('titlebar-title').textContent = 'Opening...';
 
@@ -1492,9 +3510,13 @@
           console.log('Files:', project.files.length);
           console.log('NavTree:', project.navTree);
           updateNavSidebar(project, filePath);
+
+          // Start watching for file changes
+          electronAPI.project.watch(project.root);
         } else {
           console.log('No project found (standalone file)');
           updateNavSidebar(null);
+          electronAPI.project.unwatch();
         }
         // === END NEW ===
 
@@ -1516,6 +3538,11 @@
 
         // Destroy existing editor
         if (state.editor) {
+          // Clear cursor from awareness before destroying to prevent stale cursors
+          // appearing as "anonymous" when navigating back to this document
+          if (state.editor.awareness) {
+            state.editor.awareness.setLocalStateField('cursor', null);
+          }
           detachSyncStatusHandlers();
           state.editor.destroy?.();
           state.editor = null;
@@ -1547,19 +3574,1113 @@
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
 
+        // Add runtime CodeLens extensions for yaml config blocks
+        addRuntimeCodeLensToEditor(state.editor);
+
+        // Add AI integration extensions for visual feedback
+        addAiIntegrationToEditor(state.editor);
+
         // Update UI
         document.getElementById('editor-container').style.display = 'block';
         document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
         document.getElementById('status-file').textContent = filePath.replace(/^\/home\/[^/]+/, '~');
 
+        // Initialize Table of Contents
+        initializeTOC();
+
         console.log('File opened successfully');
 
-        // Auto-discover venvs for this project
-        discoverProjectVenv(projectDir);
+        // Check for missing configuration and show hints
+        updateSetupHints();
+
+        // Resolve session from project config and auto-start if configured
+        await resolveProjectSession();
 
       } catch (e) {
         console.error('Error opening file:', e);
         alert('Error: ' + e.message);
+      }
+    }
+
+    // =========================================================================
+    // SIDE RAIL SYSTEM
+    // =========================================================================
+
+    const railState = {
+      open: false,
+      activePanel: null,
+    };
+
+    /**
+     * Initialize the side rail system
+     */
+    function initSideRail() {
+      const toggle = document.getElementById('rail-toggle');
+      const rail = document.getElementById('side-rail');
+
+      // Toggle button toggles the rail
+      toggle?.addEventListener('click', () => {
+        if (railState.open) {
+          closeRail();
+        } else {
+          openRail();
+        }
+      });
+
+      // Panel buttons
+      document.querySelectorAll('.rail-btn[data-panel]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const panelId = btn.dataset.panel;
+          togglePanel(panelId);
+        });
+      });
+
+      // Close panel buttons
+      document.querySelectorAll('[data-close-panel]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const panelId = btn.dataset.closePanel;
+          closePanel(panelId);
+        });
+      });
+
+      // Keyboard shortcut: Ctrl+\ to toggle rail
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === '\\') {
+          e.preventDefault();
+          if (railState.open) {
+            closeRail();
+          } else {
+            openRail();
+          }
+        }
+        // Escape closes active panel or rail
+        if (e.key === 'Escape') {
+          if (railState.activePanel) {
+            closePanel(railState.activePanel);
+          } else if (railState.open) {
+            closeRail();
+          }
+        }
+      });
+    }
+
+    /**
+     * Open the side rail
+     */
+    function openRail() {
+      const toggle = document.getElementById('rail-toggle');
+      const rail = document.getElementById('side-rail');
+      const content = document.querySelector('.content');
+
+      railState.open = true;
+      toggle?.classList.add('active');
+      rail?.classList.add('open');
+      content?.classList.add('rail-open');
+    }
+
+    /**
+     * Close the side rail
+     */
+    function closeRail() {
+      const toggle = document.getElementById('rail-toggle');
+      const rail = document.getElementById('side-rail');
+      const content = document.querySelector('.content');
+
+      // Close any open panel first
+      if (railState.activePanel) {
+        closePanel(railState.activePanel);
+      }
+
+      railState.open = false;
+      toggle?.classList.remove('active');
+      rail?.classList.remove('open');
+      content?.classList.remove('rail-open');
+    }
+
+    /**
+     * Toggle a panel
+     */
+    function togglePanel(panelId) {
+      if (railState.activePanel === panelId) {
+        closePanel(panelId);
+      } else {
+        openPanel(panelId);
+      }
+    }
+
+    /**
+     * Open a panel
+     */
+    function openPanel(panelId) {
+      // Close current panel if different
+      if (railState.activePanel && railState.activePanel !== panelId) {
+        closePanel(railState.activePanel);
+      }
+
+      const panel = document.getElementById(`panel-${panelId}`);
+      const btn = document.querySelector(`.rail-btn[data-panel="${panelId}"]`);
+
+      panel?.classList.add('open');
+      btn?.classList.add('active');
+      railState.activePanel = panelId;
+
+      // Update settings theme display if settings panel
+      if (panelId === 'settings') {
+        const themeEl = document.getElementById('settings-theme');
+        const statusTheme = document.getElementById('status-theme');
+        if (themeEl && statusTheme) {
+          themeEl.textContent = statusTheme.textContent;
+        }
+      }
+    }
+
+    /**
+     * Close a panel
+     */
+    function closePanel(panelId) {
+      const panel = document.getElementById(`panel-${panelId}`);
+      const btn = document.querySelector(`.rail-btn[data-panel="${panelId}"]`);
+
+      panel?.classList.remove('open');
+      btn?.classList.remove('active');
+
+      if (railState.activePanel === panelId) {
+        railState.activePanel = null;
+      }
+    }
+
+    // Initialize rail on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      initSideRail();
+    });
+
+    // =========================================================================
+    // VARIABLES PANEL
+    // =========================================================================
+
+    const variablesState = {
+      variables: [],
+      loading: false,
+      error: null,
+      lastRefresh: null,
+    };
+
+    /**
+     * Fetch variables from the Python runtime
+     */
+    async function fetchVariables() {
+      if (!state.pythonPort) {
+        variablesState.variables = [];
+        variablesState.error = 'No runtime connected';
+        renderVariables();
+        return;
+      }
+
+      variablesState.loading = true;
+      renderVariables();
+
+      try {
+        const url = `http://127.0.0.1:${state.pythonPort}/mrp/v1/variables`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session: 'default',
+            filter: { excludePrivate: true }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        variablesState.variables = result.variables || [];
+        variablesState.error = null;
+        variablesState.lastRefresh = Date.now();
+      } catch (err) {
+        console.error('Failed to fetch variables:', err);
+        variablesState.error = err.message;
+        variablesState.variables = [];
+      } finally {
+        variablesState.loading = false;
+        renderVariables();
+      }
+    }
+
+    /**
+     * Render the variables list in the panel
+     */
+    function renderVariables() {
+      const container = document.getElementById('variables-list');
+      if (!container) return;
+
+      // Loading state
+      if (variablesState.loading) {
+        container.innerHTML = `
+          <div class="var-item">
+            <div class="var-item-color" style="background: var(--text-dim);"></div>
+            <span class="var-item-name">Loading...</span>
+          </div>
+        `;
+        return;
+      }
+
+      // No runtime connected
+      if (!state.pythonPort) {
+        container.innerHTML = `
+          <div class="var-item">
+            <div class="var-item-color" style="background: var(--text-dim);"></div>
+            <span class="var-item-name">No session</span>
+            <span class="var-item-type">Start a runtime to see variables</span>
+          </div>
+        `;
+        return;
+      }
+
+      // Error state
+      if (variablesState.error) {
+        container.innerHTML = `
+          <div class="var-item">
+            <div class="var-item-color" style="background: var(--error);"></div>
+            <span class="var-item-name">Error</span>
+            <span class="var-item-type">${escapeHtml(variablesState.error)}</span>
+          </div>
+        `;
+        return;
+      }
+
+      // No variables
+      if (variablesState.variables.length === 0) {
+        container.innerHTML = `
+          <div class="var-item">
+            <div class="var-item-color" style="background: var(--text-dim);"></div>
+            <span class="var-item-name">No variables</span>
+            <span class="var-item-type">Run some code to create variables</span>
+          </div>
+        `;
+        return;
+      }
+
+      // Render variables
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+      container.innerHTML = variablesState.variables.map((v, i) => {
+        const color = colors[i % colors.length];
+        const typeInfo = v.shape ? `${v.type}(${v.shape.join(', ')})` : v.type;
+        return `
+          <div class="var-item" title="${escapeHtml(v.value || '')}">
+            <div class="var-item-color" style="background: ${color};"></div>
+            <span class="var-item-name">${escapeHtml(v.name)}</span>
+            <span class="var-item-type">${escapeHtml(typeInfo)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Initialize variables panel - auto-refresh when panel opens
+     */
+    function initVariablesPanel() {
+      // Refresh when panel opens
+      const originalOpenPanel = openPanel;
+      openPanel = function(panelId) {
+        originalOpenPanel(panelId);
+        if (panelId === 'variables') {
+          fetchVariables();
+        }
+      };
+
+      // Add refresh button handler
+      const refreshBtn = document.getElementById('variables-refresh');
+      refreshBtn?.addEventListener('click', fetchVariables);
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initVariablesPanel();
+    });
+
+    // Auto-refresh variables after code execution
+    // Hook into editor's execution events if available
+    function setupVariablesAutoRefresh() {
+      if (state.editor?.on) {
+        state.editor.on('executionComplete', () => {
+          // Only refresh if panel is open
+          if (railState.activePanel === 'variables') {
+            setTimeout(fetchVariables, 500); // Small delay for Python to update
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // AI COMMANDS PANEL
+    // =========================================================================
+
+    /**
+     * Global AI client - set when AI server is connected
+     * @type {import('mrmd-editor').AiClient|null}
+     */
+    let aiClient = null;
+
+    /**
+     * AI command definitions
+     */
+    const AI_COMMANDS = {
+      'fix-grammar': {
+        program: 'FixGrammarPredict',
+        resultField: 'fixed_text',
+        type: 'replace',
+        requiresSelection: true,
+        buildParams: (ctx) => ({
+          text_to_fix: ctx.selectedText,
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'fix-transcription': {
+        program: 'FixTranscriptionPredict',
+        resultField: 'fixed_text',
+        type: 'replace',
+        requiresSelection: true,
+        buildParams: (ctx) => ({
+          text_to_fix: ctx.selectedText,
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'finish-sentence': {
+        program: 'FinishSentencePredict',
+        resultField: 'completion',
+        type: 'insert',
+        requiresSelection: false,
+        buildParams: (ctx) => ({
+          text_before_cursor: ctx.textBeforeCursor,
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'finish-paragraph': {
+        program: 'FinishParagraphPredict',
+        resultField: 'completion',
+        type: 'insert',
+        requiresSelection: false,
+        buildParams: (ctx) => ({
+          text_before_cursor: ctx.textBeforeCursor,
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'document-code': {
+        program: 'DocumentCodePredict',
+        resultField: 'documented_code',
+        type: 'replace',
+        requiresSelection: true,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code: ctx.selectedText,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'add-types': {
+        program: 'AddTypeHintsPredict',
+        resultField: 'typed_code',
+        type: 'replace',
+        requiresSelection: true,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code: ctx.selectedText,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'improve-names': {
+        program: 'ImproveNamesPredict',
+        resultField: 'improved_code',
+        type: 'replace',
+        requiresSelection: true,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code: ctx.selectedText,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'refactor': {
+        program: 'RefactorCodePredict',
+        resultField: 'refactored_code',
+        type: 'replace',
+        requiresSelection: true,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code: ctx.selectedText,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'finish-code-line': {
+        program: 'FinishCodeLinePredict',
+        resultField: 'completion',
+        type: 'insert',
+        requiresSelection: false,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code_before_cursor: ctx.textBeforeCursor,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'finish-code-section': {
+        program: 'FinishCodeSectionPredict',
+        resultField: 'completion',
+        type: 'insert',
+        requiresSelection: false,
+        codeOnly: true,
+        buildParams: (ctx, lang) => ({
+          code_before_cursor: ctx.textBeforeCursor,
+          language: lang || 'python',
+          local_context: ctx.localContext,
+          document_context: ctx.documentContext,
+        }),
+      },
+      'document-continue': {
+        program: 'DocumentResponsePredict',
+        resultField: 'response',
+        type: 'insert',
+        requiresSelection: false,
+        buildParams: (ctx) => ({
+          document: ctx.documentContext,
+        }),
+        // Special: insert at end of document
+        insertAtEnd: true,
+      },
+    };
+
+    /**
+     * Connect to AI server
+     * @param {string} serverUrl - AI server base URL (e.g., http://127.0.0.1:34251)
+     */
+    function connectAiServer(serverUrl) {
+      // Create a simple client that calls mrmd-ai server directly
+      // mrmd-ai endpoints are at /{program} not /api/ai/{program}
+      aiClient = {
+        baseUrl: serverUrl.replace(/\/$/, ''),
+        juiceLevel: 1, // Default to Balanced
+
+        async execute(program, params, options = {}) {
+          const juiceLevel = options.juiceLevel ?? this.juiceLevel;
+          const response = await fetch(`${this.baseUrl}/${program}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Juice-Level': String(juiceLevel),
+            },
+            body: JSON.stringify(params),
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: response.statusText }));
+            throw new Error(error.detail || `AI request failed: ${response.status}`);
+          }
+
+          return response.json();
+        },
+
+        /**
+         * Execute with streaming progress updates
+         */
+        async executeStream(program, params, callbacks = {}, options = {}) {
+          const juiceLevel = options.juiceLevel ?? this.juiceLevel;
+          const response = await fetch(`${this.baseUrl}/${program}/stream`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Juice-Level': String(juiceLevel),
+              'Accept': 'text/event-stream',
+            },
+            body: JSON.stringify(params),
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: response.statusText }));
+            throw new Error(error.detail || `AI stream request failed: ${response.status}`);
+          }
+
+          // Parse SSE stream
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let result = null;
+          let currentEventType = null;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              // Track event type
+              if (line.startsWith('event: ')) {
+                currentEventType = line.slice(7).trim();
+                continue;
+              }
+
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  // Route based on event type
+                  if (currentEventType === 'model_start') {
+                    callbacks.onModelStart?.(data.model, data);
+                  } else if (currentEventType === 'model_complete') {
+                    callbacks.onModelComplete?.(data.model, data);
+                  } else if (currentEventType === 'status') {
+                    callbacks.onStatus?.(data.step, data);
+                  } else if (currentEventType === 'result') {
+                    result = data;
+                    callbacks.onResult?.(data);
+                  } else if (currentEventType === 'error') {
+                    callbacks.onError?.(new Error(data.message || data.error));
+                  } else {
+                    // Fallback: check data properties
+                    if (data.step) {
+                      callbacks.onStatus?.(data.step, data);
+                    }
+                    if (data.completion || data.fixed_text || data.response) {
+                      result = data;
+                      callbacks.onResult?.(data);
+                    }
+                  }
+
+                  currentEventType = null; // Reset after processing
+                } catch (e) {
+                  // Skip invalid JSON
+                }
+              }
+            }
+          }
+
+          return result;
+        },
+
+        cancel(requestId) {
+          // Not implemented for simple client
+        },
+
+        cancelAll() {
+          // Not implemented for simple client
+        },
+      };
+
+      updateAiPanelStatus();
+      console.log('[AI] Connected to AI server at', serverUrl);
+    }
+
+    /**
+     * Disconnect from AI server
+     */
+    function disconnectAiServer() {
+      if (aiClient) {
+        aiClient.cancelAll?.();
+        aiClient = null;
+        updateAiPanelStatus();
+        console.log('[AI] Disconnected from AI server');
+      }
+    }
+
+    /**
+     * Update AI panel status display
+     */
+    function updateAiPanelStatus() {
+      const statusEl = document.getElementById('ai-panel-status');
+      if (!statusEl) return;
+
+      if (aiClient) {
+        statusEl.style.display = 'none';
+      } else {
+        statusEl.style.display = 'flex';
+      }
+    }
+
+    /**
+     * Show AI progress panel
+     */
+    function showAiProgress(title, model) {
+      const progressEl = document.getElementById('ai-progress');
+      const modelEl = document.getElementById('ai-progress-model');
+      const modelsEl = document.getElementById('ai-progress-models');
+
+      if (progressEl) {
+        progressEl.style.display = 'block';
+        progressEl.querySelector('.ai-progress-title').textContent = title || 'Working...';
+      }
+      if (modelEl) {
+        modelEl.textContent = model || '';
+      }
+      if (modelsEl) {
+        modelsEl.innerHTML = '';
+      }
+    }
+
+    /**
+     * Hide AI progress panel
+     */
+    function hideAiProgress() {
+      const progressEl = document.getElementById('ai-progress');
+      if (progressEl) {
+        progressEl.style.display = 'none';
+      }
+    }
+
+    /**
+     * Update model progress chips
+     */
+    function updateModelProgress(modelName, status) {
+      const modelsEl = document.getElementById('ai-progress-models');
+      if (!modelsEl) return;
+
+      // Shorten model name for display
+      const shortName = modelName.replace(/^(claude-|gpt-|gemini-)/, '').slice(0, 12);
+
+      // Find or create chip for this model
+      let chip = modelsEl.querySelector(`[data-model="${modelName}"]`);
+      if (!chip) {
+        chip = document.createElement('span');
+        chip.className = 'ai-progress-chip';
+        chip.dataset.model = modelName;
+        chip.textContent = shortName;
+        modelsEl.appendChild(chip);
+      }
+
+      // Update status
+      chip.classList.remove('running', 'done', 'pending');
+      if (status === 'running') {
+        chip.classList.add('running');
+      } else if (status === 'done') {
+        chip.classList.add('done');
+      } else if (status === 'pending') {
+        chip.classList.add('pending');
+      }
+    }
+
+    /**
+     * Execute an AI command
+     * @param {string} cmdId - Command ID
+     */
+    async function executeAiCommand(cmdId) {
+      const cmd = AI_COMMANDS[cmdId];
+      if (!cmd) return;
+
+      if (!aiClient) {
+        console.warn('[AI] AI server not connected');
+        return;
+      }
+
+      if (!state.editor?.view) {
+        console.warn('[AI] No editor active');
+        return;
+      }
+
+      const view = state.editor.view;
+      const cmdEl = document.querySelector(`.ai-cmd[data-cmd="${cmdId}"]`);
+
+      // Get AI context using mrmd.default.ai helpers
+      const context = mrmd.default.ai.getAiContext(view);
+
+      // Check requirements
+      if (cmd.requiresSelection && !context.selectedText) {
+        console.warn('[AI] This command requires selected text');
+        return;
+      }
+
+      // Detect code language if needed
+      let language = null;
+      if (cmd.codeOnly) {
+        language = detectCodeLanguageAtCursor(view);
+      }
+
+      const juiceLevel = currentJuiceLevel;
+
+      // Determine insert position
+      let from, to;
+      if (cmd.insertAtEnd) {
+        // Insert at end of document
+        const docLength = view.state.doc.length;
+        from = docLength;
+        to = docLength;
+      } else if (cmd.type === 'insert') {
+        from = context.cursorPos;
+        to = context.cursorPos;
+      } else {
+        from = context.selectionFrom;
+        to = context.selectionTo;
+      }
+
+      // Show loading state
+      cmdEl?.classList.add('loading');
+      showAiProgress('Working...', '');
+
+      const params = cmd.buildParams(context, language);
+
+      try {
+        // Use streaming for progress updates
+        const result = await aiClient.executeStream(cmd.program, params, {
+          onStatus: (step, data) => {
+            console.log('[AI] Status:', step, data);
+            if (step === 'starting_multi_model') {
+              // Ultimate mode - show all pending models
+              showAiProgress('Multi-model synthesis...', `${data.total} models`);
+              data.models?.forEach(m => updateModelProgress(m, 'pending'));
+            } else if (step === 'calling_model') {
+              showAiProgress('Working...', data.model || '');
+            } else if (step === 'starting') {
+              const title = data.juice_name || 'Working...';
+              showAiProgress(title, data.model || '');
+            }
+          },
+          onModelStart: (modelName, data) => {
+            console.log('[AI] Model started:', modelName);
+            updateModelProgress(modelName, 'running');
+          },
+          onModelComplete: (modelName, data) => {
+            console.log('[AI] Model complete:', modelName);
+            updateModelProgress(modelName, 'done');
+          },
+          onError: (err) => {
+            console.error('[AI] Stream error:', err);
+          },
+        }, { juiceLevel });
+
+        hideAiProgress();
+
+        if (!result) {
+          console.warn('[AI] No result from AI');
+          return;
+        }
+
+        // Extract the result text
+        const newText = result[cmd.resultField] || result.completion || result.fixed_text || result.response || '';
+
+        if (!newText) {
+          console.warn('[AI] Empty result from AI');
+          return;
+        }
+
+        // Insert/replace text using AI integration for accept/reject UI
+        const ai = mrmd.default?.ai || mrmd.ai;
+        const opId = ai.generateOperationId();
+
+        if (cmd.type === 'insert') {
+          view.dispatch({
+            changes: { from, insert: newText },
+            effects: ai.completeAiOperation.of({ id: opId, newText }),
+          });
+        } else {
+          view.dispatch({
+            changes: { from, to, insert: newText },
+            effects: ai.completeAiOperation.of({ id: opId, newText }),
+          });
+        }
+      } catch (err) {
+        console.error('[AI] Command failed:', err);
+        hideAiProgress();
+      } finally {
+        cmdEl?.classList.remove('loading');
+      }
+    }
+
+    /**
+     * Detect the programming language at cursor position
+     * @param {EditorView} view
+     * @returns {string}
+     */
+    function detectCodeLanguageAtCursor(view) {
+      // Look for ```language in nearby text
+      const pos = view.state.selection.main.head;
+      const text = view.state.doc.toString();
+      const before = text.slice(Math.max(0, pos - 500), pos);
+      const match = before.match(/```(\w+)[^\`]*$/);
+      return match ? match[1] : 'python';
+    }
+
+    /**
+     * Update command states based on selection
+     */
+    function updateAiCommandStates() {
+      if (!state.editor?.view) return;
+
+      const hasSelection = state.editor.view.state.selection.main.from !==
+                           state.editor.view.state.selection.main.to;
+
+      document.querySelectorAll('.ai-cmd').forEach(el => {
+        const cmdId = el.dataset.cmd;
+        const cmd = AI_COMMANDS[cmdId];
+        if (cmd?.requiresSelection && !hasSelection) {
+          el.classList.add('disabled');
+        } else {
+          el.classList.remove('disabled');
+        }
+      });
+    }
+
+    /**
+     * Current juice level (0-4)
+     */
+    let currentJuiceLevel = 1;
+
+    /**
+     * Set the juice level and update UI
+     */
+    function setJuiceLevel(level) {
+      currentJuiceLevel = Math.max(0, Math.min(4, level));
+      if (aiClient) {
+        aiClient.juiceLevel = currentJuiceLevel;
+      }
+      // Update UI
+      document.querySelectorAll('.ai-juice-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.juice) === currentJuiceLevel);
+      });
+    }
+
+    /**
+     * Initialize the AI Commands panel
+     */
+    function initAiPanel() {
+      // Attach click handlers to AI commands
+      document.querySelectorAll('.ai-cmd').forEach(el => {
+        el.addEventListener('click', () => {
+          const cmdId = el.dataset.cmd;
+          if (!el.classList.contains('disabled') && !el.classList.contains('loading')) {
+            executeAiCommand(cmdId);
+          }
+        });
+      });
+
+      // Attach click handlers to juice level buttons
+      document.querySelectorAll('.ai-juice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setJuiceLevel(parseInt(btn.dataset.juice));
+        });
+      });
+
+      // Update command states when panel opens
+      const originalOpenPanel = openPanel;
+      openPanel = function(panelId) {
+        originalOpenPanel(panelId);
+        if (panelId === 'ai') {
+          updateAiPanelStatus();
+          updateAiCommandStates();
+        }
+      };
+
+      // Update AI panel status initially
+      updateAiPanelStatus();
+
+      // Listen for editor selection changes (poll every 200ms when panel is open)
+      setInterval(() => {
+        if (railState.activePanel === 'ai') {
+          updateAiCommandStates();
+        }
+      }, 200);
+    }
+
+    // Initialize AI panel on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initAiPanel();
+    });
+
+    // =========================================================================
+    // TABLE OF CONTENTS
+    // =========================================================================
+
+    /**
+     * Extract headings from markdown content
+     * @param {string} content - The markdown content
+     * @returns {Array<{level: number, text: string, line: number, pos: number}>}
+     */
+    function extractHeadings(content) {
+      const headings = [];
+      const lines = content.split('\n');
+      let pos = 0;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Match markdown headings (# to ######)
+        const match = line.match(/^(#{1,6})\s+(.+)$/);
+        if (match) {
+          const level = match[1].length;
+          // Clean up the heading text (remove trailing #, inline code, etc.)
+          let text = match[2].trim().replace(/\s*#+\s*$/, '');
+          headings.push({
+            level,
+            text,
+            line: i,
+            pos: pos,
+          });
+        }
+        pos += line.length + 1; // +1 for newline
+      }
+
+      return headings;
+    }
+
+    /**
+     * Update the TOC sidebar with headings
+     * @param {Array} headings - Array of heading objects
+     */
+    function updateTOC(headings) {
+      const tocList = document.getElementById('toc-list');
+      const tocSidebar = document.getElementById('toc-sidebar');
+
+      if (!tocList) return;
+
+      // Filter to show only h1-h3 by default for cleaner display
+      const displayHeadings = headings.filter(h => h.level <= 3);
+
+      if (displayHeadings.length === 0) {
+        tocList.innerHTML = '<div class="toc-empty">No headings found</div>';
+        tocSidebar.classList.remove('visible');
+        return;
+      }
+
+      // Show the sidebar
+      tocSidebar.classList.add('visible');
+
+      // Build the TOC HTML
+      tocList.innerHTML = displayHeadings.map((h, idx) => `
+        <div class="toc-item" data-level="${h.level}" data-pos="${h.pos}" data-index="${idx}">
+          ${escapeHtml(h.text)}
+        </div>
+      `).join('');
+
+      // Add click handlers
+      tocList.querySelectorAll('.toc-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const pos = parseInt(item.dataset.pos, 10);
+          jumpToPosition(pos);
+
+          // Update active state
+          tocList.querySelectorAll('.toc-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+        });
+      });
+
+      // Set first item as active by default
+      const firstItem = tocList.querySelector('.toc-item');
+      if (firstItem) firstItem.classList.add('active');
+    }
+
+    /**
+     * Jump to a position in the editor
+     * @param {number} pos - Character position
+     */
+    function jumpToPosition(pos) {
+      if (!state.editor?.view) return;
+
+      const view = state.editor.view;
+
+      // Set cursor position
+      view.dispatch({
+        selection: { anchor: pos, head: pos },
+        scrollIntoView: true,
+      });
+
+      // Focus the editor
+      view.focus();
+    }
+
+    /**
+     * Escape HTML special characters
+     */
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Initialize TOC for the current editor
+     */
+    function initializeTOC() {
+      if (!state.editor) return;
+
+      // Get initial content and update TOC
+      const content = state.editor.view?.state.doc.toString() || '';
+      const headings = extractHeadings(content);
+      updateTOC(headings);
+
+      // Subscribe to content changes (debounced)
+      let tocUpdateTimeout = null;
+      state.editor.on?.('change', (newContent) => {
+        clearTimeout(tocUpdateTimeout);
+        tocUpdateTimeout = setTimeout(() => {
+          const headings = extractHeadings(newContent);
+          updateTOC(headings);
+        }, 300); // Debounce 300ms
+      });
+
+      // Update active heading based on scroll position
+      const contentEl = document.querySelector('.content');
+      if (contentEl) {
+        contentEl.addEventListener('scroll', () => {
+          updateActiveTOCItem();
+        }, { passive: true });
+      }
+    }
+
+    /**
+     * Update the active TOC item based on scroll position
+     */
+    function updateActiveTOCItem() {
+      if (!state.editor?.view) return;
+
+      const view = state.editor.view;
+      const tocItems = document.querySelectorAll('.toc-item');
+      if (tocItems.length === 0) return;
+
+      // Get the visible area's top position in document coordinates
+      const visibleTop = view.documentTop;
+      const scrollTop = view.scrollDOM.scrollTop;
+
+      // Find which heading is currently visible
+      let activeItem = tocItems[0];
+
+      tocItems.forEach(item => {
+        const pos = parseInt(item.dataset.pos, 10);
+        try {
+          const coords = view.coordsAtPos(pos);
+          if (coords && coords.top <= 100) { // 100px from top of viewport
+            activeItem = item;
+          }
+        } catch (e) {
+          // Position might be invalid, skip
+        }
+      });
+
+      // Update active class
+      tocItems.forEach(item => item.classList.remove('active'));
+      activeItem.classList.add('active');
+
+      // Scroll TOC to keep active item visible
+      activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    /**
+     * Hide the TOC sidebar
+     */
+    function hideTOC() {
+      const tocSidebar = document.getElementById('toc-sidebar');
+      if (tocSidebar) {
+        tocSidebar.classList.remove('visible');
       }
     }
 
@@ -1583,16 +4704,516 @@
     }
 
     // =========================================================================
-    // STATUS BAR
+    // STATUS BAR & SESSION MANAGEMENT
     // =========================================================================
 
+    /**
+     * Update session status (state only, UI handled by CodeLens)
+     * @param {'none'|'starting'|'connected'|'error'} status
+     * @param {string} name - Session name (e.g., "thesis:default")
+     */
+    function updateSessionStatus(status, name) {
+      state.session.status = status;
+      state.session.name = name;
+
+      // Log status change
+      console.log(`[Session] Status: ${status}, Name: ${name || 'none'}`);
+
+      // Rebuild CodeLens to reflect status change
+      rebuildEditorCodeLens();
+    }
+
+    // Legacy wrapper for old code
     function updatePythonStatus(status, label) {
-      document.getElementById('python-dot').className = 'status-dot ' + status;
-      document.getElementById('python-label').textContent = label || 'python';
+      const statusMap = { ready: 'connected', loading: 'starting', error: 'error' };
+      updateSessionStatus(statusMap[status] || 'none', label);
     }
 
     function updateAiStatus(status) {
-      document.getElementById('ai-dot').className = 'status-dot ' + status;
+      const dot = document.getElementById('ai-dot');
+      if (dot) {
+        dot.className = 'status-dot ' + status;
+      }
+    }
+
+    /**
+     * Add AI integration extensions to the editor
+     * Shows loading shimmer and accept/reject UI for AI operations
+     * @param {Object} editor - The mrmd editor instance
+     */
+    function addAiIntegrationToEditor(editor) {
+      if (!editor?.view) return;
+
+      // Get the AI integration module
+      const ai = mrmd.default?.ai || mrmd.ai;
+      if (!ai?.aiIntegration) {
+        console.warn('[AI] aiIntegration not available');
+        return;
+      }
+
+      // Create AI extensions
+      const aiExtensions = ai.aiIntegration({
+        // Could add onSparkClick here for inline AI menu
+      });
+
+      // Add extensions to editor
+      editor.view.dispatch({
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(aiExtensions),
+      });
+
+      console.log('[AI] AI integration extensions added to editor');
+    }
+
+    /**
+     * Add runtime CodeLens extensions to the editor
+     * Shows inline controls above yaml config blocks and frontmatter
+     * @param {Object} editor - The mrmd editor instance
+     */
+    function addRuntimeCodeLensToEditor(editor) {
+      if (!editor?.view) return;
+
+      const projectName = state.project?.config?.name || 'default';
+
+      // Create CodeLens extensions with callbacks
+      const codeLensExtensions = mrmd.runtimeCodeLens.createExtensions({
+        projectName,
+
+        // Get session status by name (e.g., "thesis:default")
+        getSessionStatus: (sessionName) => {
+          if (state.session.name === sessionName && state.session.status !== 'none') {
+            return {
+              alive: state.session.status === 'connected',
+              pid: state.session.info?.pid,
+              port: state.session.info?.port,
+              error: state.session.status === 'error' ? 'Session failed' : undefined,
+            };
+          }
+          return null;
+        },
+
+        // Start a runtime (receives full runtime config from yaml)
+        onStart: async (runtime) => {
+          console.log('[CodeLens] Start runtime:', runtime);
+          const projectRoot = state.project?.root || '';
+
+          // Resolve relative paths to absolute
+          const resolvePath = (p) => {
+            if (!p) return projectRoot;
+            if (p.startsWith('/')) return p;
+            return projectRoot ? `${projectRoot}/${p}`.replace(/\/+/g, '/') : p;
+          };
+
+          // Build session config from runtime info with resolved paths
+          const config = {
+            name: runtime.name,
+            language: runtime.language,
+            venv: resolvePath(runtime.venv),
+            cwd: resolvePath(runtime.cwd),
+            projectRoot,
+          };
+          console.log('[CodeLens] Resolved config:', config);
+          state.session.config = config;
+          await startSession();
+          // Rebuild CodeLens to update status
+          rebuildEditorCodeLens();
+        },
+
+        // Stop a runtime by name
+        onStop: async (sessionName) => {
+          console.log('[CodeLens] Stop session:', sessionName);
+          state.session.name = sessionName;
+          await stopSession();
+          // Rebuild CodeLens to update status
+          rebuildEditorCodeLens();
+        },
+
+        // Restart a runtime by name
+        onRestart: async (sessionName) => {
+          console.log('[CodeLens] Restart session:', sessionName);
+          state.session.name = sessionName;
+          await restartSession();
+          // Rebuild CodeLens to update status
+          rebuildEditorCodeLens();
+        },
+
+        // Restart all runtimes (for multi-runtime configs)
+        onRestartAll: async () => {
+          console.log('[CodeLens] Restart all runtimes');
+          // For now, just restart the current session
+          if (state.session.name) {
+            await restartSession();
+            rebuildEditorCodeLens();
+          }
+        },
+      });
+
+      // Add extensions to the editor dynamically
+      editor.view.dispatch({
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(codeLensExtensions),
+      });
+
+      console.log('[CodeLens] Runtime CodeLens extensions added to editor');
+    }
+
+    /**
+     * Rebuild CodeLens decorations in the editor
+     * Call this when session status changes
+     * Uses requestAnimationFrame to avoid "update during update" errors
+     */
+    function rebuildEditorCodeLens() {
+      if (state.editor?.view) {
+        // Defer to avoid calling dispatch during an update cycle
+        requestAnimationFrame(() => {
+          if (state.editor?.view) {
+            mrmd.runtimeCodeLens.rebuild(state.editor.view);
+          }
+        });
+      }
+    }
+
+    /**
+     * Start session from project config
+     */
+    async function startSession() {
+      if (!state.session.config) {
+        console.error('No session config available');
+        return;
+      }
+
+      const config = state.session.config;
+      updateSessionStatus('starting', config.name);
+
+      try {
+        // Pass config directly - preload wraps it in { config }
+        const result = await electronAPI.session.start(config);
+
+        if (result.success || result.pid) {
+          state.session.info = result;
+          state.pythonPort = result.port;
+          updateSessionStatus('connected', config.name);
+          console.log(`Session started: ${config.name} on port ${result.port} (PID ${result.pid})`);
+
+          // Register runtime with existing editor if open
+          if (state.editor && state.currentFile) {
+            registerSessionWithEditor(result.port);
+          }
+        } else {
+          updateSessionStatus('error', config.name);
+          console.error('Failed to start session:', result.error);
+        }
+      } catch (e) {
+        updateSessionStatus('error', config.name);
+        console.error('Session start error:', e);
+      }
+    }
+
+    /**
+     * Restart current session
+     */
+    async function restartSession() {
+      if (!state.session.name) {
+        console.error('No session to restart');
+        return;
+      }
+
+      const sessionName = state.session.name;
+      updateSessionStatus('starting', sessionName);
+
+      try {
+        const result = await electronAPI.session.restart(sessionName);
+
+        if (result.success || result.pid) {
+          state.session.info = result;
+          state.pythonPort = result.port;
+          updateSessionStatus('connected', sessionName);
+          console.log(`Session restarted: ${sessionName} on port ${result.port}`);
+
+          // Register runtime with existing editor if open
+          if (state.editor && state.currentFile) {
+            registerSessionWithEditor(result.port);
+          }
+        } else {
+          updateSessionStatus('error', sessionName);
+          console.error('Failed to restart session:', result.error);
+        }
+      } catch (e) {
+        updateSessionStatus('error', sessionName);
+        console.error('Session restart error:', e);
+      }
+    }
+
+    /**
+     * Stop current session
+     */
+    async function stopSession() {
+      if (!state.session.name) {
+        console.error('No session to stop');
+        return;
+      }
+
+      const sessionName = state.session.name;
+
+      try {
+        const result = await electronAPI.session.stop(sessionName);
+
+        if (result.success) {
+          state.session.info = null;
+          state.pythonPort = null;
+          updateSessionStatus('none', null);
+          console.log(`Session stopped: ${sessionName}`);
+        } else {
+          console.error('Failed to stop session:', result.error);
+        }
+      } catch (e) {
+        console.error('Session stop error:', e);
+      }
+    }
+
+    /**
+     * Register session with editor for code execution
+     */
+    function registerSessionWithEditor(port) {
+      if (!state.editor || !port) return;
+
+      const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+      const pythonClient = new mrmd.MRPClient(
+        `http://127.0.0.1:${port}/mrp/v1`,
+        { session: docName, languages: ['python', 'py', 'python3'] }
+      );
+      state.editor.registerRuntime('python', pythonClient);
+      console.log('Registered Python runtime with editor');
+    }
+
+    /**
+     * Resolve and optionally auto-start session for current project
+     */
+    async function resolveProjectSession() {
+      if (!state.project) {
+        state.session.config = null;
+        updateSessionStatus('none', null);
+        return;
+      }
+
+      try {
+        // Get session config from project
+        const sessionConfig = await electronAPI.session.forDocument(state.currentFile);
+
+        if (sessionConfig) {
+          state.session.config = sessionConfig;
+
+          // Check for errors (e.g., venv not found, auto-start failed)
+          if (sessionConfig.error) {
+            console.error('Session config error:', sessionConfig.error);
+            updateSessionStatus('error', sessionConfig.name);
+            showSessionError(sessionConfig.error);
+            return;
+          }
+
+          // Check if already connected (either existing or auto-started)
+          if (sessionConfig.alive && sessionConfig.port) {
+            state.session.info = sessionConfig;
+            state.pythonPort = sessionConfig.port;
+            updateSessionStatus('connected', sessionConfig.name);
+            registerSessionWithEditor(sessionConfig.port);
+          } else {
+            // Show as available but not started
+            state.session.name = sessionConfig.name;
+            updateSessionStatus('none', null);
+          }
+        } else {
+          state.session.config = null;
+          updateSessionStatus('none', null);
+        }
+      } catch (e) {
+        console.error('Error resolving project session:', e);
+        updateSessionStatus('error', 'Session error');
+      }
+    }
+
+    /**
+     * Show session error to user
+     */
+    function showSessionError(message) {
+      // For now, log to console. Can enhance with a toast/banner later.
+      console.error('Session error:', message);
+
+      // Check for common errors and provide helpful messages
+      if (message.includes('mrmd-python not installed')) {
+        console.log('Hint: mrmd-python needs to be installed in the venv');
+      } else if (message.includes('not found')) {
+        console.log('Hint: Check that the venv path in mrmd.md is correct');
+      }
+    }
+
+    // =========================================================================
+    // SETUP HINTS
+    // =========================================================================
+
+    const dismissedHints = new Set();
+
+    /**
+     * Update setup hints based on current state
+     */
+    function updateSetupHints() {
+      const hintsEl = document.getElementById('setup-hints');
+      if (!hintsEl) return;
+
+      const hints = [];
+
+      // Check for missing project config
+      const hasProjectConfig = state.project?.config?.name;
+      if (!hasProjectConfig && !dismissedHints.has('no-project')) {
+        hints.push('no-project');
+      }
+
+      // Check for missing session config in document
+      const hasSessionConfig = checkDocumentHasSessionConfig();
+      if (!hasSessionConfig && !dismissedHints.has('no-session')) {
+        hints.push('no-session');
+      }
+
+      // Check for missing venv
+      const hasVenv = state.project?.config?.venv || state.session?.config?.venv;
+      if (!hasVenv && hasSessionConfig && !dismissedHints.has('no-venv')) {
+        hints.push('no-venv');
+      }
+
+      // Show/hide individual hints
+      document.getElementById('hint-no-project').style.display =
+        hints.includes('no-project') ? 'flex' : 'none';
+      document.getElementById('hint-no-session').style.display =
+        hints.includes('no-session') ? 'flex' : 'none';
+      document.getElementById('hint-no-venv').style.display =
+        hints.includes('no-venv') ? 'flex' : 'none';
+
+      // Show/hide hints container
+      hintsEl.style.display = hints.length > 0 ? 'block' : 'none';
+    }
+
+    /**
+     * Check if current document has session config in frontmatter
+     */
+    function checkDocumentHasSessionConfig() {
+      if (!state.editor?.view) return false;
+
+      const doc = state.editor.view.state.doc.toString();
+      // Check for session: or python: in yaml frontmatter
+      const frontmatterMatch = doc.match(/^---\n([\s\S]*?)\n---/);
+      if (frontmatterMatch) {
+        const yaml = frontmatterMatch[1];
+        return yaml.includes('session:') || yaml.includes('python:');
+      }
+
+      // Also check for ```yaml config blocks with session
+      return doc.includes('```yaml') && (doc.includes('session:') || doc.includes('python:'));
+    }
+
+    /**
+     * Dismiss a hint
+     */
+    function dismissHint(hintId) {
+      dismissedHints.add(hintId);
+      updateSetupHints();
+    }
+
+    /**
+     * Initialize current directory as mrmd project
+     */
+    async function initializeProject() {
+      if (!state.projectDir) {
+        alert('No directory to initialize');
+        return;
+      }
+
+      try {
+        // Get folder name for project name
+        const folderName = state.projectDir.split('/').pop() || 'project';
+
+        // Create mrmd.md with basic config
+        const mrmdConfig = `# ${folderName}
+
+Project configuration for mrmd.
+
+\`\`\`yaml
+project:
+  name: "${folderName}"
+  venv: .venv
+\`\`\`
+`;
+
+        const mrmdPath = state.projectDir + '/mrmd.md';
+        await electronAPI.file.write(mrmdPath, mrmdConfig);
+
+        console.log('Project initialized:', mrmdPath);
+
+        // Refresh project info
+        const project = await electronAPI.project.get(state.currentFile);
+        state.project = project;
+        updateNavSidebar(project);
+        updateSetupHints();
+      } catch (e) {
+        console.error('Failed to initialize project:', e);
+        alert('Failed to initialize project: ' + e.message);
+      }
+    }
+
+    /**
+     * Insert session config at the top of the document
+     */
+    function insertSessionConfig() {
+      if (!state.editor?.view) return;
+
+      const view = state.editor.view;
+      const doc = view.state.doc.toString();
+
+      // Default session config
+      const projectName = state.project?.config?.name || 'default';
+      const sessionConfig = `\`\`\`yaml
+session:
+  python:
+    name: "${projectName}:default"
+    venv: .venv
+\`\`\`
+
+`;
+
+      // Check if document already starts with --- (frontmatter) or ```yaml
+      let insertPos = 0;
+      if (doc.startsWith('---\n')) {
+        // Has frontmatter, insert after it
+        const endMatch = doc.match(/^---\n[\s\S]*?\n---\n/);
+        if (endMatch) {
+          insertPos = endMatch[0].length;
+        }
+      } else if (doc.startsWith('# ')) {
+        // Has title, insert after first line
+        const firstNewline = doc.indexOf('\n');
+        if (firstNewline > 0) {
+          insertPos = firstNewline + 1;
+        }
+      }
+
+      view.dispatch({
+        changes: { from: insertPos, insert: sessionConfig },
+        selection: { anchor: insertPos + sessionConfig.length },
+      });
+
+      // Update hints
+      setTimeout(updateSetupHints, 100);
+    }
+
+    /**
+     * Show venv picker (reuse existing functionality)
+     */
+    function showVenvPicker() {
+      // Trigger the runtime picker if available
+      const statusBar = document.querySelector('.session-status');
+      if (statusBar) {
+        statusBar.click();
+      } else {
+        // Fallback: show file picker
+        showFilePicker();
+      }
     }
 
     // =========================================================================
@@ -1683,9 +5304,12 @@
           return;
         }
 
+        // Count total items including create options
+        const totalItems = document.querySelectorAll('#file-list .picker-item').length;
+
         if (e.key === 'ArrowDown' || (e.ctrlKey && e.key === 'n') || (e.ctrlKey && e.key === 'j')) {
           e.preventDefault();
-          if (state.selectedFileIndex < state.filteredFiles.length - 1) {
+          if (state.selectedFileIndex < totalItems - 1) {
             selectFileItem(state.selectedFileIndex + 1);
           }
           return;
@@ -1699,10 +5323,47 @@
           return;
         }
 
+        // Ctrl/Cmd+Enter: Create file/project (jump to create option)
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          // Find the create option and trigger it
+          const createItem = document.querySelector('#file-list .picker-item[data-action^="create"]');
+          if (createItem) {
+            const createIndex = parseInt(createItem.dataset.index);
+            selectFileItem(createIndex);
+            // Small delay to show selection, then trigger
+            setTimeout(() => {
+              if (createItem.dataset.action === 'create-file') {
+                createNewFile();
+              } else if (createItem.dataset.action === 'create-project') {
+                createNewProject();
+              }
+            }, 100);
+          }
+          return;
+        }
+
         if (e.key === 'Enter') {
           e.preventDefault();
           openSelectedFile();
           return;
+        }
+
+        // Tab completion
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          tabComplete();
+          return;
+        }
+
+        // Backspace at empty input exits folder context
+        if (e.key === 'Backspace' && state.folderContext) {
+          const input = document.getElementById('file-search');
+          if (input.value === '') {
+            e.preventDefault();
+            exitFolderContext();
+            return;
+          }
         }
       }
 
@@ -2061,17 +5722,44 @@
     // INITIALIZATION
     // =========================================================================
 
+    // Debounced project refresh
+    let projectRefreshTimeout = null;
+    function scheduleProjectRefresh() {
+      if (projectRefreshTimeout) clearTimeout(projectRefreshTimeout);
+      projectRefreshTimeout = setTimeout(async () => {
+        if (state.project?.root) {
+          console.log('[watch] Refreshing project nav...');
+          const project = await electronAPI.project.get(state.currentFile || state.project.root + '/mrmd.md');
+          if (project) {
+            state.project = project;
+            updateNavSidebar(project, state.currentFile);
+          }
+        }
+      }, 300); // 300ms debounce
+    }
+
     async function init() {
       console.log('mrmd-electron ready');
 
+      // Load home directory for path resolution
+      state.homeDir = await electronAPI.getHomeDir();
+
       // Load saved theme (must be after mrmd.js is loaded)
       loadSavedTheme();
+
+      // Set up project file change listener
+      electronAPI.project.onChanged(({ projectRoot }) => {
+        console.log('[watch] Project files changed:', projectRoot);
+        scheduleProjectRefresh();
+      });
 
       // Start AI in background
       electronAPI.getAi().then(result => {
         if (result.success) {
           state.aiPort = result.port;
           updateAiStatus('ready');
+          // Connect AI client for AI Commands panel
+          connectAiServer(`http://127.0.0.1:${result.port}`);
         }
       });
 

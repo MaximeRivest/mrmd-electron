@@ -5,6 +5,15 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // System info
+  getHomeDir: () => ipcRenderer.invoke('get-home-dir'),
+
+  // Shell utilities (via IPC to main process)
+  shell: {
+    showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:showItemInFolder', { fullPath }),
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
+  },
+
   // Recent files/venvs
   getRecent: () => ipcRenderer.invoke('get-recent'),
 
@@ -73,6 +82,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
      * @param {string} projectRoot - Project root path
      */
     invalidate: (projectRoot) => ipcRenderer.invoke('project:invalidate', { projectRoot }),
+
+    /**
+     * Watch project for file changes
+     * @param {string} projectRoot - Project root path
+     */
+    watch: (projectRoot) => ipcRenderer.invoke('project:watch', { projectRoot }),
+
+    /**
+     * Stop watching project
+     */
+    unwatch: () => ipcRenderer.invoke('project:unwatch'),
+
+    /**
+     * Register callback for project file changes
+     * @param {Function} callback - Called when files change
+     */
+    onChanged: (callback) => {
+      ipcRenderer.removeAllListeners('project:changed');
+      ipcRenderer.on('project:changed', (event, data) => callback(data));
+    },
   },
 
   // ==========================================================================
@@ -154,6 +183,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
      */
     move: (projectRoot, fromPath, toPath) =>
       ipcRenderer.invoke('file:move', { projectRoot, fromPath, toPath }),
+
+    /**
+     * Reorder a file/folder (drag-drop with FSML ordering)
+     * @param {string} projectRoot - Project root
+     * @param {string} sourcePath - Source relative path
+     * @param {string} targetPath - Target relative path (drop target)
+     * @param {'before' | 'after' | 'inside'} position - Drop position
+     * @returns {Promise<{ movedFile, updatedFiles }>}
+     */
+    reorder: (projectRoot, sourcePath, targetPath, position) =>
+      ipcRenderer.invoke('file:reorder', { projectRoot, sourcePath, targetPath, position }),
 
     /**
      * Delete a file

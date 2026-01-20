@@ -9,6 +9,7 @@
     "dev": "electron . --enable-logging"
   },
   "dependencies": {
+    "chokidar": "^5.0.0",
     "electron": "^28.0.0",
     "fzf": "^0.5.2",
     "mrmd-project": "^0.1.0"

@@ -8,7 +8,7 @@
  * - mrmd-ai: SHARED (stateless)
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { spawn, execSync } from 'child_process';
 import crypto from 'crypto';
 import path from 'path';
@@ -619,13 +619,20 @@ async function installMrmdPython(venvPath) {
     throw new Error(`Python not found at ${pythonPath}. Is this a valid venv?`);
   }
 
+  // Check for local development override (MRMD_PYTHON_DEV=/path/to/mrmd-python)
+  const localDev = process.env.MRMD_PYTHON_DEV;
+  const args = ['pip', 'install', '--python', pythonPath];
+
+  if (localDev) {
+    args.push('-e', localDev);
+    console.log('[python] Installing from local:', localDev);
+  } else {
+    args.push('mrmd-python');
+    console.log('[python] Installing from PyPI');
+  }
+
   return new Promise((resolve, reject) => {
-    // Use uv pip install with --python to target the venv
-    const proc = spawn('uv', [
-      'pip', 'install',
-      '--python', pythonPath,
-      '-e', path.join(MRMD_PACKAGES, 'mrmd-python'),
-    ], {
+    const proc = spawn('uv', args, {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -728,6 +735,20 @@ function cleanupWindow(windowId) {
 // ============================================================================
 // IPC HANDLERS
 // ============================================================================
+
+// Get home directory
+ipcMain.handle('get-home-dir', () => {
+  return os.homedir();
+});
+
+// Shell utilities
+ipcMain.handle('shell:showItemInFolder', (event, { fullPath }) => {
+  shell.showItemInFolder(fullPath);
+});
+
+ipcMain.handle('shell:openExternal', async (event, { url }) => {
+  await shell.openExternal(url);
+});
 
 // Get recent files and venvs
 ipcMain.handle('get-recent', () => {
@@ -966,6 +987,42 @@ ipcMain.handle('project:invalidate', (event, { projectRoot }) => {
   return { success: true };
 });
 
+// Watch project for file changes
+const projectWatchers = new Map(); // windowId -> watcher
+
+ipcMain.handle('project:watch', (event, { projectRoot }) => {
+  const windowId = BrowserWindow.fromWebContents(event.sender)?.id;
+  if (!windowId) return { success: false };
+
+  // Close existing watcher for this window
+  if (projectWatchers.has(windowId)) {
+    projectWatchers.get(windowId).close();
+  }
+
+  // Start new watcher
+  const watcher = projectService.watch(projectRoot, () => {
+    // Send event to renderer when files change
+    const win = BrowserWindow.fromId(windowId);
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('project:changed', { projectRoot });
+    }
+  });
+
+  projectWatchers.set(windowId, watcher);
+  console.log(`[project:watch] Watching ${projectRoot} for window ${windowId}`);
+
+  return { success: true };
+});
+
+ipcMain.handle('project:unwatch', (event) => {
+  const windowId = BrowserWindow.fromWebContents(event.sender)?.id;
+  if (windowId && projectWatchers.has(windowId)) {
+    projectWatchers.get(windowId).close();
+    projectWatchers.delete(windowId);
+  }
+  return { success: true };
+});
+
 // ============================================================================
 // SESSION SERVICE IPC HANDLERS
 // ============================================================================
@@ -1064,6 +1121,16 @@ ipcMain.handle('file:move', async (event, { projectRoot, fromPath, toPath }) => 
     return await fileService.move(projectRoot, fromPath, toPath);
   } catch (e) {
     console.error('[file:move] Error:', e.message);
+    throw e;
+  }
+});
+
+// Reorder file (drag-drop with FSML ordering)
+ipcMain.handle('file:reorder', async (event, { projectRoot, sourcePath, targetPath, position }) => {
+  try {
+    return await fileService.reorder(projectRoot, sourcePath, targetPath, position);
+  } catch (e) {
+    console.error('[file:reorder] Error:', e.message);
     throw e;
   }
 });
