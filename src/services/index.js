@@ -7,12 +7,14 @@
 
 import ProjectService from './project-service.js';
 import SessionService from './session-service.js';
+import BashSessionService from './bash-session-service.js';
 import FileService from './file-service.js';
 import AssetService from './asset-service.js';
 
 export {
   ProjectService,
   SessionService,
+  BashSessionService,
   FileService,
   AssetService,
 };

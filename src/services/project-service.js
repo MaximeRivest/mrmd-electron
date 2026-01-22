@@ -11,12 +11,11 @@ import { Project, FSML, Scaffold } from 'mrmd-project';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
 import chokidar from 'chokidar';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Shared utilities and configuration
+import { createVenv, installMrmdPython } from '../utils/index.js';
+import { PROJECT_SCAN_MAX_DEPTH } from '../config.js';
 
 class ProjectService {
   constructor() {
@@ -96,10 +95,10 @@ class ProjectService {
 
     // 4. Create venv
     const venvPath = path.join(targetPath, scaffold.venvPath);
-    await this.createVenv(venvPath);
+    await createVenv(venvPath);
 
     // 5. Install mrmd-python
-    await this.installMrmdPython(venvPath);
+    await installMrmdPython(venvPath);
 
     // 6. Return project info
     return this.getProject(targetPath);
@@ -165,7 +164,7 @@ class ProjectService {
     const files = [];
 
     const walk = async (dir, depth = 0) => {
-      if (depth > 10) return; // Max depth
+      if (depth > PROJECT_SCAN_MAX_DEPTH) return;
 
       let entries;
       try {
@@ -195,82 +194,8 @@ class ProjectService {
     return FSML.sortPaths(files);
   }
 
-  /**
-   * Create a Python virtual environment
-   *
-   * @param {string} venvPath - Path for the venv
-   */
-  async createVenv(venvPath) {
-    return new Promise((resolve, reject) => {
-      // Try uv first (faster), fall back to python -m venv
-      const proc = spawn('uv', ['venv', venvPath], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      let stderr = '';
-      proc.stderr.on('data', (d) => { stderr += d.toString(); });
-
-      proc.on('error', () => {
-        // uv not found, try python -m venv
-        const fallback = spawn('python3', ['-m', 'venv', venvPath], {
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-
-        fallback.on('error', (e) => reject(new Error(`Failed to create venv: ${e.message}`)));
-        fallback.on('close', (code) => {
-          if (code === 0) resolve();
-          else reject(new Error(`python -m venv failed with code ${code}`));
-        });
-      });
-
-      proc.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`uv venv failed: ${stderr}`));
-      });
-    });
-  }
-
-  /**
-   * Install mrmd-python in a venv
-   *
-   * @param {string} venvPath - Path to the venv
-   */
-  async installMrmdPython(venvPath) {
-    const pythonPath = path.join(venvPath, 'bin', 'python');
-
-    // Check for local development override (MRMD_PYTHON_DEV=/path/to/mrmd-python)
-    const localDev = process.env.MRMD_PYTHON_DEV;
-
-    const args = ['pip', 'install', '--python', pythonPath];
-    if (localDev) {
-      // Development: install from local path in editable mode
-      args.push('-e', localDev);
-      console.log('[project] Installing mrmd-python from local:', localDev);
-    } else {
-      // Production: install from PyPI
-      args.push('mrmd-python');
-      console.log('[project] Installing mrmd-python from PyPI');
-    }
-
-    return new Promise((resolve, reject) => {
-      const proc = spawn('uv', args, {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      let output = '';
-      proc.stdout.on('data', (d) => { output += d.toString(); });
-      proc.stderr.on('data', (d) => { output += d.toString(); });
-
-      proc.on('error', (e) => {
-        reject(new Error(`Failed to run uv: ${e.message}. Is uv installed?`));
-      });
-
-      proc.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`uv pip install failed: ${output.slice(-500)}`));
-      });
-    });
-  }
+  // Note: createVenv and installMrmdPython are now imported from utils
 }
+
 
 export default ProjectService;

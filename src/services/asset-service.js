@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
+import { ASSETS_DIR_NAME, ASSET_MANIFEST_NAME, ASSET_HASH_LENGTH } from '../config.js';
 
 // MIME type mapping
 const MIME_TYPES = {
@@ -45,7 +46,7 @@ class AssetService {
    * @returns {Promise<AssetInfo[]>}
    */
   async list(projectRoot) {
-    const assetsDir = path.join(projectRoot, '_assets');
+    const assetsDir = path.join(projectRoot, ASSETS_DIR_NAME);
 
     if (!fs.existsSync(assetsDir)) {
       return [];
@@ -105,7 +106,7 @@ class AssetService {
    * @returns {Promise<{ path: string, deduplicated: boolean }>}
    */
   async save(projectRoot, file, filename) {
-    const assetsDir = path.join(projectRoot, '_assets');
+    const assetsDir = path.join(projectRoot, ASSETS_DIR_NAME);
     const hash = this.computeHashFromBuffer(file);
 
     // Load manifest to check for duplicates
@@ -154,7 +155,7 @@ class AssetService {
    */
   getRelativePath(assetPath, documentPath) {
     // Use mrmd-project for computation
-    return Assets.computeRelativePath(documentPath, path.join('_assets', assetPath));
+    return Assets.computeRelativePath(documentPath, path.join(ASSETS_DIR_NAME, assetPath));
   }
 
   /**
@@ -206,7 +207,7 @@ class AssetService {
    * @param {string} assetPath - Asset path relative to _assets/
    */
   async delete(projectRoot, assetPath) {
-    const fullPath = path.join(projectRoot, '_assets', assetPath);
+    const fullPath = path.join(projectRoot, ASSETS_DIR_NAME, assetPath);
 
     await fsPromises.unlink(fullPath);
 
@@ -218,7 +219,7 @@ class AssetService {
     // Clean up empty directories
     await this.removeEmptyDirs(
       path.dirname(fullPath),
-      path.join(projectRoot, '_assets')
+      path.join(projectRoot, ASSETS_DIR_NAME)
     );
   }
 
@@ -234,7 +235,7 @@ class AssetService {
    * Compute hash from buffer
    */
   computeHashFromBuffer(buffer) {
-    return crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 16);
+    return crypto.createHash('sha256').update(buffer).digest('hex').slice(0, ASSET_HASH_LENGTH);
   }
 
   /**
@@ -278,11 +279,12 @@ class AssetService {
    * Load manifest file
    */
   async loadManifest(projectRoot) {
-    const manifestPath = path.join(projectRoot, '_assets', '.manifest.json');
+    const manifestPath = path.join(projectRoot, ASSETS_DIR_NAME, ASSET_MANIFEST_NAME);
     try {
       const content = await fsPromises.readFile(manifestPath, 'utf8');
       return JSON.parse(content);
-    } catch {
+    } catch (e) {
+      console.warn(`[asset] Could not load manifest: ${e.message}`);
       return {};
     }
   }
@@ -291,8 +293,8 @@ class AssetService {
    * Save manifest file
    */
   async saveManifest(projectRoot, manifest) {
-    const assetsDir = path.join(projectRoot, '_assets');
-    const manifestPath = path.join(assetsDir, '.manifest.json');
+    const assetsDir = path.join(projectRoot, ASSETS_DIR_NAME);
+    const manifestPath = path.join(assetsDir, ASSET_MANIFEST_NAME);
 
     await fsPromises.mkdir(assetsDir, { recursive: true });
     await fsPromises.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
@@ -305,15 +307,16 @@ class AssetService {
     while (dir !== stopAt && dir.startsWith(stopAt)) {
       try {
         const entries = await fsPromises.readdir(dir);
-        // Don't count .manifest.json as a real entry
-        const realEntries = entries.filter(e => e !== '.manifest.json');
+        // Don't count manifest file as a real entry
+        const realEntries = entries.filter(e => e !== ASSET_MANIFEST_NAME);
         if (realEntries.length === 0) {
           await fsPromises.rmdir(dir);
           dir = path.dirname(dir);
         } else {
           break;
         }
-      } catch {
+      } catch (e) {
+        console.warn(`[asset] Error removing empty directory ${dir}: ${e.message}`);
         break;
       }
     }

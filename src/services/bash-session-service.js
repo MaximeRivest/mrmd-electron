@@ -1,25 +1,50 @@
 /**
- * SessionService - Python runtime session management
+ * BashSessionService - Bash runtime session management
  *
- * Manages Python runtime sessions (mrmd-python processes).
- * Sessions are named {projectName}:{sessionName} and persisted
+ * Manages Bash runtime sessions (mrmd-bash processes).
+ * Sessions are named {projectName}:bash:{sessionName} and persisted
  * in ~/.mrmd/sessions/ for sharing across windows.
+ *
+ * Unlike Python sessions, bash sessions don't need venv management.
+ * They use the system's bash with a specific working directory.
  *
  * Uses mrmd-project for session config resolution.
  */
 
 import { Project } from 'mrmd-project';
 import { spawn } from 'child_process';
+import { createRequire } from 'module';
 import fs from 'fs';
-import fsPromises from 'fs/promises';
 import path from 'path';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from '../utils/index.js';
-import { installMrmdPython } from '../utils/index.js';
 import { SESSIONS_DIR } from '../config.js';
 
-class SessionService {
+// Create require for resolving package paths
+const require = createRequire(import.meta.url);
+
+/**
+ * Resolve the path to mrmd-bash package directory
+ */
+function resolveBashPackageDir() {
+  try {
+    const packageJson = require.resolve('mrmd-bash/package.json');
+    return path.dirname(packageJson);
+  } catch (e) {
+    // Fallback to sibling directory for development
+    // From src/services/ → ../../../ gets us to mrmd-packages/, then into mrmd-bash/
+    const siblingPath = path.resolve(path.dirname(import.meta.url.replace('file://', '')), '../../../mrmd-bash');
+    console.log('[bash-session] Trying sibling path:', siblingPath);
+    if (fs.existsSync(siblingPath)) {
+      console.log('[bash-session] Using sibling path for mrmd-bash (development mode)');
+      return siblingPath;
+    }
+    throw new Error(`Cannot resolve mrmd-bash: ${e.message}`);
+  }
+}
+
+class BashSessionService {
   constructor() {
     this.sessions = new Map(); // name -> SessionInfo
     this.processes = new Map(); // name -> ChildProcess
@@ -27,17 +52,20 @@ class SessionService {
   }
 
   /**
-   * Load existing sessions from disk registry
+   * Load existing bash sessions from disk registry
    */
   loadRegistry() {
     if (!fs.existsSync(SESSIONS_DIR)) return;
 
     try {
-      const files = fs.readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json'));
+      const files = fs.readdirSync(SESSIONS_DIR).filter(f => f.startsWith('bash-') && f.endsWith('.json'));
 
       for (const file of files) {
         try {
           const info = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, file), 'utf8'));
+
+          // Only load bash sessions
+          if (info.language !== 'bash') continue;
 
           // Check if process is still alive
           if (info.pid) {
@@ -46,22 +74,21 @@ class SessionService {
               info.alive = true;
               this.sessions.set(info.name, info);
             } catch {
-              // Process dead, remove registry file (expected - ESRCH means not running)
+              // Process dead, remove registry file
               fs.unlinkSync(path.join(SESSIONS_DIR, file));
             }
           }
         } catch (e) {
-          // Skip invalid files but log for debugging
-          console.warn(`[session] Skipping invalid registry file ${file}:`, e.message);
+          console.warn(`[bash-session] Skipping invalid registry file ${file}:`, e.message);
         }
       }
     } catch (e) {
-      console.error('[session] Error loading registry:', e.message);
+      console.error('[bash-session] Error loading registry:', e.message);
     }
   }
 
   /**
-   * List all sessions
+   * List all bash sessions
    *
    * @returns {SessionInfo[]}
    */
@@ -82,11 +109,10 @@ class SessionService {
   }
 
   /**
-   * Start a new session
+   * Start a new bash session
    *
    * @param {object} config - Session configuration
-   * @param {string} config.name - Session name (e.g., "thesis:default")
-   * @param {string} config.venv - Absolute path to venv
+   * @param {string} config.name - Session name (e.g., "thesis:bash:default")
    * @param {string} config.cwd - Working directory
    * @returns {Promise<SessionInfo>}
    */
@@ -107,38 +133,28 @@ class SessionService {
       }
     }
 
-    // 2. Validate venv and auto-install mrmd-python if needed
-    const mrmdPythonPath = path.join(config.venv, 'bin', 'mrmd-python');
-    if (!fs.existsSync(mrmdPythonPath)) {
-      console.log(`[session] mrmd-python not found in ${config.venv}, installing...`);
-      await installMrmdPython(config.venv);
-
-      // Verify installation succeeded
-      if (!fs.existsSync(mrmdPythonPath)) {
-        throw new Error(`Failed to install mrmd-python in ${config.venv}`);
-      }
-      console.log(`[session] mrmd-python installed successfully`);
-    }
+    // 2. Find mrmd-bash package
+    const bashPackageDir = resolveBashPackageDir();
 
     // 3. Find free port
     const port = await findFreePort();
 
-    // 4. Spawn mrmd-python
-    console.log(`[session] Starting "${config.name}" on port ${port}...`);
+    // 4. Spawn mrmd-bash using uv run
+    console.log(`[bash-session] Starting "${config.name}" on port ${port} with cwd ${config.cwd}...`);
 
-    const proc = spawn(mrmdPythonPath, [
-      '--id', config.name,
+    const proc = spawn('uv', [
+      'run', '--project', bashPackageDir,
+      'mrmd-bash',
       '--port', port.toString(),
-      '--foreground',
+      '--cwd', config.cwd,
     ], {
-      cwd: config.cwd,
+      cwd: bashPackageDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, VIRTUAL_ENV: config.venv },
       detached: false,
     });
 
-    proc.stdout.on('data', (d) => console.log(`[session:${config.name}]`, d.toString().trim()));
-    proc.stderr.on('data', (d) => console.error(`[session:${config.name}]`, d.toString().trim()));
+    proc.stdout.on('data', (d) => console.log(`[bash-session:${config.name}]`, d.toString().trim()));
+    proc.stderr.on('data', (d) => console.error(`[bash-session:${config.name}]`, d.toString().trim()));
 
     // 5. Wait for ready
     await waitForPort(port);
@@ -146,9 +162,9 @@ class SessionService {
     // 6. Register session
     const info = {
       name: config.name,
+      language: 'bash',
       pid: proc.pid,
       port,
-      venv: config.venv,
       cwd: config.cwd,
       startedAt: new Date().toISOString(),
       alive: true,
@@ -160,7 +176,7 @@ class SessionService {
 
     // 7. Handle exit
     proc.on('exit', (code, signal) => {
-      console.log(`[session:${config.name}] Exited (code=${code}, signal=${signal})`);
+      console.log(`[bash-session:${config.name}] Exited (code=${code}, signal=${signal})`);
       const session = this.sessions.get(config.name);
       if (session) {
         session.alive = false;
@@ -183,10 +199,9 @@ class SessionService {
     const session = this.sessions.get(sessionName);
     if (!session) return false;
 
-    console.log(`[session] Stopping "${sessionName}"...`);
+    console.log(`[bash-session] Stopping "${sessionName}"...`);
 
     try {
-      // Kill process (and process group for GPU memory release)
       if (session.pid) {
         try {
           // Try to kill the process group
@@ -197,7 +212,7 @@ class SessionService {
         }
       }
     } catch (e) {
-      console.error(`[session] Error killing ${sessionName}:`, e.message);
+      console.error(`[bash-session] Error killing ${sessionName}:`, e.message);
     }
 
     this.sessions.delete(sessionName);
@@ -216,12 +231,11 @@ class SessionService {
   async restart(sessionName) {
     const session = this.sessions.get(sessionName);
     if (!session) {
-      throw new Error(`Session "${sessionName}" not found`);
+      throw new Error(`Bash session "${sessionName}" not found`);
     }
 
     const config = {
       name: sessionName,
-      venv: session.venv,
       cwd: session.cwd,
     };
 
@@ -257,10 +271,7 @@ class SessionService {
   }
 
   /**
-   * Get or create session for a document
-   *
-   * Returns the resolved session config, optionally with running session info.
-   * Always returns config so renderer can show start button even when not auto-started.
+   * Get or create bash session for a document
    *
    * @param {string} documentPath - Path to document
    * @param {object} projectConfig - Project configuration
@@ -269,16 +280,23 @@ class SessionService {
    * @returns {Promise<SessionConfig>} Resolved session config with optional session info
    */
   async getForDocument(documentPath, projectConfig, frontmatter, projectRoot) {
-    // Use mrmd-project to resolve session config
+    console.log('[bash-session] getForDocument called');
+    console.log('[bash-session] projectRoot:', projectRoot);
+    console.log('[bash-session] projectConfig:', JSON.stringify(projectConfig, null, 2));
+
+    // Use mrmd-project to resolve bash session config
     const merged = Project.mergeConfig(projectConfig, frontmatter);
-    const resolved = Project.resolveSession(documentPath, projectRoot, merged);
+    console.log('[bash-session] merged config:', JSON.stringify(merged, null, 2));
+
+    const resolved = Project.resolveSessionForLanguage('bash', documentPath, projectRoot, merged);
+    console.log('[bash-session] resolved:', resolved);
 
     // Build result with config info
     const result = {
       name: resolved.name,
-      venv: resolved.venv,
       cwd: resolved.cwd,
       autoStart: resolved.autoStart,
+      language: 'bash',
       alive: false,
       pid: null,
       port: null,
@@ -311,7 +329,7 @@ class SessionService {
         result.port = started.port;
         result.startedAt = started.startedAt;
       } catch (e) {
-        console.error('[session] Auto-start failed:', e.message);
+        console.error('[bash-session] Auto-start failed:', e.message);
         result.error = e.message;
       }
     }
@@ -319,19 +337,17 @@ class SessionService {
     return result;
   }
 
-  // Note: findFreePort, waitForPort, and installMrmdPython are now imported from utils
-
   /**
    * Save session info to registry
    */
   saveRegistry(info) {
     try {
       fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-      const filename = info.name.replace(/[:/]/g, '-') + '.json';
+      const filename = 'bash-' + info.name.replace(/[:/]/g, '-') + '.json';
       const filepath = path.join(SESSIONS_DIR, filename);
       fs.writeFileSync(filepath, JSON.stringify(info, null, 2));
     } catch (e) {
-      console.error('[session] Failed to save registry:', e.message);
+      console.error('[bash-session] Failed to save registry:', e.message);
     }
   }
 
@@ -340,13 +356,13 @@ class SessionService {
    */
   removeRegistry(sessionName) {
     try {
-      const filename = sessionName.replace(/[:/]/g, '-') + '.json';
+      const filename = 'bash-' + sessionName.replace(/[:/]/g, '-') + '.json';
       const filepath = path.join(SESSIONS_DIR, filename);
       if (fs.existsSync(filepath)) {
         fs.unlinkSync(filepath);
       }
     } catch (e) {
-      console.error('[session] Failed to remove registry:', e.message);
+      console.error('[bash-session] Failed to remove registry:', e.message);
     }
   }
 
@@ -356,10 +372,10 @@ class SessionService {
   shutdown() {
     for (const [name] of this.sessions) {
       this.stop(name).catch((e) => {
-        console.warn(`[session] Error stopping ${name} during shutdown:`, e.message);
+        console.warn(`[bash-session] Error stopping ${name} during shutdown:`, e.message);
       });
     }
   }
 }
 
-export default SessionService;
+export default BashSessionService;

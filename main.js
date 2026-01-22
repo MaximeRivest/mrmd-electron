@@ -10,29 +10,94 @@
 
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { spawn, execSync } from 'child_process';
+import { createRequire } from 'module';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
-import net from 'net';
 import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Services
-import { ProjectService, SessionService, FileService, AssetService } from './src/services/index.js';
+import { ProjectService, SessionService, BashSessionService, FileService, AssetService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
+
+// Shared utilities and configuration
+import { findFreePort, waitForPort } from './src/utils/index.js';
+import { getEnvInfo, installMrmdPython } from './src/utils/index.js';
+import {
+  CONFIG_DIR,
+  RECENT_FILE,
+  RUNTIMES_DIR,
+  DEFAULT_HOST,
+  SYNC_SERVER_MEMORY_MB,
+  FILE_SCAN_MAX_DEPTH,
+  VENV_SCAN_MAX_DEPTH,
+  MAX_RECENT_FILES,
+  MAX_RECENT_VENVS,
+  DIR_HASH_LENGTH,
+  DEFAULT_WINDOW_WIDTH,
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_BACKGROUND_COLOR,
+  SYSTEM_PYTHON_PATHS,
+  CONDA_PATHS,
+} from './src/config.js';
 
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Create require for resolving package paths
+const require = createRequire(import.meta.url);
+
 // ============================================================================
-// PATHS & CONFIG
+// PACKAGE RESOLUTION
 // ============================================================================
 
-const MRMD_PACKAGES = path.dirname(__dirname);
-const CONFIG_DIR = path.join(os.homedir(), '.config', 'mrmd');
-const RECENT_FILE = path.join(CONFIG_DIR, 'recent.json');
-const RUNTIMES_DIR = path.join(os.homedir(), '.mrmd', 'runtimes');
+/**
+ * Resolve the path to an mrmd package's CLI
+ * Uses require.resolve to find packages properly regardless of installation method
+ *
+ * @param {string} packageName - Package name (e.g., 'mrmd-sync')
+ * @param {string} binPath - Relative path to binary within package (e.g., 'bin/cli.js')
+ * @returns {string} Absolute path to the binary
+ */
+function resolvePackageBin(packageName, binPath) {
+  try {
+    // Try to resolve the package's package.json first
+    const packageJson = require.resolve(`${packageName}/package.json`);
+    const packageDir = path.dirname(packageJson);
+    return path.join(packageDir, binPath);
+  } catch (e) {
+    // Fallback to sibling directory for development
+    const siblingPath = path.join(path.dirname(__dirname), packageName, binPath);
+    if (fs.existsSync(siblingPath)) {
+      console.warn(`[resolve] Using sibling path for ${packageName} (development mode)`);
+      return siblingPath;
+    }
+    throw new Error(`Cannot resolve ${packageName}: ${e.message}`);
+  }
+}
+
+/**
+ * Resolve the path to an mrmd package's directory
+ *
+ * @param {string} packageName - Package name (e.g., 'mrmd-ai')
+ * @returns {string} Absolute path to the package directory
+ */
+function resolvePackageDir(packageName) {
+  try {
+    const packageJson = require.resolve(`${packageName}/package.json`);
+    return path.dirname(packageJson);
+  } catch (e) {
+    // Fallback to sibling directory for development
+    const siblingPath = path.join(path.dirname(__dirname), packageName);
+    if (fs.existsSync(siblingPath)) {
+      console.warn(`[resolve] Using sibling path for ${packageName} (development mode)`);
+      return siblingPath;
+    }
+    throw new Error(`Cannot resolve ${packageName}: ${e.message}`);
+  }
+}
 
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
@@ -45,6 +110,7 @@ if (!fs.existsSync(CONFIG_DIR)) {
 
 const projectService = new ProjectService();
 const sessionService = new SessionService();
+const bashSessionService = new BashSessionService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
 
@@ -65,9 +131,9 @@ function loadRecent() {
 
 function saveRecent(data) {
   try {
-    // Keep only last 50 items
-    data.files = data.files.slice(0, 50);
-    data.venvs = data.venvs.slice(0, 20);
+    // Keep only last N items (from config)
+    data.files = data.files.slice(0, MAX_RECENT_FILES);
+    data.venvs = data.venvs.slice(0, MAX_RECENT_VENVS);
     fs.writeFileSync(RECENT_FILE, JSON.stringify(data, null, 2));
   } catch (e) {
     console.warn('[recent] Failed to save:', e.message);
@@ -165,42 +231,10 @@ function findGitRoot(startPath) {
 // UTILITIES
 // ============================================================================
 
-function findFreePort() {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.listen(0, '127.0.0.1', () => {
-      const port = server.address().port;
-      server.close(() => resolve(port));
-    });
-  });
-}
-
-function waitForPort(port, timeout = 10000) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    function check() {
-      if (Date.now() - start > timeout) {
-        reject(new Error(`Port ${port} not ready after ${timeout}ms`));
-        return;
-      }
-      const socket = new net.Socket();
-      socket.setTimeout(500);
-      socket.on('connect', () => {
-        socket.destroy();
-        resolve();
-      });
-      socket.on('error', () => {
-        socket.destroy();
-        setTimeout(check, 200);
-      });
-      socket.connect(port, '127.0.0.1');
-    }
-    check();
-  });
-}
+// Note: findFreePort and waitForPort are now imported from src/utils/network.js
 
 function computeDirHash(dir) {
-  return crypto.createHash('sha256').update(path.resolve(dir)).digest('hex').slice(0, 12);
+  return crypto.createHash('sha256').update(path.resolve(dir)).digest('hex').slice(0, DIR_HASH_LENGTH);
 }
 
 // ============================================================================
@@ -211,7 +245,7 @@ function scanFiles(searchDir, callback) {
   // Use find (universally available)
   const proc = spawn('find', [
     searchDir,
-    '-maxdepth', '6',
+    '-maxdepth', String(FILE_SCAN_MAX_DEPTH),
     '-type', 'f',
     '-name', '*.md',
     '-not', '-path', '*/node_modules/*',
@@ -254,12 +288,8 @@ function discoverVenvs(projectDir, callback) {
   const found = new Set();
 
   // Phase 0: System Python (always available)
-  const systemPythonPaths = [
-    '/usr/bin/python3',
-    '/usr/local/bin/python3',
-    '/opt/homebrew/bin/python3',  // macOS Homebrew
-  ];
-  for (const pythonPath of systemPythonPaths) {
+  // Using paths from config
+  for (const pythonPath of SYSTEM_PYTHON_PATHS) {
     if (fs.existsSync(pythonPath)) {
       const envPath = path.dirname(path.dirname(pythonPath)); // e.g., /usr
       if (!found.has(envPath)) {
@@ -287,13 +317,8 @@ function discoverVenvs(projectDir, callback) {
     }
   }
 
-  // Phase 2: Conda environments
-  const condaPaths = [
-    path.join(os.homedir(), 'anaconda3', 'envs'),
-    path.join(os.homedir(), 'miniconda3', 'envs'),
-    path.join(os.homedir(), 'miniforge3', 'envs'),
-    path.join(os.homedir(), '.conda', 'envs'),
-  ];
+  // Phase 2: Conda environments (using paths from config)
+  const condaPaths = CONDA_PATHS.map(p => path.join(os.homedir(), p));
   for (const condaEnvs of condaPaths) {
     if (fs.existsSync(condaEnvs)) {
       try {
@@ -339,7 +364,7 @@ function discoverVenvs(projectDir, callback) {
   // Phase 5: Background discovery using find (for venvs)
   const proc = spawn('find', [
     os.homedir(),
-    '-maxdepth', '4',
+    '-maxdepth', String(VENV_SCAN_MAX_DEPTH),
     '-type', 'd',
     '(', '-name', '.venv', '-o', '-name', 'venv', '-o', '-name', 'env', ')',
     '-not', '-path', '*/node_modules/*',
@@ -373,59 +398,7 @@ function discoverVenvs(projectDir, callback) {
   return proc;
 }
 
-function getEnvInfo(envPath, envType) {
-  let pythonVersion = null;
-  let hasMrmdPython = false;
-  let hasPython = false;
-  let projectName = '';
-  let name = '';
-
-  try {
-    hasPython = fs.existsSync(path.join(envPath, 'bin', 'python'));
-
-    // Get Python version - try pyvenv.cfg first, then run python --version
-    const pyvenvCfg = path.join(envPath, 'pyvenv.cfg');
-    if (fs.existsSync(pyvenvCfg)) {
-      const content = fs.readFileSync(pyvenvCfg, 'utf8');
-      const match = content.match(/version\s*=\s*(\d+\.\d+)/);
-      if (match) pythonVersion = match[1];
-    }
-
-    // Check if mrmd-python is installed
-    hasMrmdPython = fs.existsSync(path.join(envPath, 'bin', 'mrmd-python'));
-
-    // Set name based on environment type
-    switch (envType) {
-      case 'system':
-        name = 'System Python';
-        projectName = 'system';
-        break;
-      case 'conda':
-        name = path.basename(envPath);
-        projectName = 'conda';
-        break;
-      case 'pyenv':
-        name = path.basename(envPath);
-        projectName = 'pyenv';
-        break;
-      default: // venv
-        name = path.basename(envPath);
-        projectName = path.basename(path.dirname(envPath));
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-
-  return {
-    path: envPath,
-    pythonVersion,
-    hasMrmdPython,
-    hasPython,
-    projectName,
-    name,
-    envType,
-  };
-}
+// Note: getEnvInfo is now imported from src/utils/python.js
 
 // Keep for backwards compatibility
 function getVenvInfo(venvPath) {
@@ -506,12 +479,13 @@ async function getSyncServer(projectDir) {
   const port = await findFreePort();
   console.log(`[sync] Starting server for ${projectDir} on port ${port}...`);
 
-  // DATA LOSS PREVENTION: Limit memory to 512MB to fail fast instead of
+  // DATA LOSS PREVENTION: Limit memory to configured MB to fail fast instead of
   // consuming all system memory and crashing unpredictably after hours.
   // Better to restart early than lose hours of work.
+  const syncCliPath = resolvePackageBin('mrmd-sync', 'bin/cli.js');
   const proc = spawn('node', [
-    '--max-old-space-size=512',
-    path.join(MRMD_PACKAGES, 'mrmd-sync/bin/cli.js'),
+    `--max-old-space-size=${SYNC_SERVER_MEMORY_MB}`,
+    syncCliPath,
     '--port', port.toString(),
     '--i-know-what-i-am-doing',
     projectDir,
@@ -610,49 +584,7 @@ async function startPythonRuntime(venvPath, windowId, forceNew = false) {
   return { proc, port, runtimeId };
 }
 
-async function installMrmdPython(venvPath) {
-  console.log(`[python] Installing mrmd-python in ${venvPath} using uv...`);
-
-  // Validate venv exists (check for python binary)
-  const pythonPath = path.join(venvPath, 'bin', 'python');
-  if (!fs.existsSync(pythonPath)) {
-    throw new Error(`Python not found at ${pythonPath}. Is this a valid venv?`);
-  }
-
-  // Check for local development override (MRMD_PYTHON_DEV=/path/to/mrmd-python)
-  const localDev = process.env.MRMD_PYTHON_DEV;
-  const args = ['pip', 'install', '--python', pythonPath];
-
-  if (localDev) {
-    args.push('-e', localDev);
-    console.log('[python] Installing from local:', localDev);
-  } else {
-    args.push('mrmd-python');
-    console.log('[python] Installing from PyPI');
-  }
-
-  return new Promise((resolve, reject) => {
-    const proc = spawn('uv', args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    let output = '';
-    proc.stdout.on('data', (d) => { output += d.toString(); });
-    proc.stderr.on('data', (d) => { output += d.toString(); });
-
-    proc.on('error', (e) => {
-      reject(new Error(`Failed to run uv: ${e.message}. Is uv installed?`));
-    });
-
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve({ success: true });
-      } else {
-        reject(new Error(`uv pip install failed (code ${code}): ${output.slice(-500)}`));
-      }
-    });
-  });
-}
+// Note: installMrmdPython is now imported from src/utils/python.js
 
 // ============================================================================
 // MONITOR
@@ -661,10 +593,11 @@ async function installMrmdPython(venvPath) {
 function startMonitor(docName, syncPort) {
   console.log(`[monitor] Starting for ${docName}...`);
 
+  const monitorCliPath = resolvePackageBin('mrmd-monitor', 'bin/cli.js');
   const proc = spawn('node', [
-    path.join(MRMD_PACKAGES, 'mrmd-monitor/bin/cli.js'),
+    monitorCliPath,
     '--doc', docName,
-    `ws://127.0.0.1:${syncPort}`,
+    `ws://${DEFAULT_HOST}:${syncPort}`,
   ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
   proc.stdout.on('data', (d) => console.log(`[monitor:${docName}]`, d.toString().trim()));
@@ -685,12 +618,13 @@ async function ensureAiServer() {
   const port = await findFreePort();
   console.log(`[ai] Starting on port ${port}...`);
 
+  const aiPackageDir = resolvePackageDir('mrmd-ai');
   const proc = spawn('uv', [
-    'run', '--project', path.join(MRMD_PACKAGES, 'mrmd-ai'),
+    'run', '--project', aiPackageDir,
     'mrmd-ai-server', '--port', port.toString(),
   ], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    cwd: path.join(MRMD_PACKAGES, 'mrmd-ai'),
+    cwd: aiPackageDir,
   });
 
   proc.stdout.on('data', (d) => console.log('[ai]', d.toString().trim()));
@@ -701,6 +635,7 @@ async function ensureAiServer() {
   aiServer = { proc, port };
   return aiServer;
 }
+
 
 // ============================================================================
 // WINDOW STATE
@@ -736,6 +671,14 @@ function cleanupWindow(windowId) {
 // IPC HANDLERS
 // ============================================================================
 
+/**
+ * Log a deprecation warning for legacy IPC handlers.
+ * These handlers still work but users should migrate to the new service APIs.
+ */
+function logDeprecation(handler, replacement) {
+  console.warn(`[DEPRECATED] '${handler}' is deprecated. Use '${replacement}' instead.`);
+}
+
 // Get home directory
 ipcMain.handle('get-home-dir', () => {
   return os.homedir();
@@ -755,19 +698,22 @@ ipcMain.handle('get-recent', () => {
   return loadRecent();
 });
 
-// List running runtimes
+// List running runtimes (LEGACY - use session:list for projects)
 ipcMain.handle('list-runtimes', () => {
+  logDeprecation('list-runtimes', 'session:list');
   return { runtimes: listRuntimes() };
 });
 
-// Kill a runtime
+// Kill a runtime (LEGACY - use session:stop for projects)
 ipcMain.handle('kill-runtime', (event, { runtimeId }) => {
+  logDeprecation('kill-runtime', 'session:stop');
   const success = killRuntime(runtimeId);
   return { success };
 });
 
-// Attach to existing runtime (just verify it's alive and return info)
+// Attach to existing runtime (LEGACY - use session:forDocument for projects)
 ipcMain.handle('attach-runtime', (event, { runtimeId }) => {
+  logDeprecation('attach-runtime', 'session:forDocument');
   const runtimes = listRuntimes();
   const runtime = runtimes.find(r => r.id === runtimeId && r.alive);
   if (runtime) {
@@ -776,8 +722,9 @@ ipcMain.handle('attach-runtime', (event, { runtimeId }) => {
   return { success: false, error: 'Runtime not found or not alive' };
 });
 
-// Scan for files
+// Scan for files (LEGACY - use file:scan for projects)
 ipcMain.handle('scan-files', (event, { searchDir }) => {
+  logDeprecation('scan-files', 'file:scan');
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
   let state = windowStates.get(windowId);
   if (!state) {
@@ -854,8 +801,9 @@ ipcMain.handle('get-file-info', async (event, { filePath }) => {
   }
 });
 
-// Install mrmd-python
+// Install mrmd-python (LEGACY - session:start auto-installs for projects)
 ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
+  logDeprecation('install-mrmd-python', 'session:start (auto-installs)');
   try {
     await installMrmdPython(venvPath);
     return { success: true };
@@ -864,8 +812,9 @@ ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
   }
 });
 
-// Start Python runtime
+// Start Python runtime (LEGACY - use session:start for projects)
 ipcMain.handle('start-python', async (event, { venvPath, forceNew }) => {
+  logDeprecation('start-python', 'session:start');
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
 
   try {
@@ -890,8 +839,9 @@ ipcMain.handle('start-python', async (event, { venvPath, forceNew }) => {
   }
 });
 
-// Open file
+// Open file (LEGACY - use project:get + session:forDocument for projects)
 ipcMain.handle('open-file', async (event, { filePath }) => {
+  logDeprecation('open-file', 'project:get + session:forDocument');
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
 
   const projectDir = path.dirname(filePath);
@@ -943,6 +893,70 @@ ipcMain.handle('get-ai', async () => {
     return { success: true, port: ai.port };
   } catch (e) {
     return { success: false, error: e.message };
+  }
+});
+
+// ============================================================================
+// BASH SESSION SERVICE IPC HANDLERS
+// ============================================================================
+
+// List all bash sessions
+ipcMain.handle('bash:list', () => {
+  return bashSessionService.list();
+});
+
+// Start bash session
+ipcMain.handle('bash:start', async (event, { config }) => {
+  try {
+    return await bashSessionService.start(config);
+  } catch (e) {
+    console.error('[bash:start] Error:', e.message);
+    throw e;
+  }
+});
+
+// Stop bash session
+ipcMain.handle('bash:stop', async (event, { sessionName }) => {
+  return bashSessionService.stop(sessionName);
+});
+
+// Restart bash session
+ipcMain.handle('bash:restart', async (event, { sessionName }) => {
+  try {
+    return await bashSessionService.restart(sessionName);
+  } catch (e) {
+    console.error('[bash:restart] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get or create bash session for document
+ipcMain.handle('bash:forDocument', async (event, { documentPath }) => {
+  console.log('[bash:forDocument] Called with:', documentPath);
+  try {
+    const project = await projectService.getProject(documentPath);
+    console.log('[bash:forDocument] Project:', project?.root);
+    if (!project) {
+      console.log('[bash:forDocument] No project found');
+      return null;
+    }
+
+    // Parse frontmatter from document
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    console.log('[bash:forDocument] Calling bashSessionService.getForDocument');
+    const result = await bashSessionService.getForDocument(
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+    console.log('[bash:forDocument] Result:', result);
+    return result;
+  } catch (e) {
+    console.error('[bash:forDocument] Error:', e.message, e.stack);
+    return null;
   }
 });
 
@@ -1226,9 +1240,9 @@ ipcMain.handle('asset:delete', async (event, { projectRoot, assetPath }) => {
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1000,
-    height: 750,
-    backgroundColor: '#0d1117',
+    width: DEFAULT_WINDOW_WIDTH,
+    height: DEFAULT_WINDOW_HEIGHT,
+    backgroundColor: DEFAULT_BACKGROUND_COLOR,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -1279,6 +1293,9 @@ app.on('window-all-closed', () => {
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');
   }
+
+  // Shutdown bash sessions
+  bashSessionService.shutdown();
 
   for (const [, server] of syncServers) {
     if (server.owned && server.proc) {

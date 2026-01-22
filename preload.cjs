@@ -145,6 +145,46 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // BASH SESSION SERVICE API
+  // ==========================================================================
+
+  bash: {
+    /**
+     * List all running bash sessions
+     * @returns {Promise<SessionInfo[]>}
+     */
+    list: () => ipcRenderer.invoke('bash:list'),
+
+    /**
+     * Start a new bash session
+     * @param {object} config - Session config { name, cwd }
+     * @returns {Promise<SessionInfo>}
+     */
+    start: (config) => ipcRenderer.invoke('bash:start', { config }),
+
+    /**
+     * Stop a bash session
+     * @param {string} sessionName - Session name to stop
+     * @returns {Promise<boolean>}
+     */
+    stop: (sessionName) => ipcRenderer.invoke('bash:stop', { sessionName }),
+
+    /**
+     * Restart a bash session
+     * @param {string} sessionName - Session name to restart
+     * @returns {Promise<SessionInfo>}
+     */
+    restart: (sessionName) => ipcRenderer.invoke('bash:restart', { sessionName }),
+
+    /**
+     * Get or create bash session for a document
+     * @param {string} documentPath - Path to document
+     * @returns {Promise<SessionInfo | null>}
+     */
+    forDocument: (documentPath) => ipcRenderer.invoke('bash:forDocument', { documentPath }),
+  },
+
+  // ==========================================================================
   // FILE SERVICE API
   // ==========================================================================
 

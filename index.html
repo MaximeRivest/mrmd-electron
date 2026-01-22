@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' ws://127.0.0.1:* http://127.0.0.1:*">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*">
   <title>mrmd</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -112,7 +112,7 @@
       display: flex;
       align-items: stretch;
       overflow-y: auto;
-      overflow-x: hidden;
+      overflow-x: visible;
       position: relative;
       background: var(--editor-background, var(--bg));
     }
@@ -124,6 +124,7 @@
       padding-right: 10px; /* Account for scrollbar */
       display: none;
       overflow-y: auto;
+      position: relative;
     }
 
     /* Center the editor within its container */
@@ -146,6 +147,9 @@
       display: none;
       flex-direction: column;
       flex-shrink: 0;
+      position: relative;
+      transition: width 0.2s ease;
+      overflow: visible;
     }
 
     .nav-sidebar.visible {
@@ -464,10 +468,10 @@
       flex-shrink: 0;
       display: none;
       flex-direction: column;
-      position: sticky;
-      top: 0;
+      position: relative;
       height: calc(100vh - 38px); /* Subtract titlebar */
-      overflow: hidden;
+      overflow: visible;
+      transition: width 0.2s ease;
     }
 
     .toc-sidebar.visible {
@@ -524,6 +528,134 @@
       color: var(--text-dim);
       font-size: 12px;
       font-style: italic;
+    }
+
+    /* =========================================================================
+       SIDEBAR COLLAPSE TOGGLES
+       Minimal arrow-only toggles for collapsing nav and TOC sidebars
+       ========================================================================= */
+
+    /* Shared toggle button styles - just an arrow, no chrome */
+    .sidebar-toggle {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 14px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.2s, color 0.15s;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar-toggle:hover {
+      color: var(--text);
+    }
+
+    /* Show on sidebar hover */
+    .nav-sidebar:hover > .nav-toggle,
+    .toc-sidebar:hover > .toc-toggle {
+      opacity: 0.6;
+    }
+
+    .nav-sidebar:hover > .nav-toggle:hover,
+    .toc-sidebar:hover > .toc-toggle:hover {
+      opacity: 1;
+    }
+
+    /* Left nav toggle - inside right edge */
+    .nav-toggle {
+      right: 4px;
+    }
+
+    /* Right TOC toggle - inside left edge */
+    .toc-toggle {
+      left: 4px;
+    }
+
+    /* Collapsed nav sidebar */
+    .nav-sidebar.collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      border-right: none !important;
+    }
+
+    .nav-sidebar.collapsed > .nav-header,
+    .nav-sidebar.collapsed > .nav-tree {
+      display: none !important;
+    }
+
+    .nav-sidebar.collapsed > .nav-toggle {
+      display: none !important;
+    }
+
+    /* Collapsed TOC sidebar */
+    .toc-sidebar.collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+    }
+
+    .toc-sidebar.collapsed > .toc-header,
+    .toc-sidebar.collapsed > .toc-list {
+      display: none !important;
+    }
+
+    .toc-sidebar.collapsed > .toc-toggle {
+      display: none !important;
+    }
+
+    /* Floating toggles (when sidebar collapsed) - also just arrows */
+    .sidebar-toggle-floating {
+      position: fixed;
+      top: calc(50% + 19px);
+      transform: translateY(-50%);
+      width: 24px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 14px;
+      z-index: 200;
+      padding: 0;
+      margin: 0;
+      transition: color 0.15s, opacity 0.15s;
+      opacity: 0.4;
+    }
+
+    .sidebar-toggle-floating:hover {
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .nav-toggle-floating {
+      left: 4px;
+    }
+
+    .nav-toggle-floating.visible {
+      display: flex;
+    }
+
+    .toc-toggle-floating {
+      right: 4px;
+    }
+
+    .toc-toggle-floating.visible {
+      display: flex;
     }
 
     /* =========================================================================
@@ -697,6 +829,84 @@
       padding: 12px 0;
     }
 
+    /* Wide panel variant (for source code) */
+    .rail-panel-wide {
+      width: 500px;
+    }
+
+    /* Source panel styles */
+    .source-back-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+    .source-back-btn:hover:not(:disabled) {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+    .source-back-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .source-file-path {
+      padding: 8px 16px;
+      font-size: 11px;
+      color: var(--text-dim);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-content {
+      padding: 0 !important;
+    }
+    .source-code {
+      margin: 0;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      background: var(--bg-primary);
+      color: var(--text);
+      white-space: pre;
+      tab-size: 4;
+    }
+    .source-code code {
+      font-family: inherit;
+    }
+    /* Clickable type references in source */
+    .source-type-ref {
+      color: var(--accent);
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 2px;
+    }
+    .source-type-ref:hover {
+      text-decoration-style: solid;
+    }
+    /* Python syntax highlighting (basic) */
+    .source-code .kw { color: #ff7b72; }  /* keywords */
+    .source-code .str { color: #a5d6ff; } /* strings */
+    .source-code .num { color: #79c0ff; } /* numbers */
+    .source-code .cm { color: #8b949e; }  /* comments */
+    .source-code .fn { color: #d2a8ff; }  /* function names */
+    .source-code .cls { color: #ffa657; } /* class names */
+    .source-code .dec { color: #ffa657; } /* decorators */
+    .source-code .type { color: #79c0ff; } /* type annotations */
+
     /* Panel section */
     .rail-panel-section {
       padding: 0 16px;
@@ -780,6 +990,120 @@
     .var-item-type {
       color: var(--text-muted);
       font-size: 12px;
+    }
+
+    /* Runtime list items */
+    .runtimes-list {
+      padding: 8px 0;
+    }
+
+    .runtimes-empty {
+      padding: 16px;
+      color: var(--text-dim);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .runtime-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .runtime-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .runtime-item.attached {
+      background: rgba(88, 166, 255, 0.08);
+    }
+
+    .runtime-item-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+    }
+
+    .runtime-item.attached .runtime-item-status {
+      background: var(--accent);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3);
+    }
+
+    .runtime-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .runtime-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .runtime-item-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .runtime-item-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .runtime-item:hover .runtime-item-actions {
+      opacity: 1;
+    }
+
+    .runtime-item-btn {
+      padding: 2px 6px;
+      font-size: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+
+    .runtime-item-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .runtime-item-btn.danger:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .runtime-lang-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .runtime-lang-badge.python {
+      background: rgba(53, 114, 165, 0.2);
+      color: #5a9fd4;
+    }
+
+    .runtime-lang-badge.bash {
+      background: rgba(76, 175, 80, 0.2);
+      color: #81c784;
     }
 
     /* AI Command items */
@@ -875,6 +1199,34 @@
     .ai-juice-btn.selected {
       background: var(--accent-bg, rgba(59, 130, 246, 0.15));
       border-color: var(--accent, #3b82f6);
+    }
+
+    .ai-reasoning-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .ai-reasoning-btn:hover {
+      background: var(--hover-bg);
+      border-color: var(--text-muted);
+    }
+
+    .ai-reasoning-btn.selected {
+      background: var(--accent-bg, rgba(59, 130, 246, 0.15));
+      border-color: var(--accent, #3b82f6);
+    }
+
+    .ai-reasoning-btn.disabled,
+    .ai-reasoning-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .ai-progress {
@@ -999,6 +1351,55 @@
     .hint-dismiss:hover {
       background: var(--border);
       color: var(--text);
+    }
+
+    /* Subtle hover trigger for session config */
+    .session-hover-trigger {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .session-hover-trigger.visible {
+      display: flex;
+    }
+
+    .session-hover-action {
+      opacity: 0;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s ease, background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .session-hover-trigger:hover .session-hover-action {
+      opacity: 1;
+    }
+
+    .session-hover-action:hover {
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .session-hover-action svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
     }
 
     /* Modal overlay */
@@ -1482,7 +1883,7 @@
        alert the user that their changes are NOT being saved.
        ======================================================================= -->
   <div class="sync-warning-banner" id="sync-warning-banner">
-    <span class="warning-icon">⚠️</span>
+    <span class="warning-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l6 12H2L8 2zM8 6v4M8 12v1"/></svg></span>
     <span class="warning-message">
       <strong>SYNC OFFLINE - CHANGES NOT BEING SAVED!</strong>
       <span id="sync-warning-details"></span>
@@ -1509,15 +1910,18 @@
     <div class="content">
       <!-- Project Navigation Sidebar -->
       <div id="nav-sidebar" class="nav-sidebar">
+        <button class="sidebar-toggle nav-toggle" id="nav-toggle" title="Collapse">‹</button>
         <div class="nav-header">
           <span class="nav-title" id="nav-title" title="Click to open project config">No Project</span>
-          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)">⚙</button>
+          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.5 2.5l1.5 1.5M12 12l1.5 1.5M2.5 13.5l1.5-1.5M12 4l1.5-1.5"/></svg></button>
           <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
         </div>
         <div class="nav-tree" id="nav-tree">
           <!-- Nav tree renders here -->
         </div>
       </div>
+      <!-- Floating toggle when nav is collapsed -->
+      <button class="sidebar-toggle-floating nav-toggle-floating" id="nav-toggle-floating" title="Expand">›</button>
 
       <!-- Nav Context Menu -->
       <div class="nav-context-menu" id="nav-context-menu">
@@ -1531,22 +1935,25 @@
       </div>
 
       <div id="editor-container">
-        <!-- Setup hints banner -->
+        <!-- Subtle hover trigger for session config -->
+        <div id="session-hover-trigger" class="session-hover-trigger">
+          <button class="session-hover-action" onclick="insertSessionConfig()" title="Add Python notebook configuration">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 3v10M3 8h10"/>
+            </svg>
+            Add notebook config
+          </button>
+        </div>
+        <!-- Setup hints banner (project/venv only) -->
         <div id="setup-hints" class="setup-hints" style="display: none;">
           <div class="setup-hint" id="hint-no-project">
-            <span class="hint-icon">📁</span>
+            <span class="hint-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg></span>
             <span class="hint-text">This folder isn't an mrmd project yet</span>
             <button class="hint-action" onclick="initializeProject()">Initialize Project</button>
             <button class="hint-dismiss" onclick="dismissHint('no-project')">×</button>
           </div>
-          <div class="setup-hint" id="hint-no-session">
-            <span class="hint-icon">⚡</span>
-            <span class="hint-text">No Python session configured</span>
-            <button class="hint-action" onclick="insertSessionConfig()">Add Session Config</button>
-            <button class="hint-dismiss" onclick="dismissHint('no-session')">×</button>
-          </div>
           <div class="setup-hint" id="hint-no-venv">
-            <span class="hint-icon">🐍</span>
+            <span class="hint-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12M12 2v12M4 8h8"/></svg></span>
             <span class="hint-text">No virtual environment found</span>
             <button class="hint-action" onclick="showVenvPicker()">Select venv</button>
             <button class="hint-dismiss" onclick="dismissHint('no-venv')">×</button>
@@ -1557,19 +1964,23 @@
 
       <!-- Table of Contents Sidebar -->
       <div id="toc-sidebar" class="toc-sidebar">
+        <button class="sidebar-toggle toc-toggle" id="toc-toggle" title="Collapse">›</button>
         <div class="toc-header">On This Page</div>
         <div class="toc-list" id="toc-list">
           <div class="toc-empty">No headings found</div>
         </div>
       </div>
+      <!-- Floating toggle when TOC is collapsed -->
+      <button class="sidebar-toggle-floating toc-toggle-floating" id="toc-toggle-floating" title="Expand">‹</button>
     </div>
 
     <!-- Side Rail -->
     <div class="side-rail" id="side-rail">
       <!-- Tool buttons -->
-      <button class="rail-btn" data-panel="variables" title="Variables (λ)">λ</button>
-      <button class="rail-btn" data-panel="ai" title="AI Commands (✨)">✨</button>
-      <button class="rail-btn" data-panel="help" title="Help (?)">?</button>
+      <button class="rail-btn" data-panel="runtimes" title="Runtimes"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 7h2M5 9h4"/></svg></button>
+      <button class="rail-btn" data-panel="variables" title="Variables"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l2 8h4M10 4l2 8"/></svg></button>
+      <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v2M8 12v2M2 8h2M12 8h2M4 4l1.5 1.5M10.5 10.5L12 12M4 12l1.5-1.5M10.5 5.5L12 4"/><circle cx="8" cy="8" r="2"/></svg></button>
+      <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
 
       <div class="rail-spacer"></div>
 
@@ -1582,11 +1993,25 @@
       </button>
     </div>
 
+    <!-- Panel: Runtimes -->
+    <div class="rail-panel" id="panel-runtimes">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Runtimes</span>
+        <button class="rail-panel-refresh" id="runtimes-refresh" title="Refresh"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <button class="rail-panel-close" data-close-panel="runtimes">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div id="runtimes-list" class="runtimes-list">
+          <div class="runtimes-empty">No running runtimes</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Panel: Variables -->
     <div class="rail-panel" id="panel-variables">
       <div class="rail-panel-header">
         <span class="rail-panel-title">Variables</span>
-        <button class="rail-panel-refresh" id="variables-refresh" title="Refresh">↻</button>
+        <button class="rail-panel-refresh" id="variables-refresh" title="Refresh"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
         <button class="rail-panel-close" data-close-panel="variables">×</button>
       </div>
       <div class="rail-panel-content">
@@ -1600,6 +2025,19 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Panel: Source -->
+    <div class="rail-panel rail-panel-wide" id="panel-source">
+      <div class="rail-panel-header">
+        <button class="source-back-btn" id="source-back" title="Back" disabled>←</button>
+        <span class="rail-panel-title" id="source-title">Source</span>
+        <button class="rail-panel-close" data-close-panel="source">×</button>
+      </div>
+      <div class="source-file-path" id="source-file"></div>
+      <div class="rail-panel-content source-content">
+        <pre class="source-code" id="source-code"><code>Press F12 on a symbol to view its source code.</code></pre>
       </div>
     </div>
 
@@ -1668,7 +2106,7 @@
       </div>
       <div class="rail-panel-content">
         <div id="ai-panel-status" class="ai-panel-status" style="display: none;">
-          <span class="ai-status-icon">⚠</span>
+          <span class="ai-status-icon"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l6 12H2L8 2zM8 6v4M8 12v1"/></svg></span>
           <span class="ai-status-text">AI server not connected</span>
         </div>
         <div id="ai-progress" class="ai-progress" style="display: none;">
@@ -1681,32 +2119,39 @@
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Quality</div>
           <div class="ai-juice-selector">
-            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap">⚡</button>
-            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality">⚖️</button>
-            <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning">🧠</button>
-            <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model">🚀</button>
-            <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model">🔥</button>
+            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap">1</button>
+            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality">2</button>
+            <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning">3</button>
+            <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model">4</button>
+            <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model">5</button>
+          </div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Reasoning</div>
+          <div class="ai-juice-selector">
+            <button class="ai-reasoning-btn" data-reasoning="0" title="Off - No extended thinking">0</button>
+            <button class="ai-reasoning-btn selected" data-reasoning="1" title="Minimal - Light reasoning">1</button>
+            <button class="ai-reasoning-btn" data-reasoning="2" title="Low - Some reasoning">2</button>
+            <button class="ai-reasoning-btn" data-reasoning="3" title="Medium - Moderate reasoning">3</button>
+            <button class="ai-reasoning-btn" data-reasoning="4" title="High - Deep reasoning">4</button>
+            <button class="ai-reasoning-btn" data-reasoning="5" title="Maximum - Full reasoning budget">5</button>
           </div>
         </div>
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Text</div>
           <div class="ai-cmd" data-cmd="fix-grammar">
-            <span class="ai-cmd-icon">✓</span>
             <span class="ai-cmd-label">Fix Grammar</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
           <div class="ai-cmd" data-cmd="fix-transcription">
-            <span class="ai-cmd-icon">🎤</span>
             <span class="ai-cmd-label">Fix Transcription</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
           <div class="ai-cmd" data-cmd="finish-sentence">
-            <span class="ai-cmd-icon">→</span>
             <span class="ai-cmd-label">Complete Sentence</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
           <div class="ai-cmd" data-cmd="finish-paragraph">
-            <span class="ai-cmd-icon">¶</span>
             <span class="ai-cmd-label">Complete Paragraph</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
@@ -1714,32 +2159,26 @@
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Code</div>
           <div class="ai-cmd" data-cmd="finish-code-line">
-            <span class="ai-cmd-icon">→</span>
             <span class="ai-cmd-label">Complete Line</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
           <div class="ai-cmd" data-cmd="finish-code-section">
-            <span class="ai-cmd-icon">⇢</span>
             <span class="ai-cmd-label">Complete Section</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
           <div class="ai-cmd" data-cmd="document-code">
-            <span class="ai-cmd-icon">📝</span>
             <span class="ai-cmd-label">Add Docstrings</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
           <div class="ai-cmd" data-cmd="add-types">
-            <span class="ai-cmd-icon">T</span>
             <span class="ai-cmd-label">Add Type Hints</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
           <div class="ai-cmd" data-cmd="improve-names">
-            <span class="ai-cmd-icon">N</span>
             <span class="ai-cmd-label">Improve Names</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
           <div class="ai-cmd" data-cmd="refactor">
-            <span class="ai-cmd-icon">♻</span>
             <span class="ai-cmd-label">Refactor Code</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
@@ -1747,7 +2186,6 @@
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Document</div>
           <div class="ai-cmd" data-cmd="document-continue">
-            <span class="ai-cmd-icon">📄</span>
             <span class="ai-cmd-label">Continue Document</span>
             <span class="ai-cmd-hint">append</span>
           </div>
@@ -1837,6 +2275,8 @@
       runningRuntimes: [],
       pythonPort: null,
       pythonVenv: null,
+      bashPort: null,
+      bashSession: null,
       aiPort: null,
       currentFile: null,
       projectDir: null,
@@ -2306,7 +2746,7 @@
             <div class="picker-item create ${isSelected ? 'selected' : ''}"
                  data-index="${currentIndex}" data-action="create-file" data-create-path="${createPath}"
                  onclick="selectFileItem(${currentIndex})" ondblclick="createNewFile()">
-              <span class="picker-item-icon">✨</span>
+              <span class="picker-item-icon">+</span>
               <span class="picker-item-name">Create: ${fileName}</span>
               <span class="picker-item-path">${displayPath}</span>
               ${isSelected ? '<span class="picker-item-action">[Enter]</span>' : ''}
@@ -2320,7 +2760,7 @@
             <div class="picker-item create ${isSelected ? 'selected' : ''}"
                  data-index="${currentIndex}" data-action="create-project" data-create-path="${createPath}"
                  onclick="selectFileItem(${currentIndex})" ondblclick="createNewProject()">
-              <span class="picker-item-icon">✨</span>
+              <span class="picker-item-icon">+</span>
               <span class="picker-item-name">Create PROJECT: ${query}</span>
               <span class="picker-item-path">with mrmd.md, .venv</span>
               ${isSelected ? '<span class="picker-item-action">[Enter]</span>' : ''}
@@ -2340,7 +2780,7 @@
       const timeAgo = file.opened ? formatTimeAgo(new Date(file.opened)) : '';
       const isFolder = file.isFolder;
 
-      const icon = isFolder ? '📁' : (file.isRecent ? '●' : '○');
+      const icon = isFolder ? '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg>' : (file.isRecent ? '·' : '');
       const classes = `picker-item ${selected} ${isFolder ? 'folder' : ''}`;
 
       return `
@@ -2575,8 +3015,15 @@
       renderVenvList();
 
       // Load running runtimes first (instant)
-      const { runtimes } = await electronAPI.listRuntimes();
-      state.runningRuntimes = runtimes.filter(r => r.alive);
+      const sessions = await electronAPI.session.list();
+      // Map session format to runtime format for compatibility
+      state.runningRuntimes = sessions.filter(s => s.alive).map(s => ({
+        id: s.name,
+        pid: s.pid,
+        port: s.port,
+        venv: s.venv,
+        alive: s.alive
+      }));
       filterVenvs(state.venvQuery);
 
       // Start discovery
@@ -2801,6 +3248,9 @@
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
           }
+
+          // Refresh runtimes list
+          if (typeof refreshRuntimes === 'function') refreshRuntimes();
         } else {
           updatePythonStatus('error', 'Failed');
           alert('Failed to start Python: ' + result.error);
@@ -2811,8 +3261,38 @@
       }
     }
 
-    async function attachToRuntime(runtimeId) {
-      console.log('Attaching to runtime:', runtimeId);
+    async function attachToRuntime(runtimeId, language = 'python') {
+      console.log('Attaching to runtime:', runtimeId, 'language:', language);
+
+      if (language === 'bash') {
+        // Bash attach - just look up the session info
+        try {
+          const sessions = await electronAPI.bash.list();
+          const session = sessions.find(s => s.name === runtimeId && s.alive);
+          if (session) {
+            state.bashPort = session.port;
+            state.bashSession = { name: runtimeId, port: session.port, cwd: session.cwd };
+            console.log('Attached to bash runtime on port', session.port);
+
+            // Register bash runtime with existing editor if open (using auto-restart wrapper)
+            if (state.editor && state.currentFile) {
+              const bashClient = createAutoRestartingBashClient(session.port, runtimeId);
+              state.editor.registerRuntime('bash', bashClient);
+              console.log('Registered Bash runtime with existing editor');
+            }
+
+            // Update runtimes panel if open
+            if (typeof renderRuntimesPanel === 'function') renderRuntimesPanel();
+          } else {
+            console.error('Bash session not found or not alive:', runtimeId);
+          }
+        } catch (e) {
+          console.error('Failed to attach to bash runtime:', e);
+        }
+        return;
+      }
+
+      // Python attach (existing logic)
       hideVenvPicker();
       updatePythonStatus('loading', 'Attaching...');
 
@@ -2820,7 +3300,7 @@
         const result = await electronAPI.attachRuntime(runtimeId);
         if (result.success) {
           state.pythonPort = result.port;
-          state.pythonVenv = { name: runtimeId, path: result.venv };
+          state.pythonVenv = { name: runtimeId, path: result.venv, runtimeId: runtimeId };
           updatePythonStatus('ready', runtimeId);
           console.log('Attached to runtime on port', result.port);
 
@@ -2834,6 +3314,9 @@
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
           }
+
+          // Update runtimes panel if open
+          if (typeof renderRuntimesPanel === 'function') renderRuntimesPanel();
         } else {
           updatePythonStatus('error', 'Failed');
           alert('Failed to attach: ' + result.error);
@@ -2868,6 +3351,9 @@
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered new Python runtime with editor');
           }
+
+          // Refresh runtimes list
+          if (typeof refreshRuntimes === 'function') refreshRuntimes();
         } else {
           updatePythonStatus('error', 'Failed');
           alert('Failed to start Python: ' + result.error);
@@ -2878,8 +3364,14 @@
       }
     }
 
-    async function killRuntimeAction(runtimeId) {
-      const result = await electronAPI.killRuntime(runtimeId);
+    async function killRuntimeAction(runtimeId, language = 'python') {
+      let result;
+      if (language === 'bash') {
+        result = await electronAPI.bash.stop(runtimeId);
+        result = { success: result };
+      } else {
+        result = await electronAPI.killRuntime(runtimeId);
+      }
       if (result.success) {
         // Remove from running runtimes and re-filter
         state.runningRuntimes = state.runningRuntimes.filter(r => r.id !== runtimeId);
@@ -3011,7 +3503,13 @@
         item.onclick = (e) => {
           if (e.target.classList.contains('nav-expand')) return;
           if (node.isFolder) {
-            toggleFolder(node.path);
+            // If folder has index.md, open it; otherwise toggle
+            if (node.hasIndex) {
+              const indexPath = state.project.root + '/' + node.path + '/index.md';
+              openFile(indexPath);
+            } else {
+              toggleFolder(node.path);
+            }
           } else {
             const fullPath = state.project.root + '/' + node.path;
             openFile(fullPath);
@@ -3448,7 +3946,9 @@
 
       // Show sidebar
       sidebar.classList.add('visible');
-      title.textContent = project.config?.name || 'Project';
+      // Use config name, or fallback to folder name
+      const folderName = project.root.split('/').pop() || 'Project';
+      title.textContent = project.config?.name || folderName;
 
       // Auto-expand to current file
       if (currentFilePath) {
@@ -3477,10 +3977,10 @@
       }
     });
 
-    // Also make project title clickable to open config
+    // Make project title clickable to open root index.md
     document.getElementById('nav-title').addEventListener('click', () => {
       if (state.project?.root) {
-        openFile(state.project.root + '/mrmd.md');
+        openFile(state.project.root + '/index.md');
       }
     });
 
@@ -3488,6 +3988,72 @@
     document.getElementById('nav-new-btn').addEventListener('click', () => {
       createNavFile('');
     });
+
+    // =========================================================================
+    // SIDEBAR TOGGLE HANDLERS
+    // =========================================================================
+
+    // Nav sidebar toggle
+    document.getElementById('nav-toggle').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sidebar = document.getElementById('nav-sidebar');
+      const toggle = document.getElementById('nav-toggle');
+      const floatingToggle = document.getElementById('nav-toggle-floating');
+      sidebar.classList.add('collapsed');
+      sidebar.classList.remove('visible');
+      toggle.textContent = '›';
+      floatingToggle.classList.add('visible');
+      localStorage.setItem('mrmd-nav-collapsed', 'true');
+    });
+
+    document.getElementById('nav-toggle-floating').addEventListener('click', () => {
+      const sidebar = document.getElementById('nav-sidebar');
+      const toggle = document.getElementById('nav-toggle');
+      const floatingToggle = document.getElementById('nav-toggle-floating');
+      sidebar.classList.remove('collapsed');
+      sidebar.classList.add('visible');
+      toggle.textContent = '‹';
+      floatingToggle.classList.remove('visible');
+      localStorage.setItem('mrmd-nav-collapsed', 'false');
+    });
+
+    // TOC sidebar toggle
+    document.getElementById('toc-toggle').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sidebar = document.getElementById('toc-sidebar');
+      const toggle = document.getElementById('toc-toggle');
+      const floatingToggle = document.getElementById('toc-toggle-floating');
+      sidebar.classList.add('collapsed');
+      toggle.textContent = '‹';
+      floatingToggle.classList.add('visible');
+      localStorage.setItem('mrmd-toc-collapsed', 'true');
+    });
+
+    document.getElementById('toc-toggle-floating').addEventListener('click', () => {
+      const sidebar = document.getElementById('toc-sidebar');
+      const toggle = document.getElementById('toc-toggle');
+      const floatingToggle = document.getElementById('toc-toggle-floating');
+      sidebar.classList.remove('collapsed');
+      toggle.textContent = '›';
+      floatingToggle.classList.remove('visible');
+      localStorage.setItem('mrmd-toc-collapsed', 'false');
+    });
+
+    // Restore sidebar states on load
+    if (localStorage.getItem('mrmd-nav-collapsed') === 'true') {
+      const sidebar = document.getElementById('nav-sidebar');
+      const toggle = document.getElementById('nav-toggle');
+      sidebar.classList.add('collapsed');
+      toggle.textContent = '›';
+      document.getElementById('nav-toggle-floating').classList.add('visible');
+    }
+    if (localStorage.getItem('mrmd-toc-collapsed') === 'true') {
+      const sidebar = document.getElementById('toc-sidebar');
+      const toggle = document.getElementById('toc-toggle');
+      sidebar.classList.add('collapsed');
+      toggle.textContent = '‹';
+      document.getElementById('toc-toggle-floating').classList.add('visible');
+    }
 
     // =========================================================================
     // OPEN FILE
@@ -3558,6 +4124,8 @@
             position: 'line-start',
             buttons: { run: true, stop: true, clear: true },
           },
+          // Run JS in main window context (full DOM/console access)
+          javascriptIsolation: 'none',
         };
 
         // Add Python runtime if available
@@ -3580,6 +4148,15 @@
         // Add AI integration extensions for visual feedback
         addAiIntegrationToEditor(state.editor);
 
+        // Add image paste handler for the editor
+        setupImagePasteHandler(state.editor, filePath);
+
+        // Setup asset URL resolver so images load correctly
+        setupAssetResolver(state.editor, filePath);
+
+        // Setup view source handler (F12)
+        state.editor.onViewSource(showSource);
+
         // Update UI
         document.getElementById('editor-container').style.display = 'block';
         document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
@@ -3595,6 +4172,9 @@
 
         // Resolve session from project config and auto-start if configured
         await resolveProjectSession();
+
+        // Register global bash runtime (always available)
+        registerBashWithEditor();
 
       } catch (e) {
         console.error('Error opening file:', e);
@@ -3914,6 +4494,343 @@
     }
 
     // =========================================================================
+    // SOURCE PANEL
+    // =========================================================================
+
+    const sourceState = {
+      history: [],      // Stack of {name, result} for back navigation
+      currentIndex: -1, // Current position in history
+    };
+
+    /**
+     * Show source code in the panel
+     */
+    function showSource(result) {
+      if (!result || !result.found) {
+        console.log('[source] No result to show');
+        return;
+      }
+
+      // Add to history
+      if (sourceState.currentIndex < sourceState.history.length - 1) {
+        // If we navigated back and then view new source, truncate forward history
+        sourceState.history = sourceState.history.slice(0, sourceState.currentIndex + 1);
+      }
+      sourceState.history.push({ name: result.name, result });
+      sourceState.currentIndex = sourceState.history.length - 1;
+
+      renderSource(result);
+      openPanel('source');
+    }
+
+    /**
+     * Navigate back in source history
+     */
+    function sourceBack() {
+      if (sourceState.currentIndex > 0) {
+        sourceState.currentIndex--;
+        const entry = sourceState.history[sourceState.currentIndex];
+        renderSource(entry.result);
+      }
+    }
+
+    /**
+     * Render source code with syntax highlighting and clickable types
+     */
+    function renderSource(result) {
+      const titleEl = document.getElementById('source-title');
+      const fileEl = document.getElementById('source-file');
+      const codeEl = document.getElementById('source-code');
+      const backBtn = document.getElementById('source-back');
+
+      if (!titleEl || !fileEl || !codeEl) return;
+
+      // Update title and file path
+      titleEl.textContent = result.name || 'Source';
+      fileEl.textContent = result.file || '';
+      fileEl.title = result.file || '';
+
+      // Update back button state
+      if (backBtn) {
+        backBtn.disabled = sourceState.currentIndex <= 0;
+      }
+
+      // Get source code or show message
+      const sourceCode = result.sourceCode;
+      if (!sourceCode) {
+        codeEl.innerHTML = `<code>No source code available for ${result.name}.\n\nType: ${result.type || 'unknown'}\n${result.docstring ? '\nDocstring:\n' + result.docstring : ''}</code>`;
+        return;
+      }
+
+      // Apply syntax highlighting and make types clickable
+      const highlighted = highlightPythonSource(sourceCode);
+      codeEl.innerHTML = `<code>${highlighted}</code>`;
+
+      // Add click handlers for type references
+      codeEl.querySelectorAll('.source-type-ref').forEach(el => {
+        el.addEventListener('click', async () => {
+          const typeName = el.dataset.type;
+          if (typeName) {
+            await drillIntoType(typeName);
+          }
+        });
+      });
+    }
+
+    /**
+     * Basic Python syntax highlighting with clickable type references
+     */
+    function highlightPythonSource(code) {
+      // Escape HTML first
+      let html = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Extract strings first to protect them (replace with placeholders)
+      const strings = [];
+      html = html.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*')/g, (match) => {
+        strings.push(match);
+        return `__STR${strings.length - 1}__`;
+      });
+
+      // Extract comments to protect them
+      const comments = [];
+      html = html.replace(/(#.*$)/gm, (match) => {
+        comments.push(match);
+        return `__CMT${comments.length - 1}__`;
+      });
+
+      // Keywords
+      const keywords = ['class', 'def', 'return', 'if', 'else', 'elif', 'for', 'while', 'try', 'except', 'finally', 'with', 'as', 'import', 'from', 'raise', 'pass', 'break', 'continue', 'yield', 'async', 'await', 'lambda', 'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False', 'self', 'cls'];
+      const kwPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+      html = html.replace(kwPattern, '<span class=kw>$1</span>');
+
+      // Decorators
+      html = html.replace(/(@\w+)/g, '<span class=dec>$1</span>');
+
+      // Numbers
+      html = html.replace(/\b(\d+\.?\d*)\b/g, '<span class=num>$1</span>');
+
+      // Function definitions
+      html = html.replace(/(<span class=kw>def<\/span>\s+)(\w+)/g, '$1<span class=fn>$2</span>');
+
+      // Class definitions with clickable base classes
+      html = html.replace(/(<span class=kw>class<\/span>\s+)(\w+)(\s*\()([^)]+)(\))/g, (match, prefix, className, paren1, bases, paren2) => {
+        // Make base classes clickable
+        const clickableBases = bases.split(',').map(base => {
+          const trimmed = base.trim();
+          if (trimmed && !trimmed.startsWith('<span')) {
+            return `<span class=source-type-ref data-type="${trimmed}">${trimmed}</span>`;
+          }
+          return base;
+        }).join(',');
+        return `${prefix}<span class=cls>${className}</span>${paren1}${clickableBases}${paren2}`;
+      });
+
+      // Type annotations (: TypeName) - make clickable
+      html = html.replace(/:\s*([A-Z][A-Za-z0-9_]*(?:\[[^\]]+\])?)/g, (match, typeName) => {
+        // Extract base type (before any brackets)
+        const baseType = typeName.split('[')[0];
+        return `: <span class="source-type-ref type" data-type="${baseType}">${typeName}</span>`;
+      });
+
+      // Return type annotations (-> TypeName)
+      html = html.replace(/-&gt;\s*([A-Z][A-Za-z0-9_]*(?:\[[^\]]+\])?)/g, (match, typeName) => {
+        const baseType = typeName.split('[')[0];
+        return `-&gt; <span class="source-type-ref type" data-type="${baseType}">${typeName}</span>`;
+      });
+
+      // Restore comments with highlighting
+      comments.forEach((cmt, i) => {
+        html = html.replace(`__CMT${i}__`, `<span class=cm>${cmt}</span>`);
+      });
+
+      // Restore strings with highlighting
+      strings.forEach((str, i) => {
+        html = html.replace(`__STR${i}__`, `<span class=str>${str}</span>`);
+      });
+
+      return html;
+    }
+
+    /**
+     * Drill into a type to view its source
+     */
+    async function drillIntoType(typeName) {
+      console.log('[source] Drilling into:', typeName);
+
+      if (!state.editor) {
+        console.error('[source] No editor available');
+        return;
+      }
+
+      try {
+        const result = await state.editor.viewSourceByName(typeName, 'python');
+        if (result && result.found) {
+          // showSource is called via the onViewSource callback
+        } else {
+          console.log('[source] Type not found:', typeName);
+          alert(`Could not find source for: ${typeName}`);
+        }
+      } catch (e) {
+        console.error('[source] Error drilling into type:', e);
+      }
+    }
+
+    /**
+     * Initialize source panel
+     */
+    function initSourcePanel() {
+      const backBtn = document.getElementById('source-back');
+      if (backBtn) {
+        backBtn.addEventListener('click', sourceBack);
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      initSourcePanel();
+    });
+
+    // =========================================================================
+    // RUNTIMES PANEL
+    // =========================================================================
+
+    /**
+     * Render the runtimes list in the panel
+     */
+    function renderRuntimesPanel() {
+      const listEl = document.getElementById('runtimes-list');
+      if (!listEl) return;
+
+      const runtimes = state.runningRuntimes || [];
+      const attachedPythonId = state.pythonVenv?.runtimeId || state.pythonVenv?.name;
+      const attachedBashId = state.bashSession?.name;
+
+      if (runtimes.length === 0) {
+        listEl.innerHTML = '<div class="runtimes-empty">No running runtimes</div>';
+        return;
+      }
+
+      listEl.innerHTML = runtimes.map(rt => {
+        const lang = rt.language || 'python';
+        const isAttached = lang === 'bash' ? rt.id === attachedBashId : rt.id === attachedPythonId;
+        return `
+          <div class="runtime-item ${isAttached ? 'attached' : ''}"
+               data-runtime-id="${rt.id}"
+               data-language="${lang}"
+               title="pid ${rt.pid}">
+            <div class="runtime-item-status"></div>
+            <div class="runtime-item-info">
+              <div class="runtime-item-name">
+                <span class="runtime-lang-badge ${lang}">${lang}</span>
+                ${rt.id}
+              </div>
+              <div class="runtime-item-meta">port ${rt.port}</div>
+            </div>
+            <div class="runtime-item-actions">
+              ${isAttached ? '' : `<button class="runtime-item-btn" onclick="event.stopPropagation(); attachToRuntime('${rt.id}', '${lang}')">attach</button>`}
+              <button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')">stop</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add click handler to attach on row click
+      listEl.querySelectorAll('.runtime-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const runtimeId = el.dataset.runtimeId;
+          const language = el.dataset.language || 'python';
+          if (!el.classList.contains('attached')) {
+            attachToRuntime(runtimeId, language);
+          }
+        });
+      });
+    }
+
+    /**
+     * Refresh runtimes list from backend
+     */
+    async function refreshRuntimes() {
+      try {
+        // Fetch both Python and Bash sessions in parallel
+        // Use Promise.allSettled to handle individual failures gracefully
+        const [pythonResult, bashResult] = await Promise.allSettled([
+          electronAPI.session.list(),
+          electronAPI.bash.list()
+        ]);
+
+        const pythonSessions = pythonResult.status === 'fulfilled' ? pythonResult.value : [];
+        const bashSessions = bashResult.status === 'fulfilled' ? bashResult.value : [];
+
+        if (pythonResult.status === 'rejected') {
+          console.warn('[runtimes] Failed to fetch Python sessions:', pythonResult.reason);
+        }
+        if (bashResult.status === 'rejected') {
+          console.warn('[runtimes] Failed to fetch Bash sessions:', bashResult.reason);
+        }
+
+        console.log('[runtimes] Python sessions:', pythonSessions);
+        console.log('[runtimes] Bash sessions:', bashSessions);
+
+        // Combine both with language field
+        state.runningRuntimes = [
+          ...pythonSessions.filter(s => s.alive).map(s => ({
+            id: s.name,
+            pid: s.pid,
+            port: s.port,
+            venv: s.venv,
+            alive: s.alive,
+            language: 'python'
+          })),
+          ...bashSessions.filter(s => s.alive).map(s => ({
+            id: s.name,
+            pid: s.pid,
+            port: s.port,
+            cwd: s.cwd,
+            alive: s.alive,
+            language: 'bash'
+          }))
+        ];
+        renderRuntimesPanel();
+      } catch (e) {
+        console.error('Failed to refresh runtimes:', e);
+      }
+    }
+
+    /**
+     * Kill a runtime and refresh the list
+     */
+    async function killAndRefreshRuntime(runtimeId, language = 'python') {
+      await killRuntimeAction(runtimeId, language);
+      renderRuntimesPanel();
+    }
+
+    /**
+     * Initialize runtimes panel
+     */
+    function initRuntimesPanel() {
+      // Refresh when panel opens
+      const originalOpenPanel = openPanel;
+      openPanel = function(panelId) {
+        originalOpenPanel(panelId);
+        if (panelId === 'runtimes') {
+          refreshRuntimes();
+        }
+      };
+
+      // Add refresh button handler
+      const refreshBtn = document.getElementById('runtimes-refresh');
+      refreshBtn?.addEventListener('click', refreshRuntimes);
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initRuntimesPanel();
+    });
+
+    // =========================================================================
     // AI COMMANDS PANEL
     // =========================================================================
 
@@ -4072,14 +4989,17 @@
       aiClient = {
         baseUrl: serverUrl.replace(/\/$/, ''),
         juiceLevel: 1, // Default to Balanced
+        reasoningLevel: 1, // Default to Minimal
 
         async execute(program, params, options = {}) {
           const juiceLevel = options.juiceLevel ?? this.juiceLevel;
+          const reasoningLevel = options.reasoningLevel ?? this.reasoningLevel;
           const response = await fetch(`${this.baseUrl}/${program}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-Juice-Level': String(juiceLevel),
+              'X-Reasoning-Level': String(reasoningLevel),
             },
             body: JSON.stringify(params),
           });
@@ -4097,11 +5017,13 @@
          */
         async executeStream(program, params, callbacks = {}, options = {}) {
           const juiceLevel = options.juiceLevel ?? this.juiceLevel;
+          const reasoningLevel = options.reasoningLevel ?? this.reasoningLevel;
           const response = await fetch(`${this.baseUrl}/${program}/stream`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-Juice-Level': String(juiceLevel),
+              'X-Reasoning-Level': String(reasoningLevel),
               'Accept': 'text/event-stream',
             },
             body: JSON.stringify(params),
@@ -4309,6 +5231,7 @@
       }
 
       const juiceLevel = currentJuiceLevel;
+      const reasoningLevel = currentReasoningLevel;
 
       // Determine insert position
       let from, to;
@@ -4325,9 +5248,25 @@
         to = context.selectionTo;
       }
 
-      // Show loading state
+      // Show loading state in panel
       cmdEl?.classList.add('loading');
       showAiProgress('Working...', '');
+
+      // Get AI integration for editor shimmer
+      const ai = mrmd.default?.ai || mrmd.ai;
+      const opId = ai.generateOperationId();
+      const originalText = cmd.type === 'replace' ? view.state.doc.sliceString(from, to) : '';
+
+      // Dispatch startAiOperation to show loading shimmer in document
+      view.dispatch({
+        effects: ai.startAiOperation.of({
+          id: opId,
+          type: cmd.type,
+          from,
+          to,
+          originalText,
+        }),
+      });
 
       const params = cmd.buildParams(context, language);
 
@@ -4358,12 +5297,13 @@
           onError: (err) => {
             console.error('[AI] Stream error:', err);
           },
-        }, { juiceLevel });
+        }, { juiceLevel, reasoningLevel });
 
         hideAiProgress();
 
         if (!result) {
           console.warn('[AI] No result from AI');
+          view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
           return;
         }
 
@@ -4372,13 +5312,11 @@
 
         if (!newText) {
           console.warn('[AI] Empty result from AI');
+          view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
           return;
         }
 
         // Insert/replace text using AI integration for accept/reject UI
-        const ai = mrmd.default?.ai || mrmd.ai;
-        const opId = ai.generateOperationId();
-
         if (cmd.type === 'insert') {
           view.dispatch({
             changes: { from, insert: newText },
@@ -4392,6 +5330,8 @@
         }
       } catch (err) {
         console.error('[AI] Command failed:', err);
+        // Cancel the AI operation on error
+        view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
         hideAiProgress();
       } finally {
         cmdEl?.classList.remove('loading');
@@ -4438,6 +5378,23 @@
     let currentJuiceLevel = 1;
 
     /**
+     * Current reasoning level (0-5)
+     */
+    let currentReasoningLevel = 1;
+
+    /**
+     * Map of juice levels to whether they support reasoning
+     * Level 0 (Groq/Kimi K2) does NOT support reasoning
+     */
+    const JUICE_SUPPORTS_REASONING = {
+      0: false,  // Groq/Kimi K2 - no reasoning support
+      1: true,   // Claude Sonnet 4.5
+      2: true,   // Gemini 3 Pro
+      3: true,   // Claude Opus 4.5
+      4: true,   // Multi-model (all support reasoning)
+    };
+
+    /**
      * Set the juice level and update UI
      */
     function setJuiceLevel(level) {
@@ -4448,6 +5405,32 @@
       // Update UI
       document.querySelectorAll('.ai-juice-btn').forEach(btn => {
         btn.classList.toggle('selected', parseInt(btn.dataset.juice) === currentJuiceLevel);
+      });
+
+      // Enable/disable reasoning buttons based on model support
+      const supportsReasoning = JUICE_SUPPORTS_REASONING[currentJuiceLevel] ?? true;
+      document.querySelectorAll('.ai-reasoning-btn').forEach(btn => {
+        btn.disabled = !supportsReasoning;
+        btn.classList.toggle('disabled', !supportsReasoning);
+      });
+
+      // If reasoning not supported and currently set to non-zero, reset to 0
+      if (!supportsReasoning && currentReasoningLevel > 0) {
+        setReasoningLevel(0);
+      }
+    }
+
+    /**
+     * Set the reasoning level and update UI
+     */
+    function setReasoningLevel(level) {
+      currentReasoningLevel = Math.max(0, Math.min(5, level));
+      if (aiClient) {
+        aiClient.reasoningLevel = currentReasoningLevel;
+      }
+      // Update UI
+      document.querySelectorAll('.ai-reasoning-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.reasoning) === currentReasoningLevel);
       });
     }
 
@@ -4469,6 +5452,13 @@
       document.querySelectorAll('.ai-juice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           setJuiceLevel(parseInt(btn.dataset.juice));
+        });
+      });
+
+      // Attach click handlers to reasoning level buttons
+      document.querySelectorAll('.ai-reasoning-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setReasoningLevel(parseInt(btn.dataset.reasoning));
         });
       });
 
@@ -4765,6 +5755,235 @@
     }
 
     /**
+     * Setup image paste handler for the editor.
+     * Intercepts paste events, saves images to _assets/, and inserts markdown.
+     *
+     * @param {Object} editor - The mrmd editor instance
+     * @param {string} documentPath - Absolute path to the current document
+     */
+    function setupImagePasteHandler(editor, documentPath) {
+      if (!editor?.view) return;
+
+      const editorDom = editor.view.dom;
+
+      editorDom.addEventListener('paste', async (event) => {
+        // Check if we have image data in clipboard
+        const items = event.clipboardData?.items;
+        if (!items) return;
+
+        // Find image item
+        let imageItem = null;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            imageItem = item;
+            break;
+          }
+        }
+
+        if (!imageItem) return;
+
+        // Prevent default paste (we'll handle it)
+        event.preventDefault();
+
+        // Get project info
+        const projectRoot = state.project?.root;
+        if (!projectRoot) {
+          console.warn('[ImagePaste] No project root available, cannot save asset');
+          return;
+        }
+
+        try {
+          // Get the image file from clipboard
+          const file = imageItem.getAsFile();
+          if (!file) {
+            console.warn('[ImagePaste] Could not get file from clipboard');
+            return;
+          }
+
+          // Read file as array buffer
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // Generate filename based on timestamp
+          const ext = file.type.split('/')[1] || 'png';
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          const filename = `paste-${timestamp}.${ext}`;
+
+          console.log(`[ImagePaste] Saving ${filename} (${uint8Array.length} bytes)`);
+
+          // Save asset via electron API
+          const result = await electronAPI.asset.save(projectRoot, uint8Array, filename);
+          console.log('[ImagePaste] Asset saved:', result);
+
+          // Get relative path from document to asset
+          const relativeDocPath = documentPath.replace(projectRoot + '/', '');
+          const relativePath = await electronAPI.asset.relativePath(result.path, relativeDocPath);
+          console.log('[ImagePaste] Relative path:', relativePath);
+
+          // Insert markdown at cursor position
+          const view = editor.view;
+          const pos = view.state.selection.main.head;
+
+          // Create markdown image syntax
+          const altText = result.deduplicated ? 'image' : filename.replace(/\.[^.]+$/, '');
+          const markdown = `![${altText}](${relativePath})`;
+
+          // Insert the markdown
+          view.dispatch({
+            changes: { from: pos, insert: markdown },
+            selection: { anchor: pos + markdown.length },
+          });
+
+          console.log(`[ImagePaste] Inserted: ${markdown}`);
+
+        } catch (err) {
+          console.error('[ImagePaste] Error:', err);
+        }
+      });
+
+      console.log('[ImagePaste] Image paste handler installed');
+
+      // Also handle drag and drop of images
+      editorDom.addEventListener('dragover', (event) => {
+        // Check if dragging files
+        if (event.dataTransfer?.types?.includes('Files')) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+        }
+      });
+
+      editorDom.addEventListener('drop', async (event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+
+        // Check if any file is an image
+        const imageFile = Array.from(files).find(f => f.type.startsWith('image/'));
+        if (!imageFile) return;
+
+        event.preventDefault();
+
+        const projectRoot = state.project?.root;
+        if (!projectRoot) {
+          console.warn('[ImageDrop] No project root available, cannot save asset');
+          return;
+        }
+
+        try {
+          // Read file as array buffer
+          const arrayBuffer = await imageFile.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // Use original filename or generate one
+          const filename = imageFile.name || `drop-${Date.now()}.png`;
+
+          console.log(`[ImageDrop] Saving ${filename} (${uint8Array.length} bytes)`);
+
+          // Save asset via electron API
+          const result = await electronAPI.asset.save(projectRoot, uint8Array, filename);
+          console.log('[ImageDrop] Asset saved:', result);
+
+          // Get relative path from document to asset
+          const relativeDocPath = documentPath.replace(projectRoot + '/', '');
+          const relativePath = await electronAPI.asset.relativePath(result.path, relativeDocPath);
+          console.log('[ImageDrop] Relative path:', relativePath);
+
+          // Get drop position - try to get cursor position near drop location
+          const view = editor.view;
+          const dropPos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+          const pos = dropPos ?? view.state.selection.main.head;
+
+          // Create markdown image syntax
+          const altText = result.deduplicated ? 'image' : filename.replace(/\.[^.]+$/, '');
+          const markdown = `![${altText}](${relativePath})`;
+
+          // Insert the markdown
+          view.dispatch({
+            changes: { from: pos, insert: markdown },
+            selection: { anchor: pos + markdown.length },
+          });
+
+          console.log(`[ImageDrop] Inserted: ${markdown}`);
+
+        } catch (err) {
+          console.error('[ImageDrop] Error:', err);
+        }
+      });
+
+      console.log('[ImageDrop] Image drop handler installed');
+    }
+
+    /**
+     * Setup asset URL resolver for the editor.
+     * Converts relative asset paths (like ../_assets/image.png) to absolute file:// URLs
+     * so images can load correctly in the Electron renderer.
+     *
+     * @param {Object} editor - The mrmd editor instance
+     * @param {string} documentPath - Absolute path to the current document
+     */
+    function setupAssetResolver(editor, documentPath) {
+      if (!editor?.view) return;
+
+      const projectRoot = state.project?.root;
+      if (!projectRoot) {
+        console.warn('[AssetResolver] No project root, asset resolution disabled');
+        return;
+      }
+
+      // Get the document's directory (relative paths are resolved from here)
+      const documentDir = documentPath.substring(0, documentPath.lastIndexOf('/'));
+
+      // Get the assetResolverFacet from mrmd
+      const assetResolverFacet = mrmd.assetResolverFacet;
+      if (!assetResolverFacet) {
+        console.warn('[AssetResolver] assetResolverFacet not available in mrmd');
+        return;
+      }
+
+      // Create resolver function that converts relative paths to file:// URLs
+      const resolver = (url) => {
+        if (!url) return url;
+
+        // Resolve relative path from document directory
+        // Handle ../_assets/..., ./_assets/..., _assets/... patterns
+        let resolvedPath;
+        if (url.startsWith('/')) {
+          // Absolute path - use project root
+          resolvedPath = projectRoot + url;
+        } else if (url.startsWith('../') || url.startsWith('./')) {
+          // Relative path - resolve from document directory
+          const parts = documentDir.split('/');
+          const urlParts = url.split('/');
+
+          for (const part of urlParts) {
+            if (part === '..') {
+              parts.pop();
+            } else if (part !== '.') {
+              parts.push(part);
+            }
+          }
+          resolvedPath = parts.join('/');
+        } else {
+          // Relative path without ./ - resolve from document directory
+          resolvedPath = documentDir + '/' + url;
+        }
+
+        // Convert to file:// URL
+        const fileUrl = 'file://' + resolvedPath;
+        console.log(`[AssetResolver] ${url} -> ${fileUrl}`);
+        return fileUrl;
+      };
+
+      // Add the resolver extension to the editor
+      editor.view.dispatch({
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(
+          assetResolverFacet.of(resolver)
+        ),
+      });
+
+      console.log('[AssetResolver] Asset resolver installed for', documentDir);
+    }
+
+    /**
      * Add runtime CodeLens extensions to the editor
      * Shows inline controls above yaml config blocks and frontmatter
      * @param {Object} editor - The mrmd editor instance
@@ -4985,6 +6204,142 @@
     }
 
     /**
+     * Create an auto-restarting MRP client wrapper.
+     * If execution fails due to connection error, restarts the session and retries.
+     */
+    function createAutoRestartingBashClient(initialPort, sessionName) {
+      let currentPort = initialPort;
+      let isRestarting = false;
+      const supportedLanguages = ['bash', 'sh', 'shell'];
+
+      // Create the underlying MRPClient
+      let realClient = new mrmd.MRPClient(
+        `http://127.0.0.1:${currentPort}/mrp/v1`,
+        { session: 'default', languages: supportedLanguages }
+      );
+
+      // Helper to recreate client with new port
+      function updateClient(newPort) {
+        currentPort = newPort;
+        realClient = new mrmd.MRPClient(
+          `http://127.0.0.1:${currentPort}/mrp/v1`,
+          { session: 'default', languages: supportedLanguages }
+        );
+      }
+
+      // Use Proxy to delegate all method calls, intercepting executeStreaming for auto-restart
+      return new Proxy(realClient, {
+        get(target, prop, receiver) {
+          // Always use current realClient (may have been updated)
+          const value = realClient[prop];
+
+          // For supports, use our list (faster, no async)
+          if (prop === 'supports') {
+            return (language) => supportedLanguages.includes(language.toLowerCase());
+          }
+
+          // Intercept executeStreaming to add auto-restart
+          if (prop === 'executeStreaming') {
+            return async function(code, language, onChunk, onStdinRequest, options = {}) {
+              try {
+                return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+              } catch (error) {
+                // Check if it's a connection error
+                if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION')) {
+                  console.log('[bash] Connection failed, attempting to restart session...');
+
+                  if (isRestarting) {
+                    onChunk?.('Bash session is restarting...', 'Bash session is restarting...', true);
+                    throw new Error('Bash session is restarting, please try again');
+                  }
+
+                  isRestarting = true;
+                  try {
+                    const newConfig = await electronAPI.bash.forDocument(state.currentFile);
+                    if (newConfig?.alive && newConfig?.port) {
+                      updateClient(newConfig.port);
+                      state.bashPort = newConfig.port;
+                      state.bashSession = newConfig;
+                      console.log('[bash] Session restarted on port', currentPort);
+
+                      isRestarting = false;
+                      return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+                    } else {
+                      throw new Error('Failed to restart bash session');
+                    }
+                  } catch (restartError) {
+                    isRestarting = false;
+                    console.error('[bash] Restart failed:', restartError);
+                    throw restartError;
+                  }
+                }
+                throw error;
+              }
+            };
+          }
+
+          // For all other properties, delegate to realClient
+          if (typeof value === 'function') {
+            return value.bind(realClient);
+          }
+          return value;
+        }
+      });
+    }
+
+    /**
+     * Register bash runtime with editor for shell code execution.
+     * Bash runtime is per-project, respects session.bash config in mrmd.md.
+     */
+    async function registerBashWithEditor() {
+      console.log('[bash] registerBashWithEditor called');
+
+      if (!state.editor || !state.currentFile) {
+        console.log('[bash] No editor or currentFile, skipping');
+        return;
+      }
+
+      // Check if electronAPI.bash exists (requires app restart after preload changes)
+      if (!electronAPI.bash) {
+        console.error('[bash] electronAPI.bash not available - restart the app!');
+        return;
+      }
+
+      try {
+        console.log('[bash] Calling bash.forDocument for:', state.currentFile);
+        // Get or create bash session for this document
+        const bashConfig = await electronAPI.bash.forDocument(state.currentFile);
+        console.log('[bash] Got config:', bashConfig);
+
+        if (!bashConfig) {
+          console.log('No bash session config for this document');
+          return;
+        }
+
+        // Check for errors
+        if (bashConfig.error) {
+          console.error('Bash session error:', bashConfig.error);
+          return;
+        }
+
+        // Check if session is alive (auto-started or existing)
+        if (bashConfig.alive && bashConfig.port) {
+          state.bashPort = bashConfig.port;
+          state.bashSession = bashConfig;
+
+          // Use auto-restarting client wrapper
+          const bashClient = createAutoRestartingBashClient(bashConfig.port, bashConfig.name);
+          state.editor.registerRuntime('bash', bashClient);
+          console.log('Registered Bash runtime with editor on port', bashConfig.port, 'cwd:', bashConfig.cwd);
+        } else {
+          console.log('Bash session not started (auto_start may be false)');
+        }
+      } catch (e) {
+        console.error('Error registering bash runtime:', e);
+      }
+    }
+
+    /**
      * Resolve and optionally auto-start session for current project
      */
     async function resolveProjectSession() {
@@ -5056,6 +6411,7 @@
      */
     function updateSetupHints() {
       const hintsEl = document.getElementById('setup-hints');
+      const sessionHoverTrigger = document.getElementById('session-hover-trigger');
       if (!hintsEl) return;
 
       const hints = [];
@@ -5068,9 +6424,6 @@
 
       // Check for missing session config in document
       const hasSessionConfig = checkDocumentHasSessionConfig();
-      if (!hasSessionConfig && !dismissedHints.has('no-session')) {
-        hints.push('no-session');
-      }
 
       // Check for missing venv
       const hasVenv = state.project?.config?.venv || state.session?.config?.venv;
@@ -5081,13 +6434,20 @@
       // Show/hide individual hints
       document.getElementById('hint-no-project').style.display =
         hints.includes('no-project') ? 'flex' : 'none';
-      document.getElementById('hint-no-session').style.display =
-        hints.includes('no-session') ? 'flex' : 'none';
       document.getElementById('hint-no-venv').style.display =
         hints.includes('no-venv') ? 'flex' : 'none';
 
-      // Show/hide hints container
+      // Show/hide hints container (for project/venv hints only)
       hintsEl.style.display = hints.length > 0 ? 'block' : 'none';
+
+      // Show/hide subtle session hover trigger (separate from banner)
+      if (sessionHoverTrigger) {
+        if (!hasSessionConfig) {
+          sessionHoverTrigger.classList.add('visible');
+        } else {
+          sessionHoverTrigger.classList.remove('visible');
+        }
+      }
     }
 
     /**
@@ -5129,15 +6489,27 @@
         // Get folder name for project name
         const folderName = state.projectDir.split('/').pop() || 'project';
 
-        // Create mrmd.md with basic config
+        // Create mrmd.md with complete config template
         const mrmdConfig = `# ${folderName}
 
 Project configuration for mrmd.
 
-\`\`\`yaml
-project:
-  name: "${folderName}"
-  venv: .venv
+\`\`\`yaml config
+name: "${folderName}"
+
+session:
+  python:
+    venv: .venv
+    cwd: .
+    name: default
+    auto_start: true
+  bash:
+    cwd: .
+    name: default
+    auto_start: true
+
+assets:
+  directory: _assets
 \`\`\`
 `;
 
@@ -5703,12 +7075,27 @@ session:
           saveLocalBackup('periodic');
         }
 
-        // TODO: Add WebSocket ping to sync server to detect silent disconnects
-        // This would catch cases where the sync server is still running but
+        // Check WebSocket connection health
+        // This catches cases where the sync server is still running but
         // the WebSocket connection was silently dropped.
+        if (syncProvider && syncHasEverConnected) {
+          const isConnected = !!(syncProvider.wsconnected || syncProvider.synced);
+
+          if (!isConnected && syncHealthy) {
+            // Connection was healthy but now appears disconnected
+            console.warn('[watchdog] WebSocket appears disconnected, scheduling warning...');
+            scheduleSyncWarning('connection appears lost', SYNC_RECONNECT_GRACE_MS);
+          } else if (isConnected && !syncHealthy) {
+            // Connection was lost but now appears reconnected
+            console.log('[watchdog] WebSocket reconnected');
+            clearSyncWarningTimer();
+            hideSyncWarning();
+            syncHealthy = true;
+          }
+        }
       }, 60000); // Every 60 seconds
 
-      console.log('Watchdog started: periodic backups every 60s');
+      console.log('Watchdog started: periodic backups every 60s, WebSocket health checks');
     }
 
     function stopWatchdog() {

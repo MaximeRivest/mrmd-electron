@@ -11,6 +11,7 @@ import { FSML, Links, Assets } from 'mrmd-project';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
+import { UNORDERED_FILES, ASSETS_DIR_NAME } from '../config.js';
 
 class FileService {
   /**
@@ -97,29 +98,14 @@ class FileService {
    * @param {string} content - File content
    * @returns {Promise<string>} Actual relative path (may have order prefix)
    */
-  // Files that should never have order prefixes added
-  static UNORDERED_FILES = new Set([
-    'readme.md',
-    'readme',
-    'license.md',
-    'license',
-    'license.txt',
-    'changelog.md',
-    'changelog',
-    'contributing.md',
-    'contributing',
-    'mrmd.md',
-    'index.md',
-    '.gitignore',
-    '.gitattributes',
-  ]);
+  // Files that should never have order prefixes (using config from ../config.js)
 
   /**
    * Check if a filename should bypass FSML ordering
    */
   static shouldBypassOrdering(filename) {
     const lower = filename.toLowerCase();
-    return FileService.UNORDERED_FILES.has(lower) || lower.startsWith('_');
+    return UNORDERED_FILES.has(lower) || lower.startsWith('_');
   }
 
   async createInProject(projectRoot, relativePath, content = '') {
@@ -278,7 +264,8 @@ class FileService {
       let content;
       try {
         content = await fsPromises.readFile(fullPath, 'utf8');
-      } catch {
+      } catch (e) {
+        console.warn(`[file] Could not read ${file} for link refactoring:`, e.message);
         continue;
       }
 
@@ -306,7 +293,7 @@ class FileService {
       movingContent,
       fromPath,
       toPath,
-      '_assets'
+      ASSETS_DIR_NAME
     );
 
     // 5. Actually move the file
@@ -358,7 +345,8 @@ class FileService {
       let content;
       try {
         content = await fsPromises.readFile(fullPath, 'utf8');
-      } catch {
+      } catch (e) {
+        console.warn(`[file] Could not read ${file} for directory refactoring:`, e.message);
         continue;
       }
 
@@ -382,7 +370,8 @@ class FileService {
       let content;
       try {
         content = await fsPromises.readFile(fullPath, 'utf8');
-      } catch {
+      } catch (e) {
+        console.warn(`[file] Could not read ${moved.from} for asset path update:`, e.message);
         continue;
       }
 
@@ -390,7 +379,7 @@ class FileService {
         content,
         moved.from,
         moved.to,
-        '_assets'
+        ASSETS_DIR_NAME
       );
 
       if (updatedContent !== content) {
