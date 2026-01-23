@@ -384,7 +384,7 @@ The editor provides tools to manipulate FSML, just like Markdown editors provide
 **User action:** Drag "Basic" out of "Tutorials" to top level
 
 **What happens:**
-```
+```output
 BEFORE                           AFTER
 03-tutorials/                    03-tutorials/
   01-basic.md       ────────►      01-advanced.md  (renumbered)
@@ -394,7 +394,7 @@ BEFORE                           AFTER
 ```
 
 **Also:** Any asset paths in the moved file are automatically refactored:
-```
+```output
 BEFORE (in 03-tutorials/01-basic.md):    ![](../../_assets/diagram.png)
 AFTER  (in 04-basic.md):                 ![](_assets/diagram.png)
 ```
@@ -438,7 +438,7 @@ Inserted: ![screenshot](../_assets/screenshot.png)
 
 ### 7.1 Navigation Tree
 
-```
+```output
 SOURCE (filesystem)              RENDERED (nav)
 ────────────────────             ──────────────
 01-intro.md                      Introduction

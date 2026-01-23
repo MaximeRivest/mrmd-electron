@@ -693,6 +693,10 @@ ipcMain.handle('shell:openExternal', async (event, { url }) => {
   await shell.openExternal(url);
 });
 
+ipcMain.handle('shell:openPath', async (event, { fullPath }) => {
+  return await shell.openPath(fullPath);
+});
+
 // Get recent files and venvs
 ipcMain.handle('get-recent', () => {
   return loadRecent();

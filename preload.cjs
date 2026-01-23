@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   shell: {
     showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:showItemInFolder', { fullPath }),
     openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
+    openPath: (fullPath) => ipcRenderer.invoke('shell:openPath', { fullPath }),
   },
 
   // Recent files/venvs

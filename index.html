@@ -1159,6 +1159,51 @@
       opacity: 0.6;
     }
 
+    .ai-cmd-key {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .ai-cmd:hover .ai-cmd-key {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.1);
+    }
+
+    /* Keyboard mode active indicator */
+    #panel-ai.keyboard-mode .ai-cmd-key {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    #panel-ai.keyboard-mode {
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    .ai-keyboard-hint {
+      font-size: 11px;
+      color: var(--accent);
+      margin-left: auto;
+      margin-right: 8px;
+    }
+
+    .ai-level-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: normal;
+      margin-left: 6px;
+    }
+
     .ai-panel-status {
       display: flex;
       align-items: center;
@@ -1913,7 +1958,7 @@
         <button class="sidebar-toggle nav-toggle" id="nav-toggle" title="Collapse">‹</button>
         <div class="nav-header">
           <span class="nav-title" id="nav-title" title="Click to open project config">No Project</span>
-          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.5 2.5l1.5 1.5M12 12l1.5 1.5M2.5 13.5l1.5-1.5M12 4l1.5-1.5"/></svg></button>
+          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="8" x2="14" y2="8"/><circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></button>
           <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
         </div>
         <div class="nav-tree" id="nav-tree">
@@ -1979,16 +2024,17 @@
       <!-- Tool buttons -->
       <button class="rail-btn" data-panel="runtimes" title="Runtimes"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 7h2M5 9h4"/></svg></button>
       <button class="rail-btn" data-panel="variables" title="Variables"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l2 8h4M10 4l2 8"/></svg></button>
-      <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v2M8 12v2M2 8h2M12 8h2M4 4l1.5 1.5M10.5 10.5L12 12M4 12l1.5-1.5M10.5 5.5L12 4"/><circle cx="8" cy="8" r="2"/></svg></button>
+      <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
       <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
 
       <div class="rail-spacer"></div>
 
       <div class="rail-divider"></div>
       <button class="rail-btn" data-panel="settings" title="Settings">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="8" cy="8" r="2"/>
-          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.5 2.5l1.5 1.5M12 12l1.5 1.5M2.5 13.5l1.5-1.5M12 4l1.5-1.5"/>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="2" y1="4" x2="14" y2="4"/><circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/>
+          <line x1="2" y1="8" x2="14" y2="8"/><circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/>
+          <line x1="2" y1="12" x2="14" y2="12"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/>
         </svg>
       </button>
     </div>
@@ -2102,6 +2148,7 @@
     <div class="rail-panel" id="panel-ai">
       <div class="rail-panel-header">
         <span class="rail-panel-title">AI Commands</span>
+        <span class="ai-keyboard-hint" id="ai-keyboard-hint" style="display: none;">Press key or Esc</span>
         <button class="rail-panel-close" data-close-panel="ai">×</button>
       </div>
       <div class="rail-panel-content">
@@ -2117,75 +2164,86 @@
           <div class="ai-progress-models" id="ai-progress-models"></div>
         </div>
         <div class="rail-panel-section">
-          <div class="rail-panel-section-title">Quality</div>
+          <div class="rail-panel-section-title">Quality <span class="ai-level-hint">Shift+1-5</span></div>
           <div class="ai-juice-selector">
-            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap">1</button>
-            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality">2</button>
-            <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning">3</button>
-            <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model">4</button>
-            <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model">5</button>
+            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap (Shift+1)">1</button>
+            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality (Shift+2)">2</button>
+            <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning (Shift+3)">3</button>
+            <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model (Shift+4)">4</button>
+            <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model (Shift+5)">5</button>
           </div>
         </div>
         <div class="rail-panel-section">
-          <div class="rail-panel-section-title">Reasoning</div>
+          <div class="rail-panel-section-title">Reasoning <span class="ai-level-hint">0-5</span></div>
           <div class="ai-juice-selector">
-            <button class="ai-reasoning-btn" data-reasoning="0" title="Off - No extended thinking">0</button>
-            <button class="ai-reasoning-btn selected" data-reasoning="1" title="Minimal - Light reasoning">1</button>
-            <button class="ai-reasoning-btn" data-reasoning="2" title="Low - Some reasoning">2</button>
-            <button class="ai-reasoning-btn" data-reasoning="3" title="Medium - Moderate reasoning">3</button>
-            <button class="ai-reasoning-btn" data-reasoning="4" title="High - Deep reasoning">4</button>
-            <button class="ai-reasoning-btn" data-reasoning="5" title="Maximum - Full reasoning budget">5</button>
+            <button class="ai-reasoning-btn" data-reasoning="0" title="Off - No extended thinking (0)">0</button>
+            <button class="ai-reasoning-btn selected" data-reasoning="1" title="Minimal - Light reasoning (1)">1</button>
+            <button class="ai-reasoning-btn" data-reasoning="2" title="Low - Some reasoning (2)">2</button>
+            <button class="ai-reasoning-btn" data-reasoning="3" title="Medium - Moderate reasoning (3)">3</button>
+            <button class="ai-reasoning-btn" data-reasoning="4" title="High - Deep reasoning (4)">4</button>
+            <button class="ai-reasoning-btn" data-reasoning="5" title="Maximum - Full reasoning budget (5)">5</button>
           </div>
         </div>
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Text</div>
-          <div class="ai-cmd" data-cmd="fix-grammar">
+          <div class="ai-cmd" data-cmd="fix-grammar" data-key="g">
+            <span class="ai-cmd-key">g</span>
             <span class="ai-cmd-label">Fix Grammar</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
-          <div class="ai-cmd" data-cmd="fix-transcription">
+          <div class="ai-cmd" data-cmd="fix-transcription" data-key="t">
+            <span class="ai-cmd-key">t</span>
             <span class="ai-cmd-label">Fix Transcription</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
-          <div class="ai-cmd" data-cmd="finish-sentence">
+          <div class="ai-cmd" data-cmd="finish-sentence" data-key="s">
+            <span class="ai-cmd-key">s</span>
             <span class="ai-cmd-label">Complete Sentence</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
-          <div class="ai-cmd" data-cmd="finish-paragraph">
+          <div class="ai-cmd" data-cmd="finish-paragraph" data-key="p">
+            <span class="ai-cmd-key">p</span>
             <span class="ai-cmd-label">Complete Paragraph</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
         </div>
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Code</div>
-          <div class="ai-cmd" data-cmd="finish-code-line">
+          <div class="ai-cmd" data-cmd="finish-code-line" data-key="l">
+            <span class="ai-cmd-key">l</span>
             <span class="ai-cmd-label">Complete Line</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
-          <div class="ai-cmd" data-cmd="finish-code-section">
+          <div class="ai-cmd" data-cmd="finish-code-section" data-key="c">
+            <span class="ai-cmd-key">c</span>
             <span class="ai-cmd-label">Complete Section</span>
             <span class="ai-cmd-hint">cursor</span>
           </div>
-          <div class="ai-cmd" data-cmd="document-code">
+          <div class="ai-cmd" data-cmd="document-code" data-key="d">
+            <span class="ai-cmd-key">d</span>
             <span class="ai-cmd-label">Add Docstrings</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
-          <div class="ai-cmd" data-cmd="add-types">
+          <div class="ai-cmd" data-cmd="add-types" data-key="y">
+            <span class="ai-cmd-key">y</span>
             <span class="ai-cmd-label">Add Type Hints</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
-          <div class="ai-cmd" data-cmd="improve-names">
+          <div class="ai-cmd" data-cmd="improve-names" data-key="n">
+            <span class="ai-cmd-key">n</span>
             <span class="ai-cmd-label">Improve Names</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
-          <div class="ai-cmd" data-cmd="refactor">
+          <div class="ai-cmd" data-cmd="refactor" data-key="r">
+            <span class="ai-cmd-key">r</span>
             <span class="ai-cmd-label">Refactor Code</span>
             <span class="ai-cmd-hint">selection</span>
           </div>
         </div>
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Document</div>
-          <div class="ai-cmd" data-cmd="document-continue">
+          <div class="ai-cmd" data-cmd="document-continue" data-key="o">
+            <span class="ai-cmd-key">o</span>
             <span class="ai-cmd-label">Continue Document</span>
             <span class="ai-cmd-hint">append</span>
           </div>
@@ -2297,6 +2355,53 @@
         info: null,           // SessionInfo from SessionService (pid, port, etc.)
       },
     };
+
+    // =========================================================================
+    // FSML HELPERS (for wiki-link completion)
+    // =========================================================================
+
+    /**
+     * Parse a file path for wiki-link completion.
+     * Simplified version of FSML.parsePath from mrmd-project.
+     *
+     * @param {string} path - Relative path (e.g., '02-getting-started/01-setup.md')
+     * @returns {{path: string, title: string, name: string}}
+     */
+    function parseProjectFile(path) {
+      if (!path) return { path: '', title: '', name: '' };
+
+      // Get filename without directory
+      const segments = path.split('/');
+      const filename = segments[segments.length - 1];
+
+      // Remove extension
+      let name = filename.replace(/\.[^.]+$/, '');
+
+      // Remove numeric prefix (e.g., "01-" or "02_")
+      name = name.replace(/^\d+[-_]/, '');
+
+      // Derive title: replace - and _ with spaces, title case
+      const title = name
+        .replace(/[-_]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      return { path, title, name };
+    }
+
+    /**
+     * Parse all project files for wiki-link completion.
+     *
+     * @param {string[]} files - Array of relative paths
+     * @returns {Array<{path: string, title: string, name: string}>}
+     */
+    function parseProjectFiles(files) {
+      if (!files) return [];
+      return files
+        .filter(f => f.endsWith('.md') && f !== 'mrmd.md')
+        .map(parseProjectFile);
+    }
 
     // =========================================================================
     // FILE PICKER MODE DETECTION
@@ -4157,6 +4262,16 @@
         // Setup view source handler (F12)
         state.editor.onViewSource(showSource);
 
+        // Setup wiki-link completion with project files
+        if (project && project.files) {
+          const parsedFiles = parseProjectFiles(project.files);
+          state.editor.setProjectFiles(parsedFiles);
+          console.log(`Wiki-link completion enabled with ${parsedFiles.length} files`);
+        }
+
+        // Setup link navigation handlers
+        setupLinkNavigation(state.editor, filePath, project);
+
         // Update UI
         document.getElementById('editor-container').style.display = 'block';
         document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
@@ -5257,42 +5372,115 @@
       const opId = ai.generateOperationId();
       const originalText = cmd.type === 'replace' ? view.state.doc.sliceString(from, to) : '';
 
-      // Dispatch startAiOperation to show loading shimmer in document
-      view.dispatch({
-        effects: ai.startAiOperation.of({
-          id: opId,
-          type: cmd.type,
-          from,
-          to,
-          originalText,
-        }),
-      });
+      // Check if this is Ultimate mode (juice=4) - use multi-response picker
+      const isUltimateMode = juiceLevel === 4;
+
+      // For Ultimate mode, start with multi-response picker immediately
+      if (isUltimateMode) {
+        view.dispatch({
+          effects: ai.startAiOperationMulti.of({
+            id: opId,
+            type: cmd.type,
+            from,
+            to,
+            originalText,
+          }),
+        });
+      } else {
+        // Regular mode - show loading shimmer
+        view.dispatch({
+          effects: ai.startAiOperation.of({
+            id: opId,
+            type: cmd.type,
+            from,
+            to,
+            originalText,
+          }),
+        });
+      }
 
       const params = cmd.buildParams(context, language);
 
       try {
+        // Track individual model responses as they complete
+        const modelResponses = new Map(); // model -> response text
+
         // Use streaming for progress updates
         const result = await aiClient.executeStream(cmd.program, params, {
           onStatus: (step, data) => {
             console.log('[AI] Status:', step, data);
             if (step === 'starting_multi_model') {
-              // Ultimate mode - show all pending models
+              // Ultimate mode - add placeholder responses for each model
               showAiProgress('Multi-model synthesis...', `${data.total} models`);
-              data.models?.forEach(m => updateModelProgress(m, 'pending'));
+              data.models?.forEach(m => {
+                updateModelProgress(m, 'pending');
+                // Add loading placeholder to picker
+                view.dispatch({
+                  effects: ai.addAiResponse.of({
+                    id: opId,
+                    model: m,
+                    response: null,
+                    status: 'loading',
+                    isSynthesized: false,
+                  }),
+                });
+              });
             } else if (step === 'calling_model') {
               showAiProgress('Working...', data.model || '');
             } else if (step === 'starting') {
               const title = data.juice_name || 'Working...';
               showAiProgress(title, data.model || '');
+            } else if (step === 'synthesizing') {
+              showAiProgress('Synthesizing...', 'Combining responses');
             }
           },
           onModelStart: (modelName, data) => {
             console.log('[AI] Model started:', modelName);
             updateModelProgress(modelName, 'running');
+            // Update status in picker
+            if (isUltimateMode) {
+              view.dispatch({
+                effects: ai.updateAiResponse.of({
+                  id: opId,
+                  model: modelName,
+                  status: 'loading',
+                }),
+              });
+            }
           },
           onModelComplete: (modelName, data) => {
-            console.log('[AI] Model complete:', modelName);
+            console.log('[AI] Model complete:', modelName, data);
             updateModelProgress(modelName, 'done');
+            // If data contains response, update the picker
+            if (isUltimateMode && data?.response) {
+              // Extract the actual text from the response dict using resultField
+              const responseDict = data.response;
+              const responseText = responseDict[cmd.resultField] ||
+                                   responseDict.completion ||
+                                   responseDict.fixed_text ||
+                                   responseDict.response ||
+                                   (typeof responseDict === 'string' ? responseDict : JSON.stringify(responseDict));
+
+              modelResponses.set(modelName, responseText);
+              view.dispatch({
+                effects: ai.updateAiResponse.of({
+                  id: opId,
+                  model: modelName,
+                  response: responseText,
+                  status: 'complete',
+                }),
+              });
+            } else if (isUltimateMode && data?.success === false) {
+              // Handle model error
+              view.dispatch({
+                effects: ai.updateAiResponse.of({
+                  id: opId,
+                  model: modelName,
+                  error: data.error || 'Model failed',
+                  status: 'error',
+                }),
+              });
+            }
           },
           onError: (err) => {
             console.error('[AI] Stream error:', err);
@@ -5310,6 +5498,102 @@
         // Extract the result text
         const newText = result[cmd.resultField] || result.completion || result.fixed_text || result.response || '';
 
+        // Check if we have multiple individual responses to show
+        const individualResponses = result._individual_responses;
+        const hasMultipleResponses = individualResponses && individualResponses.length > 1;
+
+        if (hasMultipleResponses || isUltimateMode) {
+          // Use multi-response picker
+          console.log('[AI] Using multi-response picker with', individualResponses?.length || 0, 'responses');
+
+          // If not already in multi mode, switch to it
+          if (!isUltimateMode) {
+            // Cancel the loading operation and start multi
+            view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
+            const multiOpId = ai.generateOperationId();
+            view.dispatch({
+              effects: ai.startAiOperationMulti.of({
+                id: multiOpId,
+                type: cmd.type,
+                from,
+                to,
+                originalText,
+              }),
+            });
+
+            // Add all individual responses
+            if (individualResponses) {
+              individualResponses.forEach((resp, idx) => {
+                view.dispatch({
+                  effects: ai.addAiResponse.of({
+                    id: multiOpId,
+                    model: resp.model,
+                    response: resp.response,
+                    error: resp.error,
+                    status: resp.error ? 'error' : 'complete',
+                    isSynthesized: false,
+                  }),
+                });
+              });
+            }
+
+            // Add synthesized response as last option
+            if (newText) {
+              view.dispatch({
+                effects: ai.addAiResponse.of({
+                  id: multiOpId,
+                  model: 'Synthesized',
+                  response: newText,
+                  status: 'complete',
+                  isSynthesized: true,
+                }),
+              });
+            }
+          } else {
+            // Already in multi mode, just add final responses
+            if (individualResponses) {
+              individualResponses.forEach((resp) => {
+                // Update or add responses
+                view.dispatch({
+                  effects: ai.updateAiResponse.of({
+                    id: opId,
+                    model: resp.model,
+                    response: resp.response,
+                    error: resp.error,
+                    status: resp.error ? 'error' : 'complete',
+                  }),
+                });
+              });
+            }
+
+            // Add synthesized response
+            if (newText) {
+              view.dispatch({
+                effects: ai.addAiResponse.of({
+                  id: opId,
+                  model: 'Synthesized',
+                  response: newText,
+                  status: 'complete',
+                  isSynthesized: true,
+                }),
+              });
+              // Select the synthesized response by default
+              const state = view.state.field(ai.aiState);
+              const op = state.operations.get(opId);
+              if (op) {
+                const synthIndex = (op.responses?.length || 0);
+                view.dispatch({
+                  effects: ai.setSelectedResponse.of({ id: opId, index: synthIndex }),
+                });
+              }
+            }
+          }
+
+          // Don't insert text yet - wait for user to pick
+          return;
+        }
+
+        // Single response - use original inline approach
         if (!newText) {
           console.warn('[AI] Empty result from AI');
           view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
@@ -5434,6 +5718,132 @@
       });
     }
 
+    // =========================================================================
+    // AI Panel Keyboard Mode
+    // =========================================================================
+
+    /**
+     * State for AI panel keyboard mode
+     */
+    let aiPanelKeyboardMode = false;
+    let aiPanelKeyHandler = null;
+
+    /**
+     * Map of keyboard shortcuts to command IDs
+     * Built dynamically from data-key attributes
+     */
+    function buildAiKeyMap() {
+      const keyMap = {};
+      document.querySelectorAll('.ai-cmd[data-key]').forEach(el => {
+        const key = el.dataset.key.toLowerCase();
+        const cmdId = el.dataset.cmd;
+        keyMap[key] = cmdId;
+      });
+      return keyMap;
+    }
+
+    /**
+     * Handle keyboard events when AI panel is in keyboard mode
+     */
+    function handleAiPanelKeydown(e) {
+      if (!aiPanelKeyboardMode) return;
+
+      const key = e.key.toLowerCase();
+      const code = e.code; // e.g., 'Digit1', 'KeyG', etc.
+      const keyMap = buildAiKeyMap();
+
+      // Escape to close panel and disable keyboard mode
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        disableAiPanelKeyboardMode();
+        closePanel('ai');
+        // Return focus to editor
+        state.editor?.view?.focus();
+        return;
+      }
+
+      // Shift+1-5 for juice/quality level (use e.code since e.key gives '!@#$%')
+      if (e.shiftKey && code >= 'Digit1' && code <= 'Digit5') {
+        e.preventDefault();
+        e.stopPropagation();
+        const digit = parseInt(code.charAt(5), 10); // Extract digit from 'Digit1'
+        setJuiceLevel(digit - 1); // 1-5 maps to 0-4
+        return;
+      }
+
+      // 0-5 for reasoning level (without shift)
+      if (!e.shiftKey && code >= 'Digit0' && code <= 'Digit5') {
+        e.preventDefault();
+        e.stopPropagation();
+        const digit = parseInt(code.charAt(5), 10);
+        setReasoningLevel(digit);
+        return;
+      }
+
+      // Command keys
+      if (keyMap[key]) {
+        e.preventDefault();
+        e.stopPropagation();
+        const cmdId = keyMap[key];
+        const cmdEl = document.querySelector(`.ai-cmd[data-cmd="${cmdId}"]`);
+        if (cmdEl && !cmdEl.classList.contains('disabled') && !cmdEl.classList.contains('loading')) {
+          disableAiPanelKeyboardMode();
+          executeAiCommand(cmdId);
+        }
+        return;
+      }
+    }
+
+    /**
+     * Enable keyboard mode for the AI panel
+     * Called when panel is opened via long-press 'j'
+     */
+    function enableAiPanelKeyboardMode() {
+      if (aiPanelKeyboardMode) return;
+
+      aiPanelKeyboardMode = true;
+
+      // Add visual indicator
+      const panel = document.getElementById('panel-ai');
+      panel?.classList.add('keyboard-mode');
+
+      // Show hint
+      const hint = document.getElementById('ai-keyboard-hint');
+      if (hint) hint.style.display = 'inline';
+
+      // Add capture-phase handler to intercept all keys
+      aiPanelKeyHandler = (e) => handleAiPanelKeydown(e);
+      document.addEventListener('keydown', aiPanelKeyHandler, { capture: true });
+
+      console.log('[AI] Keyboard mode enabled');
+    }
+
+    /**
+     * Disable keyboard mode for the AI panel
+     */
+    function disableAiPanelKeyboardMode() {
+      if (!aiPanelKeyboardMode) return;
+
+      aiPanelKeyboardMode = false;
+
+      // Remove visual indicator
+      const panel = document.getElementById('panel-ai');
+      panel?.classList.remove('keyboard-mode');
+
+      // Hide hint
+      const hint = document.getElementById('ai-keyboard-hint');
+      if (hint) hint.style.display = 'none';
+
+      // Remove handler
+      if (aiPanelKeyHandler) {
+        document.removeEventListener('keydown', aiPanelKeyHandler, { capture: true });
+        aiPanelKeyHandler = null;
+      }
+
+      console.log('[AI] Keyboard mode disabled');
+    }
+
     /**
      * Initialize the AI Commands panel
      */
@@ -5470,6 +5880,15 @@
           updateAiPanelStatus();
           updateAiCommandStates();
         }
+      };
+
+      // Disable keyboard mode when panel closes
+      const originalClosePanel = closePanel;
+      closePanel = function(panelId) {
+        if (panelId === 'ai' || railState.activePanel === 'ai') {
+          disableAiPanelKeyboardMode();
+        }
+        originalClosePanel(panelId);
       };
 
       // Update AI panel status initially
@@ -5729,6 +6148,7 @@
     /**
      * Add AI integration extensions to the editor
      * Shows loading shimmer and accept/reject UI for AI operations
+     * Also adds long-press 'j' detection to open AI panel
      * @param {Object} editor - The mrmd editor instance
      */
     function addAiIntegrationToEditor(editor) {
@@ -5746,12 +6166,33 @@
         // Could add onSparkClick here for inline AI menu
       });
 
+      // Create long-press 'j' extension to open AI panel
+      const longPressExtensions = ai.createLongPressExtension?.({
+        onTrigger: (view) => {
+          // Open the side rail first, then the AI panel
+          openRail();
+          openPanel('ai');
+          // Enable keyboard mode for the AI panel
+          enableAiPanelKeyboardMode();
+        },
+      }) || [];
+
+      // Also add palette styles extension (for loading indicator)
+      const paletteStyles = ai.aiPaletteStyles || [];
+
+      // Combine all extensions
+      const allExtensions = [
+        ...aiExtensions,
+        ...longPressExtensions,
+        paletteStyles,
+      ].filter(Boolean);
+
       // Add extensions to editor
       editor.view.dispatch({
-        effects: mrmd.codemirror.StateEffect.appendConfig.of(aiExtensions),
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(allExtensions),
       });
 
-      console.log('[AI] AI integration extensions added to editor');
+      console.log('[AI] AI integration extensions added to editor (including long-press j)');
     }
 
     /**
@@ -5910,6 +6351,221 @@
       });
 
       console.log('[ImageDrop] Image drop handler installed');
+    }
+
+    /**
+     * Resolve special links (next, prev, home, up, toc)
+     *
+     * @param {string} target - Special link target
+     * @param {string} documentPath - Absolute path to current document
+     * @param {Object} project - Project info with root and files array
+     * @returns {string | null} Resolved relative file path or null
+     */
+    function resolveSpecialLink(target, documentPath, project) {
+      const { root, files } = project;
+      if (!files || files.length === 0) return null;
+
+      // Get current document path relative to project root
+      const fromDocument = documentPath.startsWith(root + '/')
+        ? documentPath.slice(root.length + 1)
+        : documentPath;
+
+      // Filter to only .md files (content files), excluding mrmd.md
+      const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'mrmd.md');
+
+      // Sort by FSML order (numeric prefix, then alphabetical)
+      const sorted = [...mdFiles].sort((a, b) => {
+        // Extract first path segment's numeric prefix for top-level ordering
+        const aSegments = a.split('/');
+        const bSegments = b.split('/');
+
+        // Compare path segments level by level
+        const maxLen = Math.max(aSegments.length, bSegments.length);
+        for (let i = 0; i < maxLen; i++) {
+          const aSeg = aSegments[i] || '';
+          const bSeg = bSegments[i] || '';
+
+          // Extract numeric prefix
+          const aMatch = aSeg.match(/^(\d+)-/);
+          const bMatch = bSeg.match(/^(\d+)-/);
+          const aOrder = aMatch ? parseInt(aMatch[1]) : Infinity;
+          const bOrder = bMatch ? parseInt(bMatch[1]) : Infinity;
+
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          if (aSeg !== bSeg) return aSeg.localeCompare(bSeg);
+        }
+        return 0;
+      });
+
+      const currentIndex = sorted.indexOf(fromDocument);
+
+      switch (target.toLowerCase()) {
+        case 'next':
+          return currentIndex >= 0 && currentIndex < sorted.length - 1
+            ? sorted[currentIndex + 1]
+            : null;
+
+        case 'prev':
+          return currentIndex > 0
+            ? sorted[currentIndex - 1]
+            : null;
+
+        case 'home':
+          return sorted[0] || null;
+
+        case 'up': {
+          // Go to parent directory's index or first file
+          const parts = fromDocument.split('/');
+          if (parts.length > 1) {
+            const parentDir = parts.slice(0, -1).join('/');
+            // Look for index.md in parent
+            const parentIndex = sorted.find(f => f === parentDir + '/index.md');
+            if (parentIndex) return parentIndex;
+            // Or first file in parent
+            const parentFile = sorted.find(f => f.startsWith(parentDir + '/'));
+            if (parentFile) return parentFile;
+          }
+          return sorted[0] || null;
+        }
+
+        case 'toc':
+          // TODO: TOC should render inline, not navigate
+          console.log('[LinkNav] TOC link - inline rendering not yet implemented');
+          return null;
+
+        default:
+          return null;
+      }
+    }
+
+    /**
+     * Setup link navigation handlers for the editor.
+     * Handles wiki-link and file-link navigation events.
+     *
+     * @param {Object} editor - The mrmd editor instance
+     * @param {string} documentPath - Absolute path to the current document
+     * @param {Object} project - Project info with files array
+     */
+    function setupLinkNavigation(editor, documentPath, project) {
+      if (!editor?.view) return;
+
+      const editorDom = editor.view.dom;
+
+      // Handle wiki-link navigation: [[target]]
+      editorDom.addEventListener('wiki-link-navigate', async (e) => {
+        const target = e.detail?.target;
+        if (!target) return;
+
+        console.log(`[LinkNav] Wiki-link: ${target}`);
+
+        // Handle special links
+        if (target === 'next' || target === 'prev' || target === 'home' || target === 'up' || target === 'toc') {
+          if (!project?.files || !documentPath) {
+            console.warn('[LinkNav] Cannot resolve special link - missing project or document');
+            return;
+          }
+
+          const resolved = resolveSpecialLink(target, documentPath, project);
+          if (resolved) {
+            const fullPath = project.root + '/' + resolved;
+            console.log(`[LinkNav] Special link resolved: ${target} -> ${fullPath}`);
+            openFile(fullPath);
+          } else {
+            console.warn(`[LinkNav] Could not resolve special link: ${target}`);
+          }
+          return;
+        }
+
+        // Resolve wiki-link to file path
+        if (!project?.files) {
+          console.warn('[LinkNav] No project files available');
+          return;
+        }
+
+        // Find matching file (fuzzy match)
+        const targetLower = target.toLowerCase();
+        let matchedFile = null;
+
+        for (const filePath of project.files) {
+          if (!filePath.endsWith('.md')) continue;
+
+          // Get filename without extension and order prefix
+          const segments = filePath.split('/');
+          const filename = segments[segments.length - 1];
+          const name = filename.replace(/\.md$/, '').replace(/^\d+-/, '');
+
+          // Check for match
+          if (name.toLowerCase() === targetLower) {
+            matchedFile = filePath;
+            break;
+          }
+
+          // Also check full path match
+          const pathWithoutExt = filePath.replace(/\.md$/, '');
+          if (pathWithoutExt.toLowerCase().endsWith(targetLower)) {
+            matchedFile = filePath;
+            // Don't break - prefer exact name match
+          }
+        }
+
+        if (matchedFile) {
+          const fullPath = project.root + '/' + matchedFile;
+          console.log(`[LinkNav] Resolved: ${target} -> ${fullPath}`);
+          openFile(fullPath);
+        } else {
+          console.warn(`[LinkNav] Could not resolve wiki-link: ${target}`);
+        }
+      });
+
+      // Handle file-link navigation: [text](./path)
+      editorDom.addEventListener('file-link-navigate', async (e) => {
+        const relativePath = e.detail?.path;
+        if (!relativePath) return;
+
+        console.log(`[LinkNav] File link: ${relativePath}`);
+
+        // Resolve relative path from document directory
+        const documentDir = documentPath.substring(0, documentPath.lastIndexOf('/'));
+        let resolvedPath;
+
+        if (relativePath.startsWith('/')) {
+          // Absolute path
+          resolvedPath = relativePath;
+        } else if (relativePath.startsWith('../') || relativePath.startsWith('./')) {
+          // Relative path
+          const parts = documentDir.split('/');
+          const urlParts = relativePath.split('/');
+
+          for (const part of urlParts) {
+            if (part === '..') {
+              parts.pop();
+            } else if (part !== '.') {
+              parts.push(part);
+            }
+          }
+          resolvedPath = parts.join('/');
+        } else {
+          // Relative without prefix
+          resolvedPath = documentDir + '/' + relativePath;
+        }
+
+        console.log(`[LinkNav] Resolved: ${relativePath} -> ${resolvedPath}`);
+
+        // Check if it's a markdown file
+        if (resolvedPath.endsWith('.md')) {
+          // Open in editor
+          openFile(resolvedPath);
+        } else {
+          // Open with system default application
+          try {
+            await electronAPI.shell.openPath(resolvedPath);
+          } catch (err) {
+            console.error(`[LinkNav] Failed to open: ${resolvedPath}`, err);
+          }
+        }
+      });
+
+      console.log('[LinkNav] Link navigation handlers installed');
     }
 
     /**
@@ -7120,6 +7776,13 @@ session:
           if (project) {
             state.project = project;
             updateNavSidebar(project, state.currentFile);
+
+            // Update wiki-link completion with new files
+            if (state.editor && project.files) {
+              const parsedFiles = parseProjectFiles(project.files);
+              state.editor.setProjectFiles(parsedFiles);
+              console.log(`[watch] Wiki-link completion updated with ${parsedFiles.length} files`);
+            }
           }
         }
       }, 300); // 300ms debounce
