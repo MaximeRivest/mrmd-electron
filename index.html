@@ -3,8 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com">
   <title>mrmd</title>
+
+  <!-- Romantic typography: Courier Prime (typewriter) + EB Garamond (literary) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -2248,6 +2254,19 @@
             <span class="ai-cmd-hint">append</span>
           </div>
         </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Comments</div>
+          <div class="ai-cmd" data-cmd="address-comment" data-key="m">
+            <span class="ai-cmd-key">m</span>
+            <span class="ai-cmd-label">Address Nearby</span>
+            <span class="ai-cmd-hint">cursor</span>
+          </div>
+          <div class="ai-cmd" data-cmd="address-all-comments" data-key="M">
+            <span class="ai-cmd-key">M</span>
+            <span class="ai-cmd-label">Address All</span>
+            <span class="ai-cmd-hint">document</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4253,6 +4272,9 @@
         // Add AI integration extensions for visual feedback
         addAiIntegrationToEditor(state.editor);
 
+        // Add Ctrl-K and comment syntax extensions (if AI client is connected)
+        addCtrlKAndCommentExtensions();
+
         // Add image paste handler for the editor
         setupImagePasteHandler(state.editor, filePath);
 
@@ -5092,6 +5114,48 @@
         // Special: insert at end of document
         insertAtEnd: true,
       },
+      // Comment commands
+      'address-comment': {
+        program: 'AddressNearbyCommentPredict',
+        resultField: 'edits',
+        type: 'edits',  // Special type for edit operations
+        requiresSelection: false,
+        buildParams: (ctx) => {
+          const commentSyntax = mrmd.default?.commentSyntax || mrmd.commentSyntax;
+          const nearbyComment = commentSyntax?.findNearestComment?.(ctx.documentContext, ctx.cursorPos);
+          if (!nearbyComment) return null;
+          return {
+            full_document: ctx.documentContext,
+            cursor_context_before: ctx.textBeforeCursor,
+            cursor_context_after: ctx.textAfterCursor,
+            nearby_comment: {
+              text: nearbyComment.content,
+              context_before: ctx.documentContext.slice(Math.max(0, nearbyComment.start - 200), nearbyComment.start),
+              context_after: ctx.documentContext.slice(nearbyComment.end, Math.min(ctx.documentContext.length, nearbyComment.end + 200)),
+            },
+            nearby_comment_raw: nearbyComment.raw,
+          };
+        },
+      },
+      'address-all-comments': {
+        program: 'AddressAllCommentsPredict',
+        resultField: 'edits',
+        type: 'edits',
+        requiresSelection: false,
+        buildParams: (ctx) => {
+          const commentSyntax = mrmd.default?.commentSyntax || mrmd.commentSyntax;
+          const comments = commentSyntax?.extractComments?.(ctx.documentContext) || [];
+          if (comments.length === 0) return null;
+          return {
+            full_document: ctx.documentContext,
+            comments: comments.map(c => ({
+              text: c.content,
+              context_before: ctx.documentContext.slice(Math.max(0, c.start - 200), c.start),
+              context_after: ctx.documentContext.slice(c.end, Math.min(ctx.documentContext.length, c.end + 200)),
+            })),
+          };
+        },
+      },
     };
 
     /**
@@ -5103,8 +5167,8 @@
       // mrmd-ai endpoints are at /{program} not /api/ai/{program}
       aiClient = {
         baseUrl: serverUrl.replace(/\/$/, ''),
-        juiceLevel: 1, // Default to Balanced
-        reasoningLevel: 1, // Default to Minimal
+        juiceLevel: currentJuiceLevel, // Use current panel state
+        reasoningLevel: currentReasoningLevel, // Use current panel state
 
         async execute(program, params, options = {}) {
           const juiceLevel = options.juiceLevel ?? this.juiceLevel;
@@ -5220,6 +5284,47 @@
 
       updateAiPanelStatus();
       console.log('[AI] Connected to AI server at', serverUrl);
+
+      // Add Ctrl-K and comment syntax extensions now that aiClient is available
+      addCtrlKAndCommentExtensions();
+    }
+
+    /**
+     * Add Ctrl-K modal and comment syntax extensions to the editor
+     * Called after aiClient is initialized
+     */
+    function addCtrlKAndCommentExtensions() {
+      if (!state?.editor?.view || !aiClient) return;
+
+      const editor = state.editor;
+
+      // Create Ctrl-K modal extension (Mod-K to open AI command input at cursor)
+      const ctrlK = mrmd.default?.ctrlK || mrmd.ctrlK;
+      const ctrlKExtensions = ctrlK?.createCtrlKExtension?.({
+        aiClient,
+        juiceLevel: currentJuiceLevel,
+        onError: (err) => {
+          console.error('[Ctrl-K] Error:', err);
+          showAiProgress('Error', err.message);
+        },
+      }) || [];
+
+      // Create comment syntax extension (<!--! !--> markers)
+      const commentSyntax = mrmd.default?.commentSyntax || mrmd.commentSyntax;
+      const commentExtensions = commentSyntax?.createCommentSyntaxExtension?.({
+        aiClient,
+        juiceLevel: currentJuiceLevel,
+      }) || [];
+
+      if (ctrlKExtensions.length > 0 || commentExtensions.length > 0) {
+        editor.view.dispatch({
+          effects: mrmd.codemirror.StateEffect.appendConfig.of([
+            ...ctrlKExtensions,
+            ...commentExtensions,
+          ].filter(Boolean)),
+        });
+        console.log('[AI] Ctrl-K and comment syntax extensions added');
+      }
     }
 
     /**
@@ -5401,6 +5506,15 @@
 
       const params = cmd.buildParams(context, language);
 
+      // Check if params is null (e.g., no comments to address)
+      if (params === null) {
+        console.log('[AI] Command has nothing to process');
+        cmdEl?.classList.remove('loading');
+        view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
+        hideAiProgress();
+        return;
+      }
+
       try {
         // Track individual model responses as they complete
         const modelResponses = new Map(); // model -> response text
@@ -5492,6 +5606,41 @@
         if (!result) {
           console.warn('[AI] No result from AI');
           view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
+          return;
+        }
+
+        // Handle 'edits' type commands (comment addressing)
+        if (cmd.type === 'edits') {
+          const edits = result.edits || result[cmd.resultField] || [];
+          if (edits && edits.length > 0) {
+            // Apply edits using the comment syntax module
+            const commentSyntax = mrmd.default?.commentSyntax || mrmd.commentSyntax;
+            const doc = view.state.doc.toString();
+            const changes = [];
+
+            for (const edit of edits) {
+              if (edit.find === '' || edit.find === null) {
+                // Insert at cursor
+                changes.push({ from: context.cursorPos, insert: edit.replace });
+              } else {
+                // Find and replace
+                const idx = doc.indexOf(edit.find);
+                if (idx >= 0) {
+                  changes.push({ from: idx, to: idx + edit.find.length, insert: edit.replace });
+                } else {
+                  console.warn('[AI] Could not find text to replace:', edit.find.slice(0, 50));
+                }
+              }
+            }
+
+            if (changes.length > 0) {
+              view.dispatch({ changes });
+            }
+          }
+
+          // Cancel the loading operation
+          view.dispatch({ effects: ai.cancelAiOperation.of({ id: opId }) });
+          hideAiProgress();
           return;
         }
 
@@ -6149,6 +6298,7 @@
      * Add AI integration extensions to the editor
      * Shows loading shimmer and accept/reject UI for AI operations
      * Also adds long-press 'j' detection to open AI panel
+     * Note: Ctrl-K and comment syntax are added later via addCtrlKAndCommentExtensions()
      * @param {Object} editor - The mrmd editor instance
      */
     function addAiIntegrationToEditor(editor) {
@@ -7248,7 +7398,7 @@ session:
     // THEME MANAGEMENT
     // =========================================================================
 
-    const THEMES = ['github', 'midnight', 'nord', 'daylight'];
+    const THEMES = ['github', 'midnight', 'nord', 'daylight', 'grayscale-dark', 'grayscale-light'];
     let currentThemeIndex = 0;
 
     function applyTheme(themeName) {
