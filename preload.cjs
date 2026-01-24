@@ -186,6 +186,47 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // PTY SESSION SERVICE API (for ```term blocks)
+  // ==========================================================================
+
+  pty: {
+    /**
+     * List all running PTY sessions
+     * @returns {Promise<SessionInfo[]>}
+     */
+    list: () => ipcRenderer.invoke('pty:list'),
+
+    /**
+     * Start a new PTY session (mrmd-pty server)
+     * @param {object} config - Session config { name, cwd, venv? }
+     * @returns {Promise<SessionInfo>}
+     */
+    start: (config) => ipcRenderer.invoke('pty:start', { config }),
+
+    /**
+     * Stop a PTY session
+     * @param {string} sessionName - Session name to stop
+     * @returns {Promise<boolean>}
+     */
+    stop: (sessionName) => ipcRenderer.invoke('pty:stop', { sessionName }),
+
+    /**
+     * Restart a PTY session
+     * @param {string} sessionName - Session name to restart
+     * @returns {Promise<SessionInfo>}
+     */
+    restart: (sessionName) => ipcRenderer.invoke('pty:restart', { sessionName }),
+
+    /**
+     * Get or create PTY session for a document
+     * Returns session info including wsUrl for WebSocket connection
+     * @param {string} documentPath - Path to document
+     * @returns {Promise<{name, cwd, venv?, wsUrl, port, alive, error?} | null>}
+     */
+    forDocument: (documentPath) => ipcRenderer.invoke('pty:forDocument', { documentPath }),
+  },
+
+  // ==========================================================================
   // FILE SERVICE API
   // ==========================================================================
 

@@ -18,7 +18,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Services
-import { ProjectService, SessionService, BashSessionService, FileService, AssetService } from './src/services/index.js';
+import { ProjectService, SessionService, BashSessionService, PtySessionService, FileService, AssetService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
@@ -111,6 +111,7 @@ if (!fs.existsSync(CONFIG_DIR)) {
 const projectService = new ProjectService();
 const sessionService = new SessionService();
 const bashSessionService = new BashSessionService();
+const ptySessionService = new PtySessionService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
 
@@ -965,6 +966,70 @@ ipcMain.handle('bash:forDocument', async (event, { documentPath }) => {
 });
 
 // ============================================================================
+// PTY SESSION SERVICE IPC HANDLERS (for ```term blocks)
+// ============================================================================
+
+// List all pty sessions
+ipcMain.handle('pty:list', () => {
+  return ptySessionService.list();
+});
+
+// Start pty session
+ipcMain.handle('pty:start', async (event, { config }) => {
+  try {
+    return await ptySessionService.start(config);
+  } catch (e) {
+    console.error('[pty:start] Error:', e.message);
+    return { error: e.message };
+  }
+});
+
+// Stop pty session
+ipcMain.handle('pty:stop', async (event, { sessionName }) => {
+  return ptySessionService.stop(sessionName);
+});
+
+// Restart pty session
+ipcMain.handle('pty:restart', async (event, { sessionName }) => {
+  try {
+    return await ptySessionService.restart(sessionName);
+  } catch (e) {
+    console.error('[pty:restart] Error:', e.message);
+    return { error: e.message };
+  }
+});
+
+// Get or create pty session for document
+ipcMain.handle('pty:forDocument', async (event, { documentPath }) => {
+  console.log('[pty:forDocument] Called with:', documentPath);
+  try {
+    const project = await projectService.getProject(documentPath);
+    console.log('[pty:forDocument] Project:', project?.root);
+    if (!project) {
+      console.log('[pty:forDocument] No project found');
+      return null;
+    }
+
+    // Parse frontmatter from document
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    console.log('[pty:forDocument] Calling ptySessionService.getForDocument');
+    const result = await ptySessionService.getForDocument(
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+    console.log('[pty:forDocument] Result:', result);
+    return result;
+  } catch (e) {
+    console.error('[pty:forDocument] Error:', e.message, e.stack);
+    return null;
+  }
+});
+
+// ============================================================================
 // PROJECT SERVICE IPC HANDLERS
 // ============================================================================
 
@@ -1248,6 +1313,7 @@ function createWindow() {
     height: DEFAULT_WINDOW_HEIGHT,
     backgroundColor: DEFAULT_BACKGROUND_COLOR,
     titleBarStyle: 'hiddenInset',
+    icon: path.join(__dirname, 'assets', 'icon-256.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

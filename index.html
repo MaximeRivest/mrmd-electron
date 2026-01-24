@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com">
   <title>mrmd</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/icon-16.png">
 
   <!-- Romantic typography: Courier Prime (typewriter) + EB Garamond (literary) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2333,6 +2335,12 @@
   <!-- Load mrmd-editor -->
   <script src="../mrmd-editor/dist/mrmd.iife.js"></script>
 
+  <!-- Load xterm.js for terminal blocks -->
+  <link rel="stylesheet" href="./node_modules/xterm/css/xterm.css">
+  <script src="./node_modules/xterm/lib/xterm.js"></script>
+  <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  <script src="./node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
+
   <script>
     // =========================================================================
     // STATE
@@ -2354,6 +2362,7 @@
       pythonVenv: null,
       bashPort: null,
       bashSession: null,
+      ptySession: null,  // PTY session for terminal blocks
       aiPort: null,
       currentFile: null,
       projectDir: null,
@@ -4247,6 +4256,16 @@
             enabled: true,
             position: 'line-start',
             buttons: { run: true, stop: true, clear: true },
+            callbacks: {
+              // Terminal launch callback - calls global handler set up by registerPtyWithEditor
+              onLaunchTerminal: (block, blockIndex) => {
+                if (window._mrmdLaunchTerminal) {
+                  window._mrmdLaunchTerminal(block, blockIndex);
+                } else {
+                  console.warn('[cell-controls] Terminal launcher not ready');
+                }
+              },
+            },
           },
           // Run JS in main window context (full DOM/console access)
           javascriptIsolation: 'none',
@@ -4312,6 +4331,9 @@
 
         // Register global bash runtime (always available)
         registerBashWithEditor();
+
+        // Register PTY for terminal blocks (```term)
+        registerPtyWithEditor();
 
       } catch (e) {
         console.error('Error opening file:', e);
@@ -7142,6 +7164,82 @@
         }
       } catch (e) {
         console.error('Error registering bash runtime:', e);
+      }
+    }
+
+    /**
+     * Register PTY session with editor for terminal blocks (```term).
+     * Starts mrmd-pty server and sets up terminal launch callback.
+     */
+    async function registerPtyWithEditor() {
+      console.log('[pty] registerPtyWithEditor called');
+
+      if (!state.editor || !state.currentFile) {
+        console.log('[pty] No editor or currentFile, skipping');
+        return;
+      }
+
+      // Check if electronAPI.pty exists
+      if (!electronAPI.pty) {
+        console.error('[pty] electronAPI.pty not available - restart the app!');
+        return;
+      }
+
+      // Check if terminal functions are available in mrmd
+      if (!mrmd.terminal?.launchTerminal) {
+        console.log('[pty] Terminal functions not available in mrmd');
+        return;
+      }
+
+      try {
+        console.log('[pty] Calling pty.forDocument for:', state.currentFile);
+        // Get or create PTY session for this document
+        const ptyConfig = await electronAPI.pty.forDocument(state.currentFile);
+        console.log('[pty] Got config:', ptyConfig);
+
+        if (!ptyConfig) {
+          console.log('[pty] No PTY session config for this document');
+          return;
+        }
+
+        // Check for errors
+        if (ptyConfig.error) {
+          console.error('[pty] PTY session error:', ptyConfig.error);
+          return;
+        }
+
+        // Store PTY config in state
+        state.ptySession = ptyConfig;
+
+        // Inject terminal overlay styles
+        mrmd.terminal.injectTermWidgetStyles();
+
+        // Create terminal config for launching terminals
+        state.terminalConfig = {
+          filePath: state.currentFile,
+          cwd: ptyConfig.cwd,
+          venv: ptyConfig.venv,
+          baseUrl: ptyConfig.alive ? `http://127.0.0.1:${ptyConfig.port}` : null,
+        };
+
+        // Set up the global terminal launch handler for cell controls
+        // This will be called when user clicks the terminal button on a ```term block
+        window._mrmdLaunchTerminal = (block, blockIndex) => {
+          console.log('[pty] Launching terminal for block:', blockIndex, block);
+          if (state.terminalConfig && state.editor?.view) {
+            mrmd.terminal.launchTerminal(block, state.terminalConfig, state.editor.view);
+          } else {
+            console.error('[pty] Terminal config or editor not available');
+          }
+        };
+
+        if (ptyConfig.alive) {
+          console.log('[pty] Registered PTY with editor, wsUrl:', ptyConfig.wsUrl);
+        } else {
+          console.log('[pty] PTY server not started (auto_start may be false)');
+        }
+      } catch (e) {
+        console.error('[pty] Error registering PTY with editor:', e);
       }
     }
 
