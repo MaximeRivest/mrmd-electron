@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com">
   <title>mrmd</title>
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./assets/icon-16.png">
@@ -30,9 +30,15 @@
       --warning: var(--mrmd-warning, #d29922);
       --error: var(--mrmd-error, #f85149);
 
-      /* Soft interaction colors */
+      /* Soft interaction colors (dark theme default) */
       --hover-bg: rgba(255, 255, 255, 0.04);
       --selected-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Light theme overrides */
+    .light-theme {
+      --hover-bg: rgba(0, 0, 0, 0.04);
+      --selected-bg: rgba(0, 0, 0, 0.06);
     }
 
     html, body {
@@ -41,9 +47,10 @@
       color: var(--text);
       font-family: var(--mrmd-ui-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
       font-size: var(--mrmd-ui-font-size, 13px);
+      font-weight: var(--widget-font-weight, 400);
     }
 
-    /* Custom scrollbar - subtle */
+    /* Custom scrollbar - subtle (dark theme default) */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -60,6 +67,125 @@
     }
     ::-webkit-scrollbar-corner {
       background: transparent;
+    }
+
+    /* Light theme scrollbar */
+    .light-theme ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+    }
+    .light-theme ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    /* =======================================================================
+       OPENRESPONSES THEME - Matches openresponses.org styling
+       Only applies when theme-openresponses class is on body
+       ======================================================================= */
+
+    /* Openresponses theme - slate-50 backgrounds like openresponses.org */
+    body.theme-openresponses {
+      --bg: #f8fafc; /* slate-50 */
+      --bg-secondary: #f8fafc; /* slate-50 */
+      --hover-bg: #f1f5f9; /* slate-100 */
+      --border: #e2e8f0; /* slate-200 */
+      --text: #0f172a; /* slate-900 */
+      --text-muted: #64748b; /* slate-500 */
+      --text-dim: #94a3b8; /* slate-400 */
+      --accent: #ea580c; /* orange-600 */
+    }
+
+    body.theme-openresponses .app {
+      background: #f8fafc !important; /* slate-50 */
+    }
+
+    body.theme-openresponses .nav-sidebar {
+      background: #f8fafc !important; /* slate-50 */
+      border-color: #e2e8f0 !important; /* slate-200 */
+    }
+
+    body.theme-openresponses .toc-sidebar {
+      background: #f8fafc !important; /* slate-50 */
+      border-left: 1px solid #e2e8f0 !important; /* slate-200 */
+    }
+
+    body.theme-openresponses .nav-header {
+      border-color: #e2e8f0 !important; /* slate-200 */
+    }
+
+    body.theme-openresponses .titlebar {
+      background: #f8fafc !important; /* slate-50 */
+      border-color: #e2e8f0 !important; /* slate-200 */
+    }
+
+    body.theme-openresponses .content {
+      background: #f8fafc !important; /* slate-50 */
+    }
+
+    /* Openresponses nav items - matches openresponses.org style */
+    body.theme-openresponses .nav-item {
+      border-left: none !important;
+      border-radius: 0.75rem;
+      margin: 2px 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #64748b; /* slate-500 */
+      background: transparent;
+    }
+
+    body.theme-openresponses .nav-item:hover {
+      background: #f1f5f9 !important; /* slate-100 */
+      color: #334155; /* slate-700 */
+    }
+
+    body.theme-openresponses .nav-item.selected {
+      background: #f1f5f9 !important; /* slate-100 - subtle gray like openresponses.org */
+      color: #0f172a !important; /* slate-900 */
+      border-left: none !important;
+    }
+
+    body.theme-openresponses .nav-item.folder {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: #94a3b8; /* slate-400 */
+      padding: 8px 12px;
+      margin-top: 16px;
+      background: transparent !important;
+      text-transform: uppercase;
+    }
+
+    /* Openresponses TOC - matches openresponses.org style */
+    body.theme-openresponses .toc-header {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #94a3b8; /* slate-400 */
+      padding: 20px 16px 12px 16px;
+    }
+
+    body.theme-openresponses .toc-item {
+      border-left: 1px solid #e2e8f0; /* slate-200 */
+      padding: 4px 0 4px 16px;
+      margin-left: 16px;
+      font-size: 14px;
+      color: #64748b; /* slate-500 */
+      background: transparent !important;
+    }
+
+    body.theme-openresponses .toc-item:hover {
+      color: #334155; /* slate-700 */
+      background: transparent !important;
+    }
+
+    body.theme-openresponses .toc-item.active {
+      color: #ea580c !important; /* orange-600 */
+      border-left: 2px solid #ea580c !important; /* orange-600 */
+      background: transparent !important;
+    }
+
+    /* Status bar for openresponses */
+    body.theme-openresponses .status-bar {
+      background: #f8fafc !important; /* slate-50 */
+      border-color: #e2e8f0 !important;
     }
 
     .app {
@@ -1406,6 +1532,129 @@
       color: var(--text);
     }
 
+    /* Inline "no runtime" prompt - appears below code cells */
+    .no-runtime-prompt {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+      animation: prompt-slide-in 0.2s ease-out;
+    }
+
+    @keyframes prompt-slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
+    .no-runtime-prompt-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .no-runtime-prompt-header svg {
+      width: 16px;
+      height: 16px;
+      color: var(--warning, #f59e0b);
+    }
+
+    .no-runtime-prompt-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .no-runtime-prompt-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .no-runtime-prompt-btn:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--text-muted);
+    }
+
+    .no-runtime-prompt-btn.primary {
+      background: var(--accent, #3b82f6);
+      border-color: var(--accent, #3b82f6);
+      color: white;
+    }
+
+    .no-runtime-prompt-btn.primary:hover {
+      opacity: 0.9;
+    }
+
+    .no-runtime-prompt-btn.secondary {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .no-runtime-prompt-dismiss {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 2px 6px;
+      font-size: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .no-runtime-prompt-dismiss:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .no-runtime-prompt-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .no-runtime-prompt-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent, #3b82f6);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     /* Subtle hover trigger for session config */
     .session-hover-trigger {
       position: absolute;
@@ -1604,6 +1853,22 @@
       font-size: 11px;
       color: var(--text-dim);
       white-space: nowrap;
+    }
+
+    .picker-item-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .picker-item-badge.notebook {
+      background: #f59e0b20;
+      color: #f59e0b;
     }
 
     .picker-preview {
@@ -1858,6 +2123,95 @@
       font-weight: 500;
     }
 
+    /* Notebook Open Dialog */
+    .notebook-dialog {
+      width: 420px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      padding: 24px;
+    }
+
+    .notebook-dialog h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .notebook-dialog p {
+      margin: 0 0 20px 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .notebook-dialog-filename {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      word-break: break-all;
+    }
+
+    .notebook-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .notebook-option {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notebook-option:hover {
+      border-color: var(--accent);
+      background: var(--hover-bg);
+    }
+
+    .notebook-option strong {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .notebook-option span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .notebook-option.convert:hover {
+      border-color: var(--warning);
+    }
+
+    .notebook-dialog-cancel {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notebook-dialog-cancel:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
     /* =========================================================================
        DATA LOSS PREVENTION - Warning Banner
        =========================================================================
@@ -1988,13 +2342,16 @@
       </div>
 
       <div id="editor-container">
-        <!-- Subtle hover trigger for session config -->
+        <!-- Contextual Python status trigger (replaces old "Add notebook config" button) -->
         <div id="session-hover-trigger" class="session-hover-trigger">
-          <button class="session-hover-action" onclick="insertSessionConfig()" title="Add Python notebook configuration">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M8 3v10M3 8h10"/>
-            </svg>
-            Add notebook config
+          <button class="session-hover-action" id="session-hover-btn" onclick="handleSessionHoverClick()" title="Python environment status">
+            <span id="session-hover-icon">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="8" r="7"/>
+                <path d="M8 5v4M8 11v1"/>
+              </svg>
+            </span>
+            <span id="session-hover-text">Python</span>
           </button>
         </div>
         <!-- Setup hints banner (project/venv only) -->
@@ -2332,6 +2689,25 @@
     </div>
   </div>
 
+  <!-- Notebook Open Dialog -->
+  <div class="modal-overlay" id="notebook-dialog-overlay">
+    <div class="notebook-dialog">
+      <h3>Open Jupyter Notebook</h3>
+      <p>Opening <span class="notebook-dialog-filename" id="notebook-dialog-filename"></span></p>
+      <div class="notebook-options">
+        <button class="notebook-option" id="notebook-sync-btn">
+          <strong>Keep as Notebook</strong>
+          <span>Edit in MRMD while keeping the .ipynb synced with Jupyter</span>
+        </button>
+        <button class="notebook-option convert" id="notebook-convert-btn">
+          <strong>Convert to Markdown</strong>
+          <span>Replace the .ipynb file with a .md file (cannot be undone)</span>
+        </button>
+      </div>
+      <button class="notebook-dialog-cancel" id="notebook-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
   <!-- Load mrmd-editor -->
   <script src="../mrmd-editor/dist/mrmd.iife.js"></script>
 
@@ -2382,6 +2758,8 @@
         config: null,         // Resolved session config from Project.resolveSession
         info: null,           // SessionInfo from SessionService (pid, port, etc.)
       },
+      // Notebook sync state: maps shadow .md path to original .ipynb path
+      syncedNotebooks: new Map(),
     };
 
     // =========================================================================
@@ -2448,6 +2826,7 @@
       // Path prefixes trigger path mode
       if (query.match(/^[.~\/]/)) {
         const endsWithMd = query.toLowerCase().endsWith('.md');
+        const endsWithIpynb = query.toLowerCase().endsWith('.ipynb');
         const endsWithSlash = query.endsWith('/');
         const hasExtension = query.includes('.') && !query.endsWith('.');
 
@@ -2465,7 +2844,7 @@
           }
         }
 
-        if (endsWithMd) {
+        if (endsWithMd || endsWithIpynb) {
           return { mode: 'path', mayCreate: true, isFile: true, basePath };
         }
 
@@ -2478,7 +2857,7 @@
 
       // Check if query looks like it wants to create something
       // (no matches and valid filename pattern)
-      const looksLikeFilename = /^[\w-]+\.md$/i.test(query);
+      const looksLikeFilename = /^[\w-]+\.(md|ipynb)$/i.test(query);
       const looksLikeFolderName = /^[\w-]+$/.test(query) && !query.includes('.');
 
       return {
@@ -2912,15 +3291,18 @@
       const selected = index === state.selectedFileIndex ? 'selected' : '';
       const timeAgo = file.opened ? formatTimeAgo(new Date(file.opened)) : '';
       const isFolder = file.isFolder;
+      const isNotebook = file.path.endsWith('.ipynb');
 
       const icon = isFolder ? '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg>' : (file.isRecent ? '·' : '');
-      const classes = `picker-item ${selected} ${isFolder ? 'folder' : ''}`;
+      const classes = `picker-item ${selected} ${isFolder ? 'folder' : ''} ${isNotebook ? 'notebook' : ''}`;
+      const notebookBadge = isNotebook ? '<span class="picker-item-badge notebook">ipynb</span>' : '';
 
       return `
         <div class="${classes}" data-index="${index}" data-path="${file.path}" ${isFolder ? 'data-folder="true"' : ''}
              onclick="selectFileItem(${index})" ondblclick="${isFolder ? 'enterFolder' : 'openSelectedFile'}('${file.path.replace(/'/g, "\\'")}')">
           <span class="picker-item-icon">${icon}</span>
           <span class="picker-item-name">${highlightMatches(file.name, file.nameMatches)}</span>
+          ${notebookBadge}
           <span class="picker-item-path">${highlightMatches(file.dir, file.dirMatches)}</span>
           ${isFolder ? '<span class="picker-item-action">[Tab to browse]</span>' : ''}
           ${timeAgo ? `<span class="picker-item-meta">${timeAgo}</span>` : ''}
@@ -3380,6 +3762,14 @@
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
+
+            // Call pending retry callback if exists (from noRuntime prompt)
+            if (window._pendingRuntimeRetry) {
+              console.log('[venvPicker] Calling pending retry callback');
+              const retryCallback = window._pendingRuntimeRetry;
+              window._pendingRuntimeRetry = null;
+              setTimeout(() => retryCallback(), 100);
+            }
           }
 
           // Refresh runtimes list
@@ -3446,6 +3836,14 @@
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
+
+            // Call pending retry callback if exists (from noRuntime prompt)
+            if (window._pendingRuntimeRetry) {
+              console.log('[attachRuntime] Calling pending retry callback');
+              const retryCallback = window._pendingRuntimeRetry;
+              window._pendingRuntimeRetry = null;
+              setTimeout(() => retryCallback(), 100);
+            }
           }
 
           // Update runtimes panel if open
@@ -3483,6 +3881,14 @@
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered new Python runtime with editor');
+
+            // Call pending retry callback if exists (from noRuntime prompt)
+            if (window._pendingRuntimeRetry) {
+              console.log('[startNewRuntime] Calling pending retry callback');
+              const retryCallback = window._pendingRuntimeRetry;
+              window._pendingRuntimeRetry = null;
+              setTimeout(() => retryCallback(), 100);
+            }
           }
 
           // Refresh runtimes list
@@ -3510,12 +3916,30 @@
         state.runningRuntimes = state.runningRuntimes.filter(r => r.id !== runtimeId);
         filterVenvs(state.venvQuery);
 
-        // If we were using this runtime, clear state
-        if (state.pythonVenv && state.pythonVenv.runtimeId === runtimeId) {
+        // If we were using this runtime, clear state AND unregister from editor
+        if (language === 'python' && state.pythonVenv &&
+            (state.pythonVenv.runtimeId === runtimeId || state.pythonVenv.name === runtimeId)) {
           state.pythonPort = null;
           state.pythonVenv = null;
           updatePythonStatus('', 'python');
+
+          // Unregister from editor so it knows there's no runtime
+          if (state.editor?.unregisterRuntime) {
+            state.editor.unregisterRuntime('python');
+            console.log('[killRuntime] Unregistered Python runtime from editor');
+          }
+        } else if (language === 'bash' && state.bashSession?.name === runtimeId) {
+          state.bashPort = null;
+          state.bashSession = null;
+
+          if (state.editor?.unregisterRuntime) {
+            state.editor.unregisterRuntime('bash');
+            console.log('[killRuntime] Unregistered Bash runtime from editor');
+          }
         }
+
+        // Update hints (may show setup prompt again)
+        updateSetupHints();
       }
     }
 
@@ -4189,6 +4613,100 @@
     }
 
     // =========================================================================
+    // NOTEBOOK HANDLING
+    // =========================================================================
+
+    /**
+     * Show notebook open dialog and return user's choice
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<'convert'|'sync'|null>} User's choice or null if cancelled
+     */
+    function showNotebookDialog(ipynbPath) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('notebook-dialog-overlay');
+        const filenameEl = document.getElementById('notebook-dialog-filename');
+        const convertBtn = document.getElementById('notebook-convert-btn');
+        const syncBtn = document.getElementById('notebook-sync-btn');
+        const cancelBtn = document.getElementById('notebook-cancel-btn');
+
+        // Show filename
+        filenameEl.textContent = ipynbPath.split('/').pop();
+
+        // Cleanup function
+        const cleanup = () => {
+          overlay.classList.remove('visible');
+          convertBtn.onclick = null;
+          syncBtn.onclick = null;
+          cancelBtn.onclick = null;
+          overlay.onclick = null;
+        };
+
+        convertBtn.onclick = () => { cleanup(); resolve('convert'); };
+        syncBtn.onclick = () => { cleanup(); resolve('sync'); };
+        cancelBtn.onclick = () => { cleanup(); resolve(null); };
+
+        // Close on backdrop click
+        overlay.onclick = (e) => {
+          if (e.target === overlay) { cleanup(); resolve(null); }
+        };
+
+        overlay.classList.add('visible');
+      });
+    }
+
+    /**
+     * Convert notebook to markdown (deletes the .ipynb file)
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<string|null>} Path to created .md file, or null if cancelled/failed
+     */
+    async function convertNotebookToMd(ipynbPath) {
+      const confirmed = confirm(
+        'This will convert the notebook to markdown and DELETE the .ipynb file.\n\n' +
+        'This action cannot be undone. Continue?'
+      );
+
+      if (!confirmed) return null;
+
+      try {
+        const result = await electronAPI.notebook.convert(ipynbPath);
+        if (!result.success) {
+          alert('Conversion failed: ' + result.error);
+          return null;
+        }
+        return result.mdPath;
+      } catch (e) {
+        alert('Conversion failed: ' + e.message);
+        return null;
+      }
+    }
+
+    /**
+     * Start notebook sync (creates shadow .md file in .mrmd folder)
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<string|null>} Path to shadow .md file, or null if failed
+     */
+    async function startNotebookSync(ipynbPath) {
+      try {
+        console.log('[notebook] startNotebookSync called with:', ipynbPath);
+        const result = await electronAPI.notebook.startSync(ipynbPath);
+        console.log('[notebook] startSync result:', result);
+        if (!result.success) {
+          alert('Failed to start notebook sync: ' + result.error);
+          return null;
+        }
+
+        // Track the synced notebook
+        console.log('[notebook] Adding to syncedNotebooks: key=', result.shadowPath, 'value=', ipynbPath);
+        state.syncedNotebooks.set(result.shadowPath, ipynbPath);
+
+        return result.shadowPath;
+      } catch (e) {
+        alert('Failed to start notebook sync: ' + e.message);
+        return null;
+      }
+    }
+
+    // =========================================================================
     // OPEN FILE
     // =========================================================================
 
@@ -4196,6 +4714,72 @@
       // Normalize path - remove double slashes
       filePath = filePath.replace(/\/+/g, '/');
       console.log('Opening file:', filePath);
+
+      // Cleanup: Stop any synced notebook bridge if we're switching away from it
+      if (state.currentFile && state.syncedNotebooks.has(state.currentFile)) {
+        const ipynbPath = state.syncedNotebooks.get(state.currentFile);
+        // Only stop if we're not reopening the same notebook
+        let isReopening = false;
+        if (filePath.endsWith('.ipynb') && filePath === ipynbPath) {
+          isReopening = true;
+        }
+        if (!isReopening && filePath !== state.currentFile) {
+          console.log('Stopping notebook sync for:', ipynbPath);
+          await electronAPI.notebook.stopSync(ipynbPath);
+          state.syncedNotebooks.delete(state.currentFile);
+        }
+      }
+
+      // Handle shadow .md files in .mrmd folder - auto-start sync
+      if (filePath.includes('/.mrmd/') && filePath.endsWith('.md')) {
+        const ipynbPath = filePath
+          .replace('/.mrmd/', '/')
+          .replace(/\.md$/, '.ipynb');
+
+        // Check if corresponding .ipynb exists
+        try {
+          const fileInfo = await electronAPI.getFileInfo(ipynbPath);
+          if (fileInfo.success) {
+            console.log('Opening shadow file, starting sync for:', ipynbPath);
+            const shadowPath = await startNotebookSync(ipynbPath);
+            if (shadowPath) {
+              filePath = shadowPath;
+            }
+          }
+        } catch (e) {
+          // .ipynb doesn't exist, just open the .md normally
+          console.log('No corresponding .ipynb found, opening .md directly');
+        }
+      }
+
+      // Handle Jupyter notebooks
+      if (filePath.endsWith('.ipynb')) {
+        // Check if already synced
+        for (const [shadowPath, ipynb] of state.syncedNotebooks) {
+          if (ipynb === filePath) {
+            console.log('Notebook already synced, opening shadow:', shadowPath);
+            filePath = shadowPath;
+            break;
+          }
+        }
+
+        // If still an .ipynb (not already synced), show dialog
+        if (filePath.endsWith('.ipynb')) {
+          const mode = await showNotebookDialog(filePath);
+          if (!mode) return; // Cancelled
+
+          if (mode === 'convert') {
+            const mdPath = await convertNotebookToMd(filePath);
+            if (!mdPath) return; // Conversion failed or cancelled
+            filePath = mdPath;
+          } else {
+            const shadowPath = await startNotebookSync(filePath);
+            if (!shadowPath) return; // Sync failed
+            filePath = shadowPath;
+          }
+        }
+      }
+
       document.getElementById('titlebar-title').textContent = 'Opening...';
 
       try {
@@ -4288,6 +4872,9 @@
         // Add runtime CodeLens extensions for yaml config blocks
         addRuntimeCodeLensToEditor(state.editor);
 
+        // Setup handler for "no runtime" event (shows inline prompt)
+        setupNoRuntimeHandler(state.editor);
+
         // Add AI integration extensions for visual feedback
         addAiIntegrationToEditor(state.editor);
 
@@ -4299,6 +4886,9 @@
 
         // Setup asset URL resolver so images load correctly
         setupAssetResolver(state.editor, filePath);
+
+        // Setup asset handler for saving plots/images from code execution
+        setupExecutionAssetHandler(state.editor, filePath);
 
         // Setup view source handler (F12)
         state.editor.onViewSource(showSource);
@@ -4315,8 +4905,20 @@
 
         // Update UI
         document.getElementById('editor-container').style.display = 'block';
-        document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
-        document.getElementById('status-file').textContent = filePath.replace(/^\/home\/[^/]+/, '~');
+
+        // Show notebook indicator if this is a synced notebook
+        console.log('[notebook] Checking sync status for filePath:', filePath);
+        console.log('[notebook] syncedNotebooks keys:', [...state.syncedNotebooks.keys()]);
+        const isNotebookSync = state.syncedNotebooks.has(filePath);
+        console.log('[notebook] isNotebookSync:', isNotebookSync);
+        if (isNotebookSync) {
+          const ipynbPath = state.syncedNotebooks.get(filePath);
+          document.getElementById('titlebar-title').textContent = ipynbPath.split('/').pop() + ' (synced)';
+          document.getElementById('status-file').textContent = ipynbPath.replace(/^\/home\/[^/]+/, '~') + ' ↔ .md';
+        } else {
+          document.getElementById('titlebar-title').textContent = filePath.split('/').pop();
+          document.getElementById('status-file').textContent = filePath.replace(/^\/home\/[^/]+/, '~');
+        }
 
         // Initialize Table of Contents
         initializeTOC();
@@ -4913,15 +5515,17 @@
      */
     async function refreshRuntimes() {
       try {
-        // Fetch both Python and Bash sessions in parallel
+        // Fetch session service runtimes AND legacy runtimes in parallel
         // Use Promise.allSettled to handle individual failures gracefully
-        const [pythonResult, bashResult] = await Promise.allSettled([
+        const [pythonResult, bashResult, legacyResult] = await Promise.allSettled([
           electronAPI.session.list(),
-          electronAPI.bash.list()
+          electronAPI.bash.list(),
+          electronAPI.listRuntimes()  // Legacy runtime registry
         ]);
 
         const pythonSessions = pythonResult.status === 'fulfilled' ? pythonResult.value : [];
         const bashSessions = bashResult.status === 'fulfilled' ? bashResult.value : [];
+        const legacyRuntimes = legacyResult.status === 'fulfilled' ? (legacyResult.value?.runtimes || []) : [];
 
         if (pythonResult.status === 'rejected') {
           console.warn('[runtimes] Failed to fetch Python sessions:', pythonResult.reason);
@@ -4929,12 +5533,20 @@
         if (bashResult.status === 'rejected') {
           console.warn('[runtimes] Failed to fetch Bash sessions:', bashResult.reason);
         }
+        if (legacyResult.status === 'rejected') {
+          console.warn('[runtimes] Failed to fetch legacy runtimes:', legacyResult.reason);
+        }
 
         console.log('[runtimes] Python sessions:', pythonSessions);
         console.log('[runtimes] Bash sessions:', bashSessions);
+        console.log('[runtimes] Legacy runtimes:', legacyRuntimes);
 
-        // Combine both with language field
+        // Collect all session IDs to avoid duplicates
+        const sessionIds = new Set(pythonSessions.map(s => s.name));
+
+        // Combine all sources with language field
         state.runningRuntimes = [
+          // Session service Python sessions
           ...pythonSessions.filter(s => s.alive).map(s => ({
             id: s.name,
             pid: s.pid,
@@ -4943,6 +5555,16 @@
             alive: s.alive,
             language: 'python'
           })),
+          // Legacy runtimes (avoid duplicates with session service)
+          ...legacyRuntimes.filter(r => r.alive && !sessionIds.has(r.id)).map(r => ({
+            id: r.id,
+            pid: r.pid,
+            port: r.port,
+            venv: r.venv,
+            alive: r.alive,
+            language: 'python'
+          })),
+          // Bash sessions
           ...bashSessions.filter(s => s.alive).map(s => ({
             id: s.name,
             pid: s.pid,
@@ -6200,7 +6822,7 @@
 
       // Subscribe to content changes (debounced)
       let tocUpdateTimeout = null;
-      state.editor.on?.('change', (newContent) => {
+      state.editor.onChange((newContent) => {
         clearTimeout(tocUpdateTimeout);
         tocUpdateTimeout = setTimeout(() => {
           const headings = extractHeadings(newContent);
@@ -6812,6 +7434,118 @@
     }
 
     /**
+     * Setup asset handler for saving generated plots/images from code execution.
+     * When a code cell produces images (matplotlib plots, etc.), this handler:
+     * 1. Fetches the image from the runtime server
+     * 2. Saves it to _assets/generated/ in the project
+     * 3. Returns the relative path for markdown insertion
+     *
+     * @param {Object} editor - The mrmd editor instance
+     * @param {string} documentPath - Absolute path to the current document
+     */
+    function setupExecutionAssetHandler(editor, documentPath) {
+      if (!editor?.execution) {
+        console.warn('[AssetHandler] No execution manager, asset handler disabled');
+        return;
+      }
+
+      const projectRoot = state.project?.root;
+      if (!projectRoot) {
+        console.warn('[AssetHandler] No project root, asset handler disabled');
+        return;
+      }
+
+      // Get document name for relative path computation
+      const docRelativePath = documentPath.replace(projectRoot + '/', '');
+
+      // Set the asset handler on the execution manager
+      editor.execution.assetHandler = async ({ execId, cellIndex, data, eventType, runtimeUrl, mimeType, url }) => {
+        console.log('[AssetHandler] Processing asset:', { execId, eventType, mimeType, url });
+
+        try {
+          // Determine filename and fetch URL
+          let fetchUrl;
+          let filename;
+
+          if (eventType === 'asset' && url) {
+            // Asset event: url is like /mrp/v1/assets/exec-123_0001.png
+            // Extract filename from URL
+            filename = url.split('/').pop();
+            fetchUrl = runtimeUrl ? `${runtimeUrl.replace('/mrp/v1', '')}${url}` : url;
+          } else if (eventType === 'display' && data.data) {
+            // Display event: base64-encoded data
+            const imgData = data.data['image/png'] || data.data['image/jpeg'] || data.data['image/svg+xml'];
+            if (imgData) {
+              // Generate filename based on execId
+              const ext = data.data['image/png'] ? '.png' : data.data['image/jpeg'] ? '.jpg' : '.svg';
+              filename = `${execId}-${Date.now()}${ext}`;
+
+              // Decode base64 and save directly
+              const buffer = Uint8Array.from(atob(imgData), c => c.charCodeAt(0));
+              const result = await window.electronAPI.asset.save(projectRoot, buffer, `generated/${filename}`);
+
+              if (result.error) {
+                console.error('[AssetHandler] Failed to save display asset:', result.error);
+                return null;
+              }
+
+              // Compute relative path from document to asset
+              // Note: result.path is already relative to _assets/ (e.g., "generated/xxx.png")
+              // getRelativePath adds _assets/ prefix internally
+              const relativePath = await window.electronAPI.asset.relativePath(
+                result.path,
+                docRelativePath
+              );
+
+              console.log('[AssetHandler] Saved display asset:', result.path, 'relative:', relativePath);
+              return { assetPath: result.path, relativePath };
+            }
+            return null;
+          } else {
+            console.warn('[AssetHandler] Unknown asset type:', eventType, data);
+            return null;
+          }
+
+          // Fetch from runtime
+          console.log('[AssetHandler] Fetching from:', fetchUrl);
+          const response = await fetch(fetchUrl);
+
+          if (!response.ok) {
+            console.error('[AssetHandler] Failed to fetch asset:', response.status, response.statusText);
+            return null;
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = new Uint8Array(arrayBuffer);
+
+          // Save to _assets/generated/
+          const result = await window.electronAPI.asset.save(projectRoot, buffer, `generated/${filename}`);
+
+          if (result.error) {
+            console.error('[AssetHandler] Failed to save asset:', result.error);
+            return null;
+          }
+
+          // Compute relative path from document to asset
+          // Note: result.path is already relative to _assets/ (e.g., "generated/xxx.png")
+          // getRelativePath adds _assets/ prefix internally
+          const relativePath = await window.electronAPI.asset.relativePath(
+            result.path,
+            docRelativePath
+          );
+
+          console.log('[AssetHandler] Saved asset:', result.path, 'relative:', relativePath, result.deduplicated ? '(deduplicated)' : '');
+          return { assetPath: result.path, relativePath };
+        } catch (err) {
+          console.error('[AssetHandler] Error processing asset:', err);
+          return null;
+        }
+      };
+
+      console.log('[AssetHandler] Execution asset handler installed');
+    }
+
+    /**
      * Add runtime CodeLens extensions to the editor
      * Shows inline controls above yaml config blocks and frontmatter
      * @param {Object} editor - The mrmd editor instance
@@ -7233,6 +7967,25 @@
           }
         };
 
+        // Add terminal widget extension (for inline terminal display)
+        // and keymap (Ctrl+Enter/Shift+Enter to toggle terminal)
+        const terminalExtensions = [];
+
+        if (mrmd.terminal.terminalWidget) {
+          terminalExtensions.push(...mrmd.terminal.terminalWidget(state.terminalConfig));
+        }
+
+        if (mrmd.terminal.terminalKeymap) {
+          terminalExtensions.push(mrmd.terminal.terminalKeymap(state.terminalConfig));
+        }
+
+        if (terminalExtensions.length > 0) {
+          state.editor.view.dispatch({
+            effects: mrmd.codemirror.StateEffect.appendConfig.of(terminalExtensions),
+          });
+          console.log('[pty] Terminal extensions added (widget + keymap)');
+        }
+
         if (ptyConfig.alive) {
           console.log('[pty] Registered PTY with editor, wsUrl:', ptyConfig.wsUrl);
         } else {
@@ -7244,12 +7997,88 @@
     }
 
     /**
-     * Resolve and optionally auto-start session for current project
+     * Try to auto-detect a venv in common locations near the current file.
+     * This enables the "just works" experience without requiring explicit config.
+     *
+     * Checks (in order):
+     * 1. .venv/ in file's directory
+     * 2. venv/ in file's directory
+     * 3. env/ in file's directory
+     * 4. .venv/ in parent directory
      */
-    async function resolveProjectSession() {
-      if (!state.project) {
+    async function tryAutoDetectVenv() {
+      if (!state.currentFile) {
         state.session.config = null;
         updateSessionStatus('none', null);
+        return;
+      }
+
+      const fileDir = state.currentFile.replace(/\/[^/]+$/, '');
+
+      // Check common venv locations
+      const candidatePaths = [
+        `${fileDir}/.venv`,
+        `${fileDir}/venv`,
+        `${fileDir}/env`,
+        `${fileDir.replace(/\/[^/]+$/, '')}/.venv`, // parent dir
+      ];
+
+      for (const venvPath of candidatePaths) {
+        try {
+          // Check if venv exists by looking for bin/python
+          const checkResult = await electronAPI.getFileInfo(`${venvPath}/bin/python`);
+          if (checkResult?.success) {
+            console.log('[auto-detect] Found venv at:', venvPath);
+
+            // Try to start the runtime
+            try {
+              updateSessionStatus('connecting', 'Auto-detected');
+              const startResult = await electronAPI.startPython(venvPath);
+
+              if (startResult?.success) {
+                console.log('[auto-detect] Python runtime started on port:', startResult.port);
+
+                state.pythonPort = startResult.port;
+                state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
+                state.session.config = {
+                  name: 'auto-detected',
+                  venv: venvPath,
+                  autoStart: true,
+                };
+                state.session.info = {
+                  alive: true,
+                  port: startResult.port,
+                  venv: venvPath,
+                };
+
+                updateSessionStatus('connected', 'Auto-detected');
+                registerSessionWithEditor(startResult.port);
+                return;
+              }
+            } catch (e) {
+              console.warn('[auto-detect] Failed to start runtime:', e.message);
+              // Continue checking other paths
+            }
+          }
+        } catch {
+          // Path doesn't exist, try next
+        }
+      }
+
+      // No venv found - that's OK, user can create one on first run
+      console.log('[auto-detect] No venv found in common locations');
+      state.session.config = null;
+      updateSessionStatus('none', null);
+    }
+
+    /**
+     * Resolve and optionally auto-start session for current project
+     * If no project exists, auto-detect common venv locations
+     */
+    async function resolveProjectSession() {
+      // If no project, try auto-detecting venv in common locations
+      if (!state.project) {
+        await tryAutoDetectVenv();
         return;
       }
 
@@ -7305,6 +8134,237 @@
     }
 
     // =========================================================================
+    // NO RUNTIME INLINE PROMPT
+    // =========================================================================
+
+    /**
+     * Current no-runtime prompt state
+     */
+    let noRuntimePrompt = null;
+
+    /**
+     * Show inline prompt when user tries to run code but no runtime is available.
+     * This is the "moment of friction" approach from the Jobs/Ive UX discussion.
+     *
+     * @param {number} cellIndex - Index of the cell that failed
+     * @param {Object} cell - Cell info {language, code, start, end}
+     * @param {string} language - Language that needs a runtime
+     * @param {function} retryCallback - Call this after runtime is set up to retry execution
+     */
+    function showNoRuntimePrompt(cellIndex, cell, language, retryCallback) {
+      // Remove any existing prompt
+      hideNoRuntimePrompt();
+
+      // Create prompt element
+      const prompt = document.createElement('div');
+      prompt.className = 'no-runtime-prompt';
+      prompt.id = 'no-runtime-prompt';
+
+      // Position below the cell (approximate - we'll refine this)
+      const editorRect = document.getElementById('editor').getBoundingClientRect();
+      prompt.style.top = `${editorRect.top + 100}px`;
+
+      // Get language-specific info
+      const langLabel = language === 'python' || language === 'py' || language === 'python3'
+        ? 'Python'
+        : language.charAt(0).toUpperCase() + language.slice(1);
+
+      const isPython = ['python', 'py', 'python3'].includes(language.toLowerCase());
+
+      prompt.innerHTML = `
+        <button class="no-runtime-prompt-dismiss" onclick="hideNoRuntimePrompt()">×</button>
+        <div class="no-runtime-prompt-header">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8 1v8M8 12v2"/>
+            <circle cx="8" cy="8" r="7"/>
+          </svg>
+          <span>No ${langLabel} environment found</span>
+        </div>
+        <div class="no-runtime-prompt-actions" id="no-runtime-actions">
+          ${isPython ? `
+            <button class="no-runtime-prompt-btn primary" onclick="createVenvAndRetry()">
+              Create .venv
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
+              Choose existing...
+            </button>
+          ` : `
+            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
+              Dismiss
+            </button>
+          `}
+        </div>
+      `;
+
+      document.body.appendChild(prompt);
+
+      // Store state for callbacks
+      noRuntimePrompt = {
+        element: prompt,
+        language,
+        cellIndex,
+        cell,
+        retryCallback,
+      };
+
+      console.log('[noRuntime] Showing prompt for', language, 'cell', cellIndex);
+    }
+
+    /**
+     * Hide the no-runtime prompt
+     */
+    function hideNoRuntimePrompt() {
+      const existing = document.getElementById('no-runtime-prompt');
+      if (existing) {
+        existing.remove();
+      }
+      noRuntimePrompt = null;
+    }
+
+    /**
+     * Create .venv in project directory and retry execution
+     */
+    async function createVenvAndRetry() {
+      if (!noRuntimePrompt) return;
+
+      const { retryCallback, language } = noRuntimePrompt;
+      const actionsEl = document.getElementById('no-runtime-actions');
+
+      // Show progress
+      if (actionsEl) {
+        actionsEl.innerHTML = `
+          <div class="no-runtime-prompt-progress">
+            <div class="no-runtime-prompt-spinner"></div>
+            <span>Creating .venv...</span>
+          </div>
+        `;
+      }
+
+      try {
+        const venvPath = state.projectDir
+          ? `${state.projectDir}/.venv`
+          : `${state.currentFile.replace(/\/[^/]+$/, '')}/.venv`;
+
+        console.log('[noRuntime] Creating venv at:', venvPath);
+
+        // Create venv using Python
+        const createResult = await electronAPI.createVenv(venvPath);
+
+        if (!createResult?.success) {
+          throw new Error(createResult?.error || 'Failed to create venv');
+        }
+
+        // Update progress - installing mrmd-python
+        if (actionsEl) {
+          actionsEl.innerHTML = `
+            <div class="no-runtime-prompt-progress">
+              <div class="no-runtime-prompt-spinner"></div>
+              <span>Installing mrmd-python...</span>
+            </div>
+          `;
+        }
+
+        // Install mrmd-python in the venv
+        console.log('[noRuntime] Installing mrmd-python in:', venvPath);
+        const installResult = await electronAPI.installMrmdPython(venvPath);
+
+        if (!installResult?.success) {
+          throw new Error(installResult?.error || 'Failed to install mrmd-python');
+        }
+
+        // Update progress - starting
+        if (actionsEl) {
+          actionsEl.innerHTML = `
+            <div class="no-runtime-prompt-progress">
+              <div class="no-runtime-prompt-spinner"></div>
+              <span>Starting Python...</span>
+            </div>
+          `;
+        }
+
+        // Start runtime
+        const startResult = await electronAPI.startPython(venvPath);
+
+        if (!startResult?.success) {
+          throw new Error(startResult?.error || 'Failed to start Python');
+        }
+
+        // Register with editor
+        if (state.editor && state.currentFile) {
+          const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+          const pythonClient = new mrmd.MRPClient(
+            `http://127.0.0.1:${startResult.port}/mrp/v1`,
+            { session: docName, languages: ['python', 'py', 'python3'] }
+          );
+          state.editor.registerRuntime('python', pythonClient);
+          state.pythonPort = startResult.port;
+          state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
+          console.log('[noRuntime] Python runtime registered');
+        }
+
+        // Refresh runtimes panel and update hints
+        if (typeof refreshRuntimes === 'function') refreshRuntimes();
+        updateSetupHints();
+
+        // Hide prompt and retry
+        hideNoRuntimePrompt();
+
+        if (retryCallback) {
+          console.log('[noRuntime] Retrying execution...');
+          retryCallback();
+        }
+
+      } catch (e) {
+        console.error('[noRuntime] Failed to create venv:', e);
+        if (actionsEl) {
+          actionsEl.innerHTML = `
+            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
+              <span>Failed: ${e.message}</span>
+            </div>
+            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
+              Dismiss
+            </button>
+          `;
+        }
+      }
+    }
+
+    /**
+     * Open venv picker and retry execution after selection
+     */
+    async function chooseVenvAndRetry() {
+      if (!noRuntimePrompt) return;
+
+      const { retryCallback } = noRuntimePrompt;
+
+      // Store retry callback for after venv selection
+      window._pendingRuntimeRetry = retryCallback;
+
+      // Hide the prompt
+      hideNoRuntimePrompt();
+
+      // Show venv picker
+      showVenvPicker();
+    }
+
+    /**
+     * Hook up noRuntime event handler to editor
+     */
+    function setupNoRuntimeHandler(editor) {
+      if (!editor?.execution?.on) {
+        console.log('[noRuntime] Editor execution manager not available');
+        return;
+      }
+
+      editor.execution.on('noRuntime', (cellIndex, cell, language, retryCallback) => {
+        console.log('[noRuntime] Event received for', language);
+        showNoRuntimePrompt(cellIndex, cell, language, retryCallback);
+      });
+
+      console.log('[noRuntime] Handler registered');
+    }
+
+    // =========================================================================
     // SETUP HINTS
     // =========================================================================
 
@@ -7316,6 +8376,10 @@
     function updateSetupHints() {
       const hintsEl = document.getElementById('setup-hints');
       const sessionHoverTrigger = document.getElementById('session-hover-trigger');
+      const hoverBtn = document.getElementById('session-hover-btn');
+      const hoverText = document.getElementById('session-hover-text');
+      const hoverIcon = document.getElementById('session-hover-icon');
+
       if (!hintsEl) return;
 
       const hints = [];
@@ -7344,32 +8408,79 @@
       // Show/hide hints container (for project/venv hints only)
       hintsEl.style.display = hints.length > 0 ? 'block' : 'none';
 
-      // Show/hide subtle session hover trigger (separate from banner)
-      if (sessionHoverTrigger) {
-        if (!hasSessionConfig) {
-          sessionHoverTrigger.classList.add('visible');
-        } else {
+      // Update contextual hover trigger based on Python state
+      if (sessionHoverTrigger && hoverText && hoverIcon) {
+        const hasRuntime = state.pythonPort != null;
+        const hasVenvDetected = state.pythonVenv || state.session?.config?.venv;
+
+        if (hasRuntime) {
+          // Python is running - hide the trigger (everything is working)
           sessionHoverTrigger.classList.remove('visible');
+        } else if (hasVenvDetected) {
+          // Venv exists but not running - show "Start Python"
+          sessionHoverTrigger.classList.add('visible');
+          hoverText.textContent = 'Start Python';
+          hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polygon points="5,3 13,8 5,13" fill="currentColor"/>
+          </svg>`;
+          hoverBtn.title = 'Start Python runtime';
+        } else if (!hasSessionConfig) {
+          // No config, no venv - show contextual prompt
+          // But only if this looks like a Python-using document
+          const doc = state.editor?.view?.state.doc.toString() || '';
+          const hasPythonCode = /```python|```py/.test(doc);
+
+          if (hasPythonCode) {
+            sessionHoverTrigger.classList.add('visible');
+            hoverText.textContent = 'Setup Python';
+            hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="8" cy="8" r="7"/>
+              <path d="M8 5v4M8 11v1"/>
+            </svg>`;
+            hoverBtn.title = 'Set up Python environment';
+          } else {
+            // No Python code - hide trigger
+            sessionHoverTrigger.classList.remove('visible');
+          }
+        } else {
+          // Has config but no venv detected - venv might be missing
+          sessionHoverTrigger.classList.add('visible');
+          hoverText.textContent = 'Create .venv';
+          hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8 3v10M3 8h10"/>
+          </svg>`;
+          hoverBtn.title = 'Create Python virtual environment';
         }
       }
     }
 
     /**
      * Check if current document has session config in frontmatter
+     * Supports both verbose (session:) and minimal syntax (python:, bash:, etc.)
      */
     function checkDocumentHasSessionConfig() {
       if (!state.editor?.view) return false;
 
       const doc = state.editor.view.state.doc.toString();
-      // Check for session: or python: in yaml frontmatter
+
+      // Patterns for both verbose and minimal syntax
+      // Verbose: session:
+      // Minimal: python:, bash:, node:, julia:, r:, term:
+      const runtimePatterns = ['session:', 'python:', 'bash:', 'node:', 'julia:', 'r:', 'term:'];
+
+      // Check for frontmatter
       const frontmatterMatch = doc.match(/^---\n([\s\S]*?)\n---/);
       if (frontmatterMatch) {
         const yaml = frontmatterMatch[1];
-        return yaml.includes('session:') || yaml.includes('python:');
+        return runtimePatterns.some(p => yaml.includes(p));
       }
 
       // Also check for ```yaml config blocks with session
-      return doc.includes('```yaml') && (doc.includes('session:') || doc.includes('python:'));
+      if (doc.includes('```yaml')) {
+        return runtimePatterns.some(p => doc.includes(p));
+      }
+
+      return false;
     }
 
     /**
@@ -7434,7 +8545,56 @@ assets:
     }
 
     /**
-     * Insert session config at the top of the document
+     * Handle contextual click on the session hover button.
+     * Action depends on current state:
+     * - If venv exists but not running: start Python
+     * - If no venv: create one
+     * - If no config: show setup prompt
+     */
+    async function handleSessionHoverClick() {
+      const hasRuntime = state.pythonPort != null;
+      const hasVenvDetected = state.pythonVenv || state.session?.config?.venv;
+      const hasSessionConfig = checkDocumentHasSessionConfig();
+
+      if (hasRuntime) {
+        // Already running - nothing to do
+        return;
+      }
+
+      if (hasVenvDetected) {
+        // Venv exists but not running - start it
+        const venvPath = state.pythonVenv?.path || state.session?.config?.venv;
+        if (venvPath) {
+          try {
+            const hoverText = document.getElementById('session-hover-text');
+            if (hoverText) hoverText.textContent = 'Starting...';
+
+            const startResult = await electronAPI.startPython(venvPath);
+            if (startResult?.success) {
+              state.pythonPort = startResult.port;
+              state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
+              updateSessionStatus('connected', 'Started');
+              registerSessionWithEditor(startResult.port);
+              updateSetupHints();
+            }
+          } catch (e) {
+            console.error('Failed to start Python:', e);
+          }
+        }
+      } else if (!hasSessionConfig) {
+        // No config, no venv - show inline prompt (same as noRuntime handler)
+        const doc = state.editor?.view?.state.doc.toString() || '';
+        const cell = { language: 'python', code: '' };
+        showNoRuntimePrompt(0, cell, 'python', null);
+      } else {
+        // Has config but no venv - create one
+        await createVenvAndRetry();
+      }
+    }
+
+    /**
+     * Insert session config at the top of the document.
+     * Uses minimal frontmatter syntax: python: .venv
      */
     function insertSessionConfig() {
       if (!state.editor?.view) return;
@@ -7442,61 +8602,46 @@ assets:
       const view = state.editor.view;
       const doc = view.state.doc.toString();
 
-      // Default session config
-      const projectName = state.project?.config?.name || 'default';
-      const sessionConfig = `\`\`\`yaml
-session:
-  python:
-    name: "${projectName}:default"
-    venv: .venv
-\`\`\`
+      // Check if document already has frontmatter
+      if (doc.startsWith('---\n')) {
+        // Has frontmatter - add python: .venv line to it
+        const endIndex = doc.indexOf('\n---', 3);
+        if (endIndex !== -1) {
+          // Check if python: already exists
+          const frontmatter = doc.slice(4, endIndex);
+          if (!frontmatter.includes('python:') && !frontmatter.includes('session:')) {
+            // Insert python: .venv before closing ---
+            const insertPos = endIndex;
+            view.dispatch({
+              changes: { from: insertPos, insert: 'python: .venv\n' },
+            });
+          }
+        }
+      } else {
+        // No frontmatter - add minimal frontmatter at the top
+        const minimalFrontmatter = `---
+python: .venv
+---
 
 `;
-
-      // Check if document already starts with --- (frontmatter) or ```yaml
-      let insertPos = 0;
-      if (doc.startsWith('---\n')) {
-        // Has frontmatter, insert after it
-        const endMatch = doc.match(/^---\n[\s\S]*?\n---\n/);
-        if (endMatch) {
-          insertPos = endMatch[0].length;
-        }
-      } else if (doc.startsWith('# ')) {
-        // Has title, insert after first line
-        const firstNewline = doc.indexOf('\n');
-        if (firstNewline > 0) {
-          insertPos = firstNewline + 1;
-        }
+        view.dispatch({
+          changes: { from: 0, insert: minimalFrontmatter },
+          selection: { anchor: minimalFrontmatter.length },
+        });
       }
-
-      view.dispatch({
-        changes: { from: insertPos, insert: sessionConfig },
-        selection: { anchor: insertPos + sessionConfig.length },
-      });
 
       // Update hints
       setTimeout(updateSetupHints, 100);
     }
 
-    /**
-     * Show venv picker (reuse existing functionality)
-     */
-    function showVenvPicker() {
-      // Trigger the runtime picker if available
-      const statusBar = document.querySelector('.session-status');
-      if (statusBar) {
-        statusBar.click();
-      } else {
-        // Fallback: show file picker
-        showFilePicker();
-      }
-    }
+    // Note: showVenvPicker() is defined earlier in the VENV PICKER section (line ~3488)
+    // It shows the proper venv discovery overlay
 
     // =========================================================================
     // THEME MANAGEMENT
     // =========================================================================
 
-    const THEMES = ['github', 'midnight', 'nord', 'daylight', 'grayscale-dark', 'grayscale-light'];
+    const THEMES = ['github', 'midnight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
     let currentThemeIndex = 0;
 
     function applyTheme(themeName) {
@@ -7504,6 +8649,17 @@ session:
       if (!theme) {
         console.error('Theme not found:', themeName);
         return;
+      }
+
+      // Inject font-face if theme has one
+      if (theme.fontFace) {
+        let fontStyle = document.getElementById('mrmd-theme-fonts');
+        if (!fontStyle) {
+          fontStyle = document.createElement('style');
+          fontStyle.id = 'mrmd-theme-fonts';
+          document.head.insertBefore(fontStyle, document.head.firstChild);
+        }
+        fontStyle.textContent = theme.fontFace;
       }
 
       // Apply all theme variables to :root
@@ -7514,13 +8670,27 @@ session:
         }
       }
 
-      // Update status bar
-      document.getElementById('status-theme').textContent = themeName;
+      // Set body class for light/dark mode (affects scrollbars, etc.)
+      document.body.classList.toggle('light-theme', theme.isDark === false);
+      document.body.classList.toggle('dark-theme', theme.isDark !== false);
+
+      // Add theme-specific class for targeted styling
+      THEMES.forEach(t => document.body.classList.remove(`theme-${t}`));
+      document.body.classList.add(`theme-${themeName}`);
+
+      // Update status bar and settings panel
+      const statusThemeEl = document.getElementById('status-theme');
+      const settingsThemeEl = document.getElementById('settings-theme');
+      if (statusThemeEl) statusThemeEl.textContent = themeName;
+      if (settingsThemeEl) settingsThemeEl.textContent = themeName;
 
       // Update editor if exists
       if (state.editor && state.editor.setTheme) {
         state.editor.setTheme(themeName);
       }
+
+      // Dispatch theme change event for terminal and other listeners
+      document.dispatchEvent(new CustomEvent('mrmd-theme-change', { detail: { theme: themeName } }));
 
       // Save preference
       localStorage.setItem('mrmd-theme', themeName);

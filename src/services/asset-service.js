@@ -247,16 +247,22 @@ class AssetService {
   }
 
   /**
-   * Generate a unique path for a new asset
+   * Generate a unique path for a new asset.
+   * Preserves directory structure (e.g., 'generated/plot.png' stays in 'generated/').
    */
   async uniquePath(assetsDir, filename) {
     const ext = path.extname(filename);
+    const dir = path.dirname(filename);
     const base = path.basename(filename, ext);
+
+    // Preserve directory structure
+    const prefix = dir !== '.' ? dir + '/' : '';
+
     let candidate = filename;
     let counter = 1;
 
     while (fs.existsSync(path.join(assetsDir, candidate))) {
-      candidate = `${base}-${counter}${ext}`;
+      candidate = `${prefix}${base}-${counter}${ext}`;
       counter++;
     }
 

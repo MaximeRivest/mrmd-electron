@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFileInfo: (filePath) => ipcRenderer.invoke('get-file-info', { filePath }),
 
   // Python management (legacy - use session.* for projects)
+  createVenv: (venvPath) => ipcRenderer.invoke('create-venv', { venvPath }),
   installMrmdPython: (venvPath) => ipcRenderer.invoke('install-mrmd-python', { venvPath }),
   startPython: (venvPath, forceNew = false) => ipcRenderer.invoke('start-python', { venvPath, forceNew }),
 
@@ -224,6 +225,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
      * @returns {Promise<{name, cwd, venv?, wsUrl, port, alive, error?} | null>}
      */
     forDocument: (documentPath) => ipcRenderer.invoke('pty:forDocument', { documentPath }),
+  },
+
+  // ==========================================================================
+  // NOTEBOOK (JUPYTER) API
+  // ==========================================================================
+
+  notebook: {
+    /**
+     * Convert a Jupyter notebook to markdown (deletes the .ipynb file)
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<{ success, mdPath?, error? }>}
+     */
+    convert: (ipynbPath) => ipcRenderer.invoke('notebook:convert', { ipynbPath }),
+
+    /**
+     * Start syncing a notebook (creates shadow .md in .mrmd folder)
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<{ success, shadowPath?, syncPort?, error? }>}
+     */
+    startSync: (ipynbPath) => ipcRenderer.invoke('notebook:startSync', { ipynbPath }),
+
+    /**
+     * Stop syncing a notebook
+     * @param {string} ipynbPath - Path to the .ipynb file
+     * @returns {Promise<{ success }>}
+     */
+    stopSync: (ipynbPath) => ipcRenderer.invoke('notebook:stopSync', { ipynbPath }),
   },
 
   // ==========================================================================

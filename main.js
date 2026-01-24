@@ -23,7 +23,7 @@ import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from './src/utils/index.js';
-import { getEnvInfo, installMrmdPython } from './src/utils/index.js';
+import { getEnvInfo, installMrmdPython, createVenv } from './src/utils/index.js';
 import {
   CONFIG_DIR,
   RECENT_FILE,
@@ -244,13 +244,15 @@ function computeDirHash(dir) {
 
 function scanFiles(searchDir, callback) {
   // Use find (universally available)
+  // Find both .md and .ipynb files, excluding system folders
   const proc = spawn('find', [
     searchDir,
     '-maxdepth', String(FILE_SCAN_MAX_DEPTH),
     '-type', 'f',
-    '-name', '*.md',
+    '(', '-name', '*.md', '-o', '-name', '*.ipynb', ')',
     '-not', '-path', '*/node_modules/*',
     '-not', '-path', '*/.git/*',
+    '-not', '-path', '*/.mrmd/*',
   ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
   let buffer = '';
@@ -538,9 +540,16 @@ async function startPythonRuntime(venvPath, windowId, forceNew = false) {
   const port = await findFreePort();
 
   // Generate runtime ID from venv path (e.g., "notemrmd-venv" or "adaptersv2-venv")
-  const venvName = path.basename(venvPath);
-  const projectName = path.basename(path.dirname(venvPath));
-  let runtimeId = `${projectName}-${venvName}`.replace(/[^a-zA-Z0-9-]/g, '-');
+  // Strip leading dots, sanitize, collapse dashes, strip leading/trailing dashes
+  const venvName = path.basename(venvPath).replace(/^\.+/, '') || 'venv';
+  const projectName = path.basename(path.dirname(venvPath)).replace(/^\.+/, '') || 'project';
+  let runtimeId = `${projectName}-${venvName}`
+    .replace(/[^a-zA-Z0-9-]/g, '-')  // Replace invalid chars with dash
+    .replace(/-+/g, '-')              // Collapse multiple dashes
+    .replace(/^-|-$/g, '');           // Strip leading/trailing dashes
+
+  // Ensure we have a valid ID
+  if (!runtimeId) runtimeId = 'python-runtime';
 
   const mrmdPythonPath = path.join(venvPath, 'bin', 'mrmd-python');
 
@@ -806,6 +815,19 @@ ipcMain.handle('get-file-info', async (event, { filePath }) => {
   }
 });
 
+// Create a new virtual environment
+ipcMain.handle('create-venv', async (event, { venvPath }) => {
+  try {
+    console.log('[main] Creating venv at:', venvPath);
+    await createVenv(venvPath);
+    console.log('[main] Venv created successfully');
+    return { success: true };
+  } catch (e) {
+    console.error('[main] Failed to create venv:', e);
+    return { success: false, error: e.message };
+  }
+});
+
 // Install mrmd-python (LEGACY - session:start auto-installs for projects)
 ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
   logDeprecation('install-mrmd-python', 'session:start (auto-installs)');
@@ -899,6 +921,112 @@ ipcMain.handle('get-ai', async () => {
   } catch (e) {
     return { success: false, error: e.message };
   }
+});
+
+// ============================================================================
+// NOTEBOOK (JUPYTER) IPC HANDLERS
+// ============================================================================
+
+// Active Jupyter bridges: ipynbPath -> { bridge, shadowPath, refCount }
+const jupyterBridges = new Map();
+
+// Convert notebook to markdown (deletes the .ipynb file)
+ipcMain.handle('notebook:convert', async (event, { ipynbPath }) => {
+  try {
+    const { ipynbToMarkdown, parseIpynb } = await import('mrmd-jupyter-bridge');
+
+    const content = fs.readFileSync(ipynbPath, 'utf8');
+    const { notebook, error } = parseIpynb(content);
+
+    if (error) {
+      return { success: false, error: `Failed to parse notebook: ${error}` };
+    }
+
+    const markdown = ipynbToMarkdown(notebook);
+    const mdPath = ipynbPath.replace(/\.ipynb$/, '.md');
+
+    // Write markdown file
+    fs.writeFileSync(mdPath, markdown, 'utf8');
+
+    // Delete the notebook
+    fs.unlinkSync(ipynbPath);
+
+    console.log(`[notebook:convert] Converted ${ipynbPath} to ${mdPath}`);
+
+    return { success: true, mdPath };
+  } catch (e) {
+    console.error('[notebook:convert] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+// Start notebook sync (creates shadow .md in .mrmd folder)
+ipcMain.handle('notebook:startSync', async (event, { ipynbPath }) => {
+  try {
+    // Check if already synced
+    if (jupyterBridges.has(ipynbPath)) {
+      const entry = jupyterBridges.get(ipynbPath);
+      entry.refCount++;
+      console.log(`[notebook:startSync] Reusing bridge for ${ipynbPath}`);
+      return { success: true, shadowPath: entry.shadowPath };
+    }
+
+    const { JupyterBridge } = await import('mrmd-jupyter-bridge');
+
+    // Compute shadow path in .mrmd folder
+    const dir = path.dirname(ipynbPath);
+    const base = path.basename(ipynbPath, '.ipynb');
+    const mrmdDir = path.join(dir, '.mrmd');
+    const shadowPath = path.join(mrmdDir, `${base}.md`);
+
+    // Ensure .mrmd directory exists
+    if (!fs.existsSync(mrmdDir)) {
+      fs.mkdirSync(mrmdDir, { recursive: true });
+    }
+
+    // Get or start sync server for the .mrmd folder
+    // This must match where the editor opens the shadow file from
+    const sync = await getSyncServer(mrmdDir);
+
+    // Create and start the bridge
+    const bridge = new JupyterBridge(
+      `ws://127.0.0.1:${sync.port}`,
+      ipynbPath,
+      {
+        name: 'jupyter-bridge',
+        mdPath: shadowPath,
+      }
+    );
+
+    await bridge.start();
+
+    const entry = { bridge, shadowPath, refCount: 1 };
+    jupyterBridges.set(ipynbPath, entry);
+
+    console.log(`[notebook:startSync] Started bridge for ${ipynbPath} -> ${shadowPath}`);
+
+    return { success: true, shadowPath, syncPort: sync.port };
+  } catch (e) {
+    console.error('[notebook:startSync] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+// Stop notebook sync
+ipcMain.handle('notebook:stopSync', async (event, { ipynbPath }) => {
+  const entry = jupyterBridges.get(ipynbPath);
+  if (!entry) {
+    return { success: true }; // Already stopped
+  }
+
+  entry.refCount--;
+  if (entry.refCount <= 0) {
+    entry.bridge.stop();
+    jupyterBridges.delete(ipynbPath);
+    console.log(`[notebook:stopSync] Stopped bridge for ${ipynbPath}`);
+  }
+
+  return { success: true };
 });
 
 // ============================================================================
@@ -1366,6 +1494,13 @@ app.on('window-all-closed', () => {
 
   // Shutdown bash sessions
   bashSessionService.shutdown();
+
+  // Shutdown Jupyter bridges
+  for (const [ipynbPath, entry] of jupyterBridges) {
+    console.log(`[cleanup] Stopping Jupyter bridge for ${ipynbPath}`);
+    entry.bridge.stop();
+  }
+  jupyterBridges.clear();
 
   for (const [, server] of syncServers) {
     if (server.owned && server.proc) {
