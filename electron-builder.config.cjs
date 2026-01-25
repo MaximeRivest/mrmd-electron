@@ -46,25 +46,25 @@ module.exports = {
     {
       from: "../mrmd-sync",
       to: "mrmd-sync",
-      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     },
     // mrmd-monitor (execution monitor)
     {
       from: "../mrmd-monitor",
       to: "mrmd-monitor",
-      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     },
     // mrmd-project (project logic library)
     {
       from: "../mrmd-project",
       to: "mrmd-project",
-      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+      filter: ["package.json", "src/**", "node_modules/**"]
     },
     // mrmd-jupyter-bridge (notebook sync)
     {
       from: "../mrmd-jupyter-bridge",
       to: "mrmd-jupyter-bridge",
-      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     }
   ],
 
