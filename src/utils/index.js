@@ -4,3 +4,4 @@
 
 export * from './network.js';
 export * from './python.js';
+export * from './uv-installer.js';

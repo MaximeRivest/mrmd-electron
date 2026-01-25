@@ -23,7 +23,7 @@ import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from './src/utils/index.js';
-import { getEnvInfo, installMrmdPython, createVenv } from './src/utils/index.js';
+import { getEnvInfo, installMrmdPython, createVenv, ensureUv, getUvVersion } from './src/utils/index.js';
 import {
   CONFIG_DIR,
   RECENT_FILE,
@@ -40,6 +40,8 @@ import {
   DEFAULT_BACKGROUND_COLOR,
   SYSTEM_PYTHON_PATHS,
   CONDA_PATHS,
+  APP_VERSION,
+  PYTHON_DEPS,
 } from './src/config.js';
 
 // ESM __dirname equivalent
@@ -692,6 +694,42 @@ function logDeprecation(handler, replacement) {
 // Get home directory
 ipcMain.handle('get-home-dir', () => {
   return os.homedir();
+});
+
+// Get system/app info
+ipcMain.handle('system:info', async () => {
+  const { findUv, getUvVersion } = await import('./src/utils/uv-installer.js');
+  const uvPath = findUv();
+
+  return {
+    appVersion: APP_VERSION,
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version,
+    pythonDeps: PYTHON_DEPS,
+    uv: uvPath ? {
+      installed: true,
+      path: uvPath,
+      version: getUvVersion(uvPath)
+    } : {
+      installed: false,
+      path: null,
+      version: null
+    }
+  };
+});
+
+// Ensure uv is installed (trigger auto-install from renderer)
+ipcMain.handle('system:ensureUv', async () => {
+  try {
+    const uvPath = await ensureUv({
+      onProgress: (stage, detail) => console.log(`[uv] ${stage}: ${detail}`)
+    });
+    const version = getUvVersion(uvPath);
+    return { success: true, path: uvPath, version };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 });
 
 // Shell utilities
@@ -1464,10 +1502,27 @@ function createWindow() {
 // APP LIFECYCLE
 // ============================================================================
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   console.log('='.repeat(50));
-  console.log('mrmd-electron starting...');
+  console.log(`mrmd-electron v${APP_VERSION} starting...`);
   console.log('='.repeat(50));
+
+  // Ensure uv is installed (auto-install if missing)
+  // This is done early so Python package installation is always fast
+  try {
+    console.log('[startup] Checking uv installation...');
+    const uvPath = await ensureUv({
+      onProgress: (stage, detail) => console.log(`[startup] uv ${stage}: ${detail}`)
+    });
+    const uvVersion = getUvVersion(uvPath);
+    console.log(`[startup] uv ready: ${uvPath} (v${uvVersion})`);
+  } catch (e) {
+    console.error('[startup] WARNING: Failed to ensure uv:', e.message);
+    console.error('[startup] Python package installation may be slower without uv');
+  }
+
+  // Log Python deps for this version
+  console.log('[startup] Python dependencies:', Object.entries(PYTHON_DEPS).map(([k, v]) => `${k}${v}`).join(', '));
 
   createWindow();
 

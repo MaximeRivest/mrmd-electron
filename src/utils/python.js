@@ -8,91 +8,82 @@ import { spawn, execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { UV_PATHS } from '../config.js';
+import { PYTHON_DEPS, getPythonInstallArgs } from '../config.js';
+import { findUv, ensureUv } from './uv-installer.js';
 
-/**
- * Find uv binary in common locations
- *
- * @returns {string|null} Path to uv or null if not found
- */
-export function findUv() {
-  return findUvSync();
-}
+// Re-export for backwards compatibility
+export { findUv, ensureUv };
 
 /**
  * Find uv binary (sync version for use in constructors)
- *
+ * @deprecated Use findUv from uv-installer.js instead
  * @returns {string|null} Path to uv or null if not found
  */
 export function findUvSync() {
-  // Check known locations
-  for (const loc of UV_PATHS) {
-    if (fs.existsSync(loc)) {
-      return loc;
-    }
-  }
-
-  // Try PATH via 'which'
-  try {
-    const result = execSync('which uv', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
-    if (result && fs.existsSync(result)) {
-      return result;
-    }
-  } catch {
-    // uv not in PATH (expected if not installed)
-  }
-
-  return null;
+  return findUv();
 }
 
 /**
- * Install mrmd-python in a virtual environment
+ * Install all required Python packages in a virtual environment
  *
- * Tries uv first (preferred), falls back to pip.
+ * Uses uv (auto-installed if missing). Installs packages according to
+ * the version compatibility matrix in config.js.
  *
  * @param {string} venvPath - Path to the virtual environment
  * @param {object} options - Options
  * @param {string} options.localDev - Local development path (from MRMD_PYTHON_DEV env)
- * @returns {Promise<{ success: boolean }>}
+ * @param {boolean} options.fullInstall - Install all packages including optional (default: true)
+ * @param {function} options.onProgress - Progress callback (stage, detail)
+ * @returns {Promise<{ success: boolean, packages: string[] }>}
  */
 export async function installMrmdPython(venvPath, options = {}) {
-  const { localDev = process.env.MRMD_PYTHON_DEV } = options;
+  const {
+    localDev = process.env.MRMD_PYTHON_DEV,
+    fullInstall = true,
+    onProgress
+  } = options;
+
+  const report = (stage, detail) => {
+    console.log(`[python] ${stage}: ${detail}`);
+    if (onProgress) onProgress(stage, detail);
+  };
 
   const pythonPath = path.join(venvPath, 'bin', 'python');
-  const pipPath = path.join(venvPath, 'bin', 'pip');
 
   // Validate venv exists
   if (!fs.existsSync(pythonPath)) {
     throw new Error(`Python not found at ${pythonPath}. Is this a valid venv?`);
   }
 
-  // Try uv first (faster), fall back to pip
-  const uvPath = findUvSync();
-  let cmd, args;
+  // Ensure uv is installed (auto-install if missing)
+  report('checking', 'uv installation');
+  const uvPath = await ensureUv({
+    onProgress: (stage, detail) => report(`uv-${stage}`, detail)
+  });
 
-  if (uvPath) {
-    cmd = uvPath;
-    args = ['pip', 'install', '--python', pythonPath];
-  } else if (fs.existsSync(pipPath)) {
-    cmd = pipPath;
-    args = ['install'];
-  } else {
-    throw new Error(`Neither uv nor pip found for ${venvPath}`);
-  }
+  // Build package list from version matrix
+  const packages = [];
 
-  // Add package to install
   if (localDev) {
-    args.push('-e', localDev);
-    console.log('[python] Installing mrmd-python from local:', localDev);
+    // Development mode: install from local path
+    packages.push('-e', localDev);
+    report('mode', 'local development');
   } else {
-    args.push('mrmd-python');
-    console.log('[python] Installing mrmd-python from PyPI');
+    // Production: install from PyPI with version constraints
+    const installArgs = getPythonInstallArgs();
+    packages.push(...installArgs);
+    report('mode', `PyPI (${installArgs.length} packages)`);
   }
+
+  // Run uv pip install
+  const args = ['pip', 'install', '--python', pythonPath, ...packages];
+
+  report('installing', packages.filter(p => !p.startsWith('-')).join(', '));
 
   return new Promise((resolve, reject) => {
-    console.log(`[python] Running: ${cmd} ${args.join(' ')}`);
+    console.log(`[python] Running: ${uvPath} ${args.join(' ')}`);
 
-    const proc = spawn(cmd, args, {
+    const proc = spawn(uvPath, args, {
       cwd: path.dirname(venvPath),
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, VIRTUAL_ENV: venvPath },
@@ -103,26 +94,40 @@ export async function installMrmdPython(venvPath, options = {}) {
 
     proc.stdout.on('data', (d) => {
       stdout += d.toString();
-      console.log('[pip]', d.toString().trim());
+      const line = d.toString().trim();
+      if (line) console.log('[uv]', line);
     });
 
     proc.stderr.on('data', (d) => {
       stderr += d.toString();
-      console.error('[pip]', d.toString().trim());
+      const line = d.toString().trim();
+      if (line) console.error('[uv]', line);
     });
 
     proc.on('error', (e) => {
-      reject(new Error(`Failed to run ${cmd}: ${e.message}`));
+      reject(new Error(`Failed to run uv: ${e.message}`));
     });
 
     proc.on('close', (code) => {
       if (code === 0) {
-        resolve({ success: true });
+        report('complete', 'all packages installed');
+        resolve({
+          success: true,
+          packages: Object.keys(PYTHON_DEPS)
+        });
       } else {
-        reject(new Error(`pip install failed (code ${code}): ${(stderr || stdout).slice(-500)}`));
+        reject(new Error(`uv pip install failed (code ${code}): ${(stderr || stdout).slice(-500)}`));
       }
     });
   });
+}
+
+/**
+ * Install mrmd-python only (legacy function for backwards compatibility)
+ * @deprecated Use installMrmdPython with fullInstall option
+ */
+export async function installMrmdPythonOnly(venvPath, options = {}) {
+  return installMrmdPython(venvPath, { ...options, fullInstall: false });
 }
 
 /**

@@ -210,3 +210,68 @@ export const UNORDERED_FILES = new Set([
   '.gitignore',
   '.gitattributes',
 ]);
+
+// ============================================================================
+// VERSION COMPATIBILITY MATRIX
+// ============================================================================
+// Defines which Python package versions are compatible with this electron app.
+// Updated on each release. Uses pip version specifiers.
+
+/**
+ * Current mrmd-electron version
+ */
+export const APP_VERSION = '0.1.0';
+
+/**
+ * Python package version requirements for this electron version.
+ * These are installed via uv/pip when user sets up a venv.
+ */
+export const PYTHON_DEPS = {
+  // Core runtime - required
+  'mrmd-python': '>=0.3.7,<0.4',
+
+  // AI features - required for full experience
+  'mrmd-ai': '>=0.1.0,<0.2',
+
+  // Orchestrator (optional, for advanced multi-runtime setups)
+  // 'mrmd': '>=0.2.0,<0.3',
+};
+
+/**
+ * Get pip install args for all required Python packages
+ * @returns {string[]} Array of package specifiers
+ */
+export function getPythonInstallArgs() {
+  return Object.entries(PYTHON_DEPS).map(
+    ([pkg, version]) => `${pkg}${version}`
+  );
+}
+
+// ============================================================================
+// UV AUTO-INSTALL
+// ============================================================================
+
+/**
+ * uv download URLs by platform
+ * Updated from: https://github.com/astral-sh/uv/releases
+ */
+export const UV_DOWNLOAD_URLS = {
+  'linux-x64': 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-gnu.tar.gz',
+  'linux-arm64': 'https://github.com/astral-sh/uv/releases/latest/download/uv-aarch64-unknown-linux-gnu.tar.gz',
+  'darwin-x64': 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-apple-darwin.tar.gz',
+  'darwin-arm64': 'https://github.com/astral-sh/uv/releases/latest/download/uv-aarch64-apple-darwin.tar.gz',
+  'win32-x64': 'https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip',
+};
+
+/**
+ * Default uv install location (user-local)
+ */
+export const UV_INSTALL_DIR = path.join(os.homedir(), '.local', 'bin');
+
+/**
+ * Path where uv will be installed
+ */
+export const UV_INSTALL_PATH = path.join(
+  UV_INSTALL_DIR,
+  process.platform === 'win32' ? 'uv.exe' : 'uv'
+);

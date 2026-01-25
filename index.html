@@ -4888,13 +4888,20 @@
           javascriptIsolation: 'none',
         };
 
+        // Create JavaScript/HTML/CSS runtime (always available - runs in browser)
+        // Isolation: 'none' = main window context (full DOM access), 'iframe' = sandboxed
+        const jsRuntime = mrmd.createJavaScriptRuntime({
+          defaultIsolation: editorOptions.javascriptIsolation === 'none' ? 'none' : 'iframe',
+        });
+        editorOptions.runtimes = { javascript: jsRuntime };
+
         // Add Python runtime if available
         if (state.pythonPort) {
           const pythonClient = new mrmd.MRPClient(
             `http://127.0.0.1:${state.pythonPort}/mrp/v1`,
             { session: docName, languages: ['python', 'py', 'python3'] }
           );
-          editorOptions.runtimes = { python: pythonClient };
+          editorOptions.runtimes.python = pythonClient;
         }
 
         // Open document

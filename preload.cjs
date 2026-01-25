@@ -8,6 +8,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // System info
   getHomeDir: () => ipcRenderer.invoke('get-home-dir'),
 
+  // System/app information
+  system: {
+    /**
+     * Get system and app info including uv status
+     * @returns {Promise<{appVersion, platform, arch, nodeVersion, pythonDeps, uv}>}
+     */
+    info: () => ipcRenderer.invoke('system:info'),
+
+    /**
+     * Ensure uv is installed (auto-install if missing)
+     * @returns {Promise<{success, path?, version?, error?}>}
+     */
+    ensureUv: () => ipcRenderer.invoke('system:ensureUv'),
+  },
+
   // Shell utilities (via IPC to main process)
   shell: {
     showItemInFolder: (fullPath) => ipcRenderer.invoke('shell:showItemInFolder', { fullPath }),
