@@ -34,35 +34,37 @@ module.exports = {
   ],
 
   // Include sibling packages that main.js resolves via resolvePackageBin
-  // These are Node.js packages needed at runtime
+  // In CI, these are copied to sibling-packages/ before build
+  // In dev, they're at ../
   extraResources: [
     // mrmd-editor dist (loaded by index.html)
+    // CI copies to sibling-packages/mrmd-editor-dist, dev uses ../mrmd-editor/dist
     {
-      from: "../mrmd-editor/dist",
+      from: "sibling-packages/mrmd-editor-dist",
       to: "mrmd-editor/dist",
       filter: ["*.js", "!*.map"]
     },
-    // mrmd-sync (Yjs sync server) - includes node_modules for runtime
+    // mrmd-sync (Yjs sync server)
     {
-      from: "../mrmd-sync",
+      from: "sibling-packages/mrmd-sync",
       to: "mrmd-sync",
       filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     },
     // mrmd-monitor (execution monitor)
     {
-      from: "../mrmd-monitor",
+      from: "sibling-packages/mrmd-monitor",
       to: "mrmd-monitor",
       filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     },
     // mrmd-project (project logic library)
     {
-      from: "../mrmd-project",
+      from: "sibling-packages/mrmd-project",
       to: "mrmd-project",
       filter: ["package.json", "src/**", "node_modules/**"]
     },
     // mrmd-jupyter-bridge (notebook sync)
     {
-      from: "../mrmd-jupyter-bridge",
+      from: "sibling-packages/mrmd-jupyter-bridge",
       to: "mrmd-jupyter-bridge",
       filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
     }

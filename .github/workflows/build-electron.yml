@@ -60,6 +60,23 @@ jobs:
           cd ../mrmd-monitor && npm install
           cd ../mrmd-project && npm install
           cd ../mrmd-jupyter-bridge && npm install
+        shell: bash
+
+      # Copy sibling packages into project for bundling
+      # electron-builder extraResources has issues with filters, so we copy manually
+      - name: Stage sibling packages for bundling
+        run: |
+          mkdir -p sibling-packages
+          # Copy with node_modules
+          cp -r ../mrmd-sync sibling-packages/
+          cp -r ../mrmd-monitor sibling-packages/
+          cp -r ../mrmd-project sibling-packages/
+          cp -r ../mrmd-jupyter-bridge sibling-packages/
+          cp -r ../mrmd-editor/dist sibling-packages/mrmd-editor-dist
+          # Verify
+          echo "=== Staged packages ===" && ls -la sibling-packages/
+          echo "=== mrmd-monitor contents ===" && ls sibling-packages/mrmd-monitor/
+          echo "=== mrmd-monitor/node_modules ===" && ls sibling-packages/mrmd-monitor/node_modules/ 2>/dev/null | head -5 || echo "WARNING: No node_modules!"
 
       # Build electron
       - name: Install electron dependencies
