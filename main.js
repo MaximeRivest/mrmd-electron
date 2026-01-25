@@ -56,21 +56,42 @@ const require = createRequire(import.meta.url);
 // ============================================================================
 
 /**
+ * Check if running as packaged app
+ */
+function isPackaged() {
+  return app.isPackaged;
+}
+
+/**
  * Resolve the path to an mrmd package's CLI
  * Uses require.resolve to find packages properly regardless of installation method
+ *
+ * Resolution order:
+ * 1. extraResources (packaged app) - packages bundled via electron-builder
+ * 2. require.resolve (node_modules)
+ * 3. Sibling directory (development mode)
  *
  * @param {string} packageName - Package name (e.g., 'mrmd-sync')
  * @param {string} binPath - Relative path to binary within package (e.g., 'bin/cli.js')
  * @returns {string} Absolute path to the binary
  */
 function resolvePackageBin(packageName, binPath) {
+  // 1. Check extraResources (packaged app)
+  if (isPackaged()) {
+    const resourcePath = path.join(process.resourcesPath, packageName, binPath);
+    if (fs.existsSync(resourcePath)) {
+      console.log(`[resolve] Using extraResources for ${packageName}`);
+      return resourcePath;
+    }
+  }
+
+  // 2. Try require.resolve (node_modules)
   try {
-    // Try to resolve the package's package.json first
     const packageJson = require.resolve(`${packageName}/package.json`);
     const packageDir = path.dirname(packageJson);
     return path.join(packageDir, binPath);
   } catch (e) {
-    // Fallback to sibling directory for development
+    // 3. Fallback to sibling directory for development
     const siblingPath = path.join(path.dirname(__dirname), packageName, binPath);
     if (fs.existsSync(siblingPath)) {
       console.warn(`[resolve] Using sibling path for ${packageName} (development mode)`);
@@ -87,11 +108,21 @@ function resolvePackageBin(packageName, binPath) {
  * @returns {string} Absolute path to the package directory
  */
 function resolvePackageDir(packageName) {
+  // 1. Check extraResources (packaged app)
+  if (isPackaged()) {
+    const resourcePath = path.join(process.resourcesPath, packageName);
+    if (fs.existsSync(resourcePath)) {
+      console.log(`[resolve] Using extraResources for ${packageName}`);
+      return resourcePath;
+    }
+  }
+
+  // 2. Try require.resolve (node_modules)
   try {
     const packageJson = require.resolve(`${packageName}/package.json`);
     return path.dirname(packageJson);
   } catch (e) {
-    // Fallback to sibling directory for development
+    // 3. Fallback to sibling directory for development
     const siblingPath = path.join(path.dirname(__dirname), packageName);
     if (fs.existsSync(siblingPath)) {
       console.warn(`[resolve] Using sibling path for ${packageName} (development mode)`);

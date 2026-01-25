@@ -33,12 +33,38 @@ module.exports = {
     "!node_modules/**/*.map"
   ],
 
-  // Include sibling packages that main.js resolves
+  // Include sibling packages that main.js resolves via resolvePackageBin
+  // These are Node.js packages needed at runtime
   extraResources: [
+    // mrmd-editor dist (loaded by index.html)
     {
       from: "../mrmd-editor/dist",
       to: "mrmd-editor/dist",
       filter: ["*.js", "!*.map"]
+    },
+    // mrmd-sync (Yjs sync server) - includes node_modules for runtime
+    {
+      from: "../mrmd-sync",
+      to: "mrmd-sync",
+      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+    },
+    // mrmd-monitor (execution monitor)
+    {
+      from: "../mrmd-monitor",
+      to: "mrmd-monitor",
+      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+    },
+    // mrmd-project (project logic library)
+    {
+      from: "../mrmd-project",
+      to: "mrmd-project",
+      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
+    },
+    // mrmd-jupyter-bridge (notebook sync)
+    {
+      from: "../mrmd-jupyter-bridge",
+      to: "mrmd-jupyter-bridge",
+      filter: ["**/*", "!.git/**", "!*.md", "!test/**", "!tests/**"]
     }
   ],
 

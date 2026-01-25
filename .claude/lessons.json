@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "project": "/home/maxime/Projects/mrmd-packages/mrmd-electron",
+  "updated": "2026-01-25T12:00:53.231508",
+  "lessons": [
+    {
+      "id": "C0001",
+      "scope": "component:mrmd-electron/.github/**",
+      "category": "gotchas",
+      "lesson": "electron-builder auto-publishes to GitHub when it detects a tag. Set 'publish: null' in config to disable and let workflow handle releases separately.",
+      "evidence": "CI failed with 403 when electron-builder tried POST to /releases",
+      "confidence": 0.95,
+      "times_confirmed": 0,
+      "times_contradicted": 0,
+      "created": "2026-01-25T12:00:53.230144",
+      "last_updated": "2026-01-25T12:00:53.230174",
+      "last_used": null,
+      "tags": [
+        "electron-builder",
+        "ci",
+        "github-actions"
+      ]
+    },
+    {
+      "id": "C0002",
+      "scope": "component:mrmd-electron/.github/**",
+      "category": "gotchas",
+      "lesson": "GitHub Actions release jobs need 'permissions: contents: write' to create releases. Add this to the job that uses softprops/action-gh-release.",
+      "evidence": "403 'Resource not accessible by integration' error on release creation",
+      "confidence": 0.95,
+      "times_confirmed": 0,
+      "times_contradicted": 0,
+      "created": "2026-01-25T12:00:53.230768",
+      "last_updated": "2026-01-25T12:00:53.230777",
+      "last_used": null,
+      "tags": [
+        "github-actions",
+        "permissions",
+        "releases"
+      ]
+    },
+    {
+      "id": "C0003",
+      "scope": "component:mrmd-electron/.github/**",
+      "category": "patterns",
+      "lesson": "For cross-repo CI with file: dependencies, clone sibling repos and use 'npm install' (not 'npm ci') since lock files may be out of sync.",
+      "evidence": "npm ci failed with 'Missing: @types/ws@8.18.1 from lock file'",
+      "confidence": 0.9,
+      "times_confirmed": 0,
+      "times_contradicted": 0,
+      "created": "2026-01-25T12:00:53.231327",
+      "last_updated": "2026-01-25T12:00:53.231335",
+      "last_used": null,
+      "tags": [
+        "ci",
+        "npm",
+        "monorepo"
+      ]
+    }
+  ]
+}
