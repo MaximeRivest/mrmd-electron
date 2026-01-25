@@ -90,9 +90,7 @@ module.exports = {
     ]
   },
 
-  // Publish to GitHub Releases
-  publish: {
-    provider: "github",
-    releaseType: "draft"
-  }
+  // Publish disabled - the release job in CI handles this
+  // Set to null to prevent electron-builder from auto-publishing on tag
+  publish: null
 };

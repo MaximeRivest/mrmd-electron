@@ -998,6 +998,70 @@
       width: 500px;
     }
 
+    /* Artifact panel - larger for preview */
+    .rail-panel-artifact {
+      width: 45vw;
+      max-width: 800px;
+      min-width: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .artifact-content {
+      flex: 1;
+      padding: 0;
+      overflow: hidden;
+      background: #fff;
+      border-radius: 4px;
+      margin: 8px;
+    }
+
+    .artifact-content iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .artifact-status {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .artifact-status-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .artifact-status-indicator.active {
+      background: #10b981;
+    }
+
+    .rail-panel-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .rail-panel-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
     /* Source panel styles */
     .source-back-btn {
       width: 28px;
@@ -2419,6 +2483,7 @@
       <!-- Tool buttons -->
       <button class="rail-btn" data-panel="runtimes" title="Runtimes"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 7h2M5 9h4"/></svg></button>
       <button class="rail-btn" data-panel="variables" title="Variables"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l2 8h4M10 4l2 8"/></svg></button>
+      <button class="rail-btn" data-panel="artifact" title="Artifact Preview"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 5h12M5 5v9"/></svg></button>
       <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
       <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
 
@@ -2466,6 +2531,22 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Panel: Artifact Preview -->
+    <div class="rail-panel rail-panel-artifact" id="panel-artifact">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Artifact</span>
+        <button class="rail-panel-btn" id="artifact-clear" title="Clear"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M4 12l8-8"/></svg></button>
+        <button class="rail-panel-btn" id="artifact-reload" title="Reload"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <button class="rail-panel-close" data-close-panel="artifact">×</button>
+      </div>
+      <div class="artifact-content">
+        <iframe id="artifact-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-modals" title="Artifact Preview"></iframe>
+      </div>
+      <div class="artifact-status" id="artifact-status">
+        <span class="artifact-status-text">No artifact yet. Run HTML, CSS, or JS cells to build.</span>
       </div>
     </div>
 
@@ -4933,6 +5014,9 @@
         // Setup view source handler (F12)
         state.editor.onViewSource(showSource);
 
+        // Setup artifact panel execution hook
+        setupArtifactExecutionHook();
+
         // Setup wiki-link completion with project files
         if (project && project.files) {
           const parsedFiles = parseProjectFiles(project.files);
@@ -5292,6 +5376,249 @@
           }
         });
       }
+    }
+
+    // =========================================================================
+    // ARTIFACT PANEL
+    // =========================================================================
+
+    const artifactState = {
+      html: '',
+      css: '',
+      scripts: [],  // JS code accumulated from cells
+      initialized: false,
+    };
+
+    /**
+     * Initialize the artifact iframe with a basic HTML structure
+     */
+    function initArtifactIframe() {
+      const iframe = document.getElementById('artifact-iframe');
+      if (!iframe) return;
+
+      // Create a basic HTML document
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style id="artifact-styles">
+            /* Base styles */
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              margin: 0;
+              padding: 16px;
+              line-height: 1.5;
+            }
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body id="artifact-body">
+          <div id="artifact-content"></div>
+        </body>
+        </html>
+      `);
+      doc.close();
+
+      artifactState.initialized = true;
+      updateArtifactStatus('Ready');
+    }
+
+    /**
+     * Update the artifact with new HTML content
+     */
+    function updateArtifactHtml(html) {
+      const iframe = document.getElementById('artifact-iframe');
+      if (!iframe || !artifactState.initialized) {
+        initArtifactIframe();
+      }
+
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const container = doc.getElementById('artifact-content');
+      if (container) {
+        // Append HTML (don't replace, so multiple HTML cells accumulate)
+        container.innerHTML += html;
+        artifactState.html += html;
+        updateArtifactStatus('HTML updated');
+      }
+    }
+
+    /**
+     * Update the artifact with new CSS
+     */
+    function updateArtifactCss(css) {
+      const iframe = document.getElementById('artifact-iframe');
+      if (!iframe || !artifactState.initialized) {
+        initArtifactIframe();
+      }
+
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const styleEl = doc.getElementById('artifact-styles');
+      if (styleEl) {
+        // Append CSS
+        styleEl.textContent += '\n' + css;
+        artifactState.css += '\n' + css;
+        updateArtifactStatus('CSS updated');
+      }
+    }
+
+    /**
+     * Execute JS in the artifact context
+     */
+    function executeArtifactJs(code) {
+      const iframe = document.getElementById('artifact-iframe');
+      if (!iframe || !artifactState.initialized) {
+        initArtifactIframe();
+      }
+
+      try {
+        const win = iframe.contentWindow;
+        // Execute in the iframe's context
+        win.eval(code);
+        artifactState.scripts.push(code);
+        updateArtifactStatus('JS executed');
+      } catch (err) {
+        console.error('[artifact] JS error:', err);
+        updateArtifactStatus('JS error: ' + err.message);
+      }
+    }
+
+    /**
+     * Update status bar
+     */
+    function updateArtifactStatus(text) {
+      const statusEl = document.getElementById('artifact-status');
+      if (statusEl) {
+        const hasContent = artifactState.html || artifactState.css || artifactState.scripts.length > 0;
+        statusEl.innerHTML = `
+          <span class="artifact-status-indicator ${hasContent ? 'active' : ''}"></span>
+          <span class="artifact-status-text">${text}</span>
+        `;
+      }
+    }
+
+    /**
+     * Clear the artifact
+     */
+    function clearArtifact() {
+      artifactState.html = '';
+      artifactState.css = '';
+      artifactState.scripts = [];
+      artifactState.initialized = false;
+      initArtifactIframe();
+      updateArtifactStatus('Cleared');
+    }
+
+    /**
+     * Reload the artifact (re-apply all accumulated content)
+     */
+    function reloadArtifact() {
+      const savedHtml = artifactState.html;
+      const savedCss = artifactState.css;
+      const savedScripts = [...artifactState.scripts];
+
+      // Reset and rebuild
+      artifactState.html = '';
+      artifactState.css = '';
+      artifactState.scripts = [];
+      artifactState.initialized = false;
+      initArtifactIframe();
+
+      // Re-apply CSS
+      if (savedCss) {
+        updateArtifactCss(savedCss);
+      }
+
+      // Re-apply HTML
+      if (savedHtml) {
+        const iframe = document.getElementById('artifact-iframe');
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        const container = doc?.getElementById('artifact-content');
+        if (container) {
+          container.innerHTML = savedHtml;
+          artifactState.html = savedHtml;
+        }
+      }
+
+      // Re-execute scripts
+      savedScripts.forEach(code => {
+        executeArtifactJs(code);
+      });
+
+      updateArtifactStatus('Reloaded');
+    }
+
+    /**
+     * Initialize artifact panel
+     */
+    function initArtifactPanel() {
+      // Initialize iframe when panel first opens
+      const originalOpenPanel = openPanel;
+      const wrappedOpenPanel = function(panelId) {
+        originalOpenPanel(panelId);
+        if (panelId === 'artifact' && !artifactState.initialized) {
+          initArtifactIframe();
+        }
+      };
+      // Only wrap if not already wrapped
+      if (!openPanel._artifactWrapped) {
+        openPanel = wrappedOpenPanel;
+        openPanel._artifactWrapped = true;
+      }
+
+      // Button handlers
+      document.getElementById('artifact-clear')?.addEventListener('click', clearArtifact);
+      document.getElementById('artifact-reload')?.addEventListener('click', reloadArtifact);
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initArtifactPanel();
+    });
+
+    /**
+     * Hook into cell execution to update artifact
+     */
+    function setupArtifactExecutionHook() {
+      if (!state.editor?.execution?.on) {
+        console.log('[artifact] Waiting for editor...');
+        setTimeout(setupArtifactExecutionHook, 500);
+        return;
+      }
+
+      // Listen for cell completion
+      state.editor.execution.on('cellComplete', (cellIndex, result, execId) => {
+        // Get the cell to determine language
+        const content = state.editor.getContent();
+        const cells = state.editor.findCells?.(content) || [];
+        const cell = cells[cellIndex];
+        if (!cell) return;
+
+        const lang = cell.language?.toLowerCase();
+        console.log('[artifact] Cell complete:', lang, execId);
+
+        // Only update artifact panel if it's open or has content
+        if (railState.activePanel !== 'artifact' && !artifactState.initialized) {
+          return;
+        }
+
+        if (lang === 'html' || lang === 'htm') {
+          // For HTML cells, use the cell code itself
+          updateArtifactHtml(cell.code);
+        } else if (lang === 'css' || lang === 'style') {
+          // For CSS cells, apply the styles
+          updateArtifactCss(cell.code);
+        } else if (lang === 'javascript' || lang === 'js') {
+          // For JS cells, optionally execute in artifact context
+          // Only if the cell has a special marker like "artifact" in metadata
+          // For now, we don't auto-execute JS in artifact
+        }
+      });
+
+      console.log('[artifact] Execution hook registered');
     }
 
     // =========================================================================
