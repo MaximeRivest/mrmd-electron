@@ -7,6 +7,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --enable-logging",
+    "bundle": "node scripts/bundle-siblings.js",
+    "prebuild": "npm run bundle",
     "build": "electron-builder --config electron-builder.config.cjs",
     "build:linux": "electron-builder --linux --config electron-builder.config.cjs",
     "build:mac": "electron-builder --mac --config electron-builder.config.cjs",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^26.0.0"
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.27.2"
   }
 }

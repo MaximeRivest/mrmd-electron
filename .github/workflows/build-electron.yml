@@ -30,31 +30,28 @@ jobs:
         with:
           node-version: '20'
 
-      # Clone sibling packages (they use file: references)
-      - name: Clone mrmd-editor
-        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-editor.git ../mrmd-editor
+      # Clone sibling packages
+      # - mrmd-editor: needed for dist/ (loaded by index.html)
+      # - mrmd-sync, mrmd-monitor: bundled into single-file JS by esbuild
+      # - mrmd-project, mrmd-jupyter-bridge: file: deps (symlinked by npm)
+      - name: Clone sibling packages
+        run: |
+          git clone --depth 1 https://github.com/MaximeRivest/mrmd-editor.git ../mrmd-editor
+          git clone --depth 1 https://github.com/MaximeRivest/mrmd-sync.git ../mrmd-sync
+          git clone --depth 1 https://github.com/MaximeRivest/mrmd-monitor.git ../mrmd-monitor
+          git clone --depth 1 https://github.com/MaximeRivest/mrmd-project.git ../mrmd-project
+          git clone --depth 1 https://github.com/MaximeRivest/mrmd-jupyter-bridge.git ../mrmd-jupyter-bridge
+        shell: bash
 
-      - name: Clone mrmd-sync
-        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-sync.git ../mrmd-sync
-
-      - name: Clone mrmd-monitor
-        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-monitor.git ../mrmd-monitor
-
-      - name: Clone mrmd-project
-        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-project.git ../mrmd-project
-
-      - name: Clone mrmd-jupyter-bridge
-        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-jupyter-bridge.git ../mrmd-jupyter-bridge
-
-      # Build mrmd-editor (required by electron)
+      # Build mrmd-editor (dist is loaded by index.html)
       - name: Build mrmd-editor
         run: |
           cd ../mrmd-editor
           npm install
           npm run build
 
-      # Install sibling deps (use npm install - lock files may be out of sync)
-      - name: Install sibling packages
+      # Install deps for sibling packages (needed for esbuild bundling)
+      - name: Install sibling dependencies
         run: |
           cd ../mrmd-sync && npm install
           cd ../mrmd-monitor && npm install
@@ -62,30 +59,23 @@ jobs:
           cd ../mrmd-jupyter-bridge && npm install
         shell: bash
 
-      # Copy sibling packages into project for bundling
-      # electron-builder extraResources has issues with filters, so we copy manually
-      - name: Stage sibling packages for bundling
-        run: |
-          mkdir -p sibling-packages
-          # Copy with node_modules
-          cp -r ../mrmd-sync sibling-packages/
-          cp -r ../mrmd-monitor sibling-packages/
-          cp -r ../mrmd-project sibling-packages/
-          cp -r ../mrmd-jupyter-bridge sibling-packages/
-          cp -r ../mrmd-editor/dist sibling-packages/mrmd-editor-dist
-          # Verify
-          echo "=== Staged packages ===" && ls -la sibling-packages/
-          echo "=== mrmd-monitor contents ===" && ls sibling-packages/mrmd-monitor/
-          echo "=== mrmd-monitor/node_modules ===" && ls sibling-packages/mrmd-monitor/node_modules/ 2>/dev/null | head -5 || echo "WARNING: No node_modules!"
-
-      # Build electron
+      # Install electron deps (also creates symlinks for file: deps)
       - name: Install electron dependencies
         run: npm ci
 
+      # Build bundles + electron app
+      # npm run build triggers prebuild (bundle) then electron-builder
       - name: Build electron app
         run: npm run build:${{ matrix.platform }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Verify bundles were created
+      - name: Verify bundles
+        run: |
+          echo "=== Bundles ===" && ls -la bundles/
+          echo "=== Bundle sizes ===" && du -h bundles/*
+        shell: bash
 
       # Upload artifacts
       - name: Upload Linux artifacts

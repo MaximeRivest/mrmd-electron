@@ -63,40 +63,45 @@ function isPackaged() {
 }
 
 /**
- * Resolve the path to an mrmd package's CLI
- * Uses require.resolve to find packages properly regardless of installation method
+ * Resolve the path to an mrmd package's CLI script
  *
- * Resolution order:
- * 1. extraResources (packaged app) - packages bundled via electron-builder
- * 2. require.resolve (node_modules)
- * 3. Sibling directory (development mode)
+ * In packaged mode: Returns path to pre-bundled single-file JS in extraResources
+ * In dev mode: Returns path to source CLI in sibling directory
  *
  * @param {string} packageName - Package name (e.g., 'mrmd-sync')
  * @param {string} binPath - Relative path to binary within package (e.g., 'bin/cli.js')
- * @returns {string} Absolute path to the binary
+ * @returns {string} Absolute path to the script
  */
 function resolvePackageBin(packageName, binPath) {
-  // 1. Check extraResources (packaged app)
+  // PACKAGED: Use pre-bundled single-file JS from extraResources
   if (isPackaged()) {
+    const bundlePath = path.join(process.resourcesPath, `${packageName}.bundle.js`);
+    if (fs.existsSync(bundlePath)) {
+      console.log(`[resolve] Using bundle for ${packageName}`);
+      return bundlePath;
+    }
+    // Fallback to old-style extraResources (for backwards compat)
     const resourcePath = path.join(process.resourcesPath, packageName, binPath);
     if (fs.existsSync(resourcePath)) {
       console.log(`[resolve] Using extraResources for ${packageName}`);
       return resourcePath;
     }
+    throw new Error(`Cannot resolve ${packageName}: bundle not found at ${bundlePath}`);
   }
 
-  // 2. Try require.resolve (node_modules)
+  // DEV: Use sibling directory source directly
+  const siblingPath = path.join(path.dirname(__dirname), packageName, binPath);
+  if (fs.existsSync(siblingPath)) {
+    console.log(`[resolve] Using sibling source for ${packageName} (dev mode)`);
+    return siblingPath;
+  }
+
+  // Fallback: Try node_modules (for testing)
   try {
     const packageJson = require.resolve(`${packageName}/package.json`);
     const packageDir = path.dirname(packageJson);
     return path.join(packageDir, binPath);
   } catch (e) {
-    // 3. Fallback to sibling directory for development
-    const siblingPath = path.join(path.dirname(__dirname), packageName, binPath);
-    if (fs.existsSync(siblingPath)) {
-      console.warn(`[resolve] Using sibling path for ${packageName} (development mode)`);
-      return siblingPath;
-    }
     throw new Error(`Cannot resolve ${packageName}: ${e.message}`);
   }
 }
@@ -519,13 +524,19 @@ async function getSyncServer(projectDir) {
   // consuming all system memory and crashing unpredictably after hours.
   // Better to restart early than lose hours of work.
   const syncCliPath = resolvePackageBin('mrmd-sync', 'bin/cli.js');
-  const proc = spawn('node', [
+  const nodeArgs = [
     `--max-old-space-size=${SYNC_SERVER_MEMORY_MB}`,
     syncCliPath,
     '--port', port.toString(),
     '--i-know-what-i-am-doing',
     projectDir,
-  ], { stdio: ['pipe', 'pipe', 'pipe'] });
+  ];
+  const proc = isPackaged()
+    ? spawn(process.execPath, nodeArgs, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      })
+    : spawn('node', nodeArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
   proc.expectedExit = false;
 
   proc.stdout.on('data', (d) => console.log(`[sync:${port}]`, d.toString().trim()));
@@ -637,11 +648,17 @@ function startMonitor(docName, syncPort) {
   console.log(`[monitor] Starting for ${docName}...`);
 
   const monitorCliPath = resolvePackageBin('mrmd-monitor', 'bin/cli.js');
-  const proc = spawn('node', [
+  const nodeArgs = [
     monitorCliPath,
     '--doc', docName,
     `ws://${DEFAULT_HOST}:${syncPort}`,
-  ], { stdio: ['pipe', 'pipe', 'pipe'] });
+  ];
+  const proc = isPackaged()
+    ? spawn(process.execPath, nodeArgs, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      })
+    : spawn('node', nodeArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
 
   proc.stdout.on('data', (d) => console.log(`[monitor:${docName}]`, d.toString().trim()));
   proc.stderr.on('data', (d) => console.error(`[monitor:${docName}]`, d.toString().trim()));

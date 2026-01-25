@@ -33,40 +33,25 @@ module.exports = {
     "!node_modules/**/*.map"
   ],
 
-  // Include sibling packages that main.js resolves via resolvePackageBin
-  // In CI, these are copied to sibling-packages/ before build
-  // In dev, they're at ../
+  // Extra resources placed OUTSIDE the asar archive
+  // These are spawned as child processes using Electron's Node
   extraResources: [
-    // mrmd-editor dist (loaded by index.html)
-    // CI copies to sibling-packages/mrmd-editor-dist, dev uses ../mrmd-editor/dist
+    // mrmd-editor dist (loaded by index.html via file:// protocol)
+    // CI clones and builds this before electron-builder runs
     {
-      from: "sibling-packages/mrmd-editor-dist",
+      from: "../mrmd-editor/dist",
       to: "mrmd-editor/dist",
       filter: ["*.js", "!*.map"]
     },
-    // mrmd-sync (Yjs sync server)
+    // Bundled sibling packages (single-file, no node_modules needed)
+    // Created by `npm run bundle` before build
     {
-      from: "sibling-packages/mrmd-sync",
-      to: "mrmd-sync",
-      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
+      from: "bundles/mrmd-sync.bundle.js",
+      to: "mrmd-sync.bundle.js"
     },
-    // mrmd-monitor (execution monitor)
     {
-      from: "sibling-packages/mrmd-monitor",
-      to: "mrmd-monitor",
-      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
-    },
-    // mrmd-project (project logic library)
-    {
-      from: "sibling-packages/mrmd-project",
-      to: "mrmd-project",
-      filter: ["package.json", "src/**", "node_modules/**"]
-    },
-    // mrmd-jupyter-bridge (notebook sync)
-    {
-      from: "sibling-packages/mrmd-jupyter-bridge",
-      to: "mrmd-jupyter-bridge",
-      filter: ["package.json", "bin/**", "src/**", "node_modules/**"]
+      from: "bundles/mrmd-monitor.bundle.js",
+      to: "mrmd-monitor.bundle.js"
     }
   ],
 

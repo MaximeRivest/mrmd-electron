@@ -3,3 +3,5 @@ node_modules/
 *.log
 .env
 sibling-packages/
+bundles/
+dist/
