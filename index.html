@@ -3,15 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://127.0.0.1:* http://127.0.0.1:*; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws://127.0.0.1:* http://127.0.0.1:*; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:* https: http: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https:; img-src 'self' data: blob: https: http:; frame-src 'self' blob: data:">
   <title>mrmd</title>
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./assets/icon-16.png">
 
-  <!-- Romantic typography: Courier Prime (typewriter) + EB Garamond (literary) -->
+  <!-- Typography: Monaspace Neon (code) + Literata (prose) -->
+  <!-- Also load Courier Prime + EB Garamond for Grayscale themes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
+  <!-- Bundled fonts: Monaspace Neon + Literata (variable fonts) -->
+  <style>
+    @font-face {
+      font-family: 'Monaspace Neon Var';
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url('./assets/fonts/MonaspaceNeon-Variable.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: 'Literata';
+      font-style: normal;
+      font-weight: 200 900;
+      font-display: swap;
+      src: url('./assets/fonts/Literata-Variable.ttf') format('truetype');
+      font-optical-sizing: auto;
+    }
+
+    @font-face {
+      font-family: 'Literata';
+      font-style: italic;
+      font-weight: 200 900;
+      font-display: swap;
+      src: url('./assets/fonts/Literata-Italic-Variable.ttf') format('truetype');
+      font-optical-sizing: auto;
+    }
+  </style>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2761,6 +2791,9 @@
       // Notebook sync state: maps shadow .md path to original .ipynb path
       syncedNotebooks: new Map(),
     };
+
+    // DEBUG: Expose state to window for console debugging
+    window._state = state;
 
     // =========================================================================
     // FSML HELPERS (for wiki-link completion)
@@ -6713,9 +6746,24 @@
       const headings = [];
       const lines = content.split('\n');
       let pos = 0;
+      let inCodeBlock = false;
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+
+        // Check for code block delimiters (``` or ~~~)
+        if (line.match(/^(`{3,}|~{3,})/)) {
+          inCodeBlock = !inCodeBlock;
+          pos += line.length + 1;
+          continue;
+        }
+
+        // Skip heading detection inside code blocks
+        if (inCodeBlock) {
+          pos += line.length + 1;
+          continue;
+        }
+
         // Match markdown headings (# to ######)
         const match = line.match(/^(#{1,6})\s+(.+)$/);
         if (match) {
