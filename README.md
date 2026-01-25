@@ -2,8 +2,9 @@
 
 **Markdown notebooks with live code execution.** Write, run, and collaborate — all in plain `.md` files.
 
-[![GitHub Release](https://img.shields.io/github/v/release/MaximeRivest/mrmd-electron)](https://github.com/MaximeRivest/mrmd-electron/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/MaximeRivest/mrmd-electron)](https://github.com/MaximeRivest/mrmd-electron/releases)<  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)>
+
+![paste-2026-01-25T22-09-05](_assets/paste-2026-01-25T22-09-05.png)
 
 ---
 
@@ -12,9 +13,6 @@
 MRMD is a desktop app that turns markdown files into executable notebooks. Think Jupyter, but:
 
 - **Plain markdown** — Your documents are standard `.md` files. No JSON, no lock-in.
-- **Real-time collaboration** — Multiple users edit simultaneously via CRDT sync.
-- **Persistent execution** — Code keeps running even if you close the app.
-- **GPU-friendly** — Kill runtimes to release VRAM instantly.
 
 ```markdown
 # My Analysis
@@ -96,9 +94,7 @@ MRMD automatically downloads required Python packages (`mrmd-python`, `mrmd-ai`,
 | Run cell | `Ctrl+Enter` |
 | Run cell and advance | `Shift+Enter` |
 | AI edit | `Ctrl+K` |
-| Save | `Ctrl+S` |
-| Toggle sidebar | `Ctrl+B` |
-| Command palette | `Ctrl+Shift+P` |
+| Search File or Create Files or Project | `Ctrl+P` |
 
 ---
 
