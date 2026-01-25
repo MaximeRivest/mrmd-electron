@@ -75,7 +75,7 @@ function isPackaged() {
 function resolvePackageBin(packageName, binPath) {
   // PACKAGED: Use pre-bundled single-file JS from extraResources
   if (isPackaged()) {
-    const bundlePath = path.join(process.resourcesPath, `${packageName}.bundle.js`);
+    const bundlePath = path.join(process.resourcesPath, `${packageName}.bundle.cjs`);
     if (fs.existsSync(bundlePath)) {
       console.log(`[resolve] Using bundle for ${packageName}`);
       return bundlePath;

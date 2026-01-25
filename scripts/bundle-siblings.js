@@ -28,12 +28,12 @@ const packages = [
   {
     name: 'mrmd-sync',
     entry: path.join(parentDir, 'mrmd-sync', 'bin', 'cli.js'),
-    output: path.join(bundlesDir, 'mrmd-sync.bundle.js'),
+    output: path.join(bundlesDir, 'mrmd-sync.bundle.cjs'),  // .cjs for CommonJS
   },
   {
     name: 'mrmd-monitor',
     entry: path.join(parentDir, 'mrmd-monitor', 'bin', 'cli.js'),
-    output: path.join(bundlesDir, 'mrmd-monitor.bundle.js'),
+    output: path.join(bundlesDir, 'mrmd-monitor.bundle.cjs'),  // .cjs for CommonJS
   },
 ];
 
@@ -50,16 +50,13 @@ async function bundlePackage(pkg) {
     bundle: true,
     platform: 'node',
     target: 'node18',
-    format: 'esm',
+    format: 'cjs',  // CJS handles shebangs in source files better
     outfile: pkg.output,
     // Keep it readable for debugging
     minify: false,
     // Include source maps for debugging
     sourcemap: true,
-    // Banner to make it executable
-    banner: {
-      js: '#!/usr/bin/env node',
-    },
+    // No banner needed - we run via spawn(process.execPath, [script])
     // Mark Node.js built-ins as external (they're available in Electron's Node)
     // Also mark native modules that can't be bundled
     external: [

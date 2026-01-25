@@ -46,12 +46,12 @@ module.exports = {
     // Bundled sibling packages (single-file, no node_modules needed)
     // Created by `npm run bundle` before build
     {
-      from: "bundles/mrmd-sync.bundle.js",
-      to: "mrmd-sync.bundle.js"
+      from: "bundles/mrmd-sync.bundle.cjs",
+      to: "mrmd-sync.bundle.cjs"
     },
     {
-      from: "bundles/mrmd-monitor.bundle.js",
-      to: "mrmd-monitor.bundle.js"
+      from: "bundles/mrmd-monitor.bundle.cjs",
+      to: "mrmd-monitor.bundle.cjs"
     }
   ],
 
