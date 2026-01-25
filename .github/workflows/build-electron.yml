@@ -43,12 +43,12 @@ jobs:
           git clone --depth 1 https://github.com/MaximeRivest/mrmd-jupyter-bridge.git ../mrmd-jupyter-bridge
         shell: bash
 
-      # Build mrmd-editor (dist is loaded by index.html)
-      - name: Build mrmd-editor
+      # mrmd-editor: use pre-built dist from repo (don't rebuild)
+      # Building fresh produces different output due to rollup config issues with prettier
+      - name: Verify mrmd-editor dist
         run: |
-          cd ../mrmd-editor
-          npm install
-          npm run build
+          echo "Using pre-built mrmd-editor from repo"
+          ls -la ../mrmd-editor/dist/
 
       # Install deps for sibling packages (needed for esbuild bundling)
       - name: Install sibling dependencies
