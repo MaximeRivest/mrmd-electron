@@ -50,16 +50,16 @@ jobs:
       - name: Build mrmd-editor
         run: |
           cd ../mrmd-editor
-          npm ci
+          npm install
           npm run build
 
-      # Install sibling deps
+      # Install sibling deps (use npm install - lock files may be out of sync)
       - name: Install sibling packages
         run: |
-          cd ../mrmd-sync && npm ci
-          cd ../mrmd-monitor && npm ci
-          cd ../mrmd-project && npm ci || npm install
-          cd ../mrmd-jupyter-bridge && npm ci
+          cd ../mrmd-sync && npm install
+          cd ../mrmd-monitor && npm install
+          cd ../mrmd-project && npm install
+          cd ../mrmd-jupyter-bridge && npm install
 
       # Build electron
       - name: Install electron dependencies
