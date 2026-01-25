@@ -61,12 +61,16 @@ async function bundlePackage(pkg) {
       js: '#!/usr/bin/env node',
     },
     // Mark Node.js built-ins as external (they're available in Electron's Node)
+    // Also mark native modules that can't be bundled
     external: [
+      // Node.js builtins
       'fs', 'path', 'os', 'crypto', 'http', 'https', 'net', 'tls',
       'stream', 'util', 'events', 'buffer', 'url', 'querystring',
       'child_process', 'cluster', 'dgram', 'dns', 'readline',
       'zlib', 'assert', 'tty', 'v8', 'vm', 'worker_threads',
       'perf_hooks', 'async_hooks', 'inspector', 'trace_events',
+      // Native modules (can't bundle .node files)
+      'fsevents',  // macOS file watcher (chokidar falls back gracefully)
     ],
     // Log level
     logLevel: 'info',
