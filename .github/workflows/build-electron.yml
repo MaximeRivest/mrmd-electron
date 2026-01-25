@@ -49,6 +49,7 @@ jobs:
         run: |
           echo "Using pre-built mrmd-editor from repo"
           ls -la ../mrmd-editor/dist/
+        shell: bash
 
       # Install deps for sibling packages (needed for esbuild bundling)
       - name: Install sibling dependencies
