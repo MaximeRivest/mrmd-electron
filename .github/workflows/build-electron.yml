@@ -63,8 +63,11 @@ jobs:
       - name: Install electron dependencies
         run: npm ci
 
-      # Build bundles + electron app
-      # npm run build triggers prebuild (bundle) then electron-builder
+      # Bundle sibling packages into single-file JS
+      - name: Bundle sibling packages
+        run: npm run bundle
+
+      # Build electron app
       - name: Build electron app
         run: npm run build:${{ matrix.platform }}
         env:
