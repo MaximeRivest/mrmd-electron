@@ -680,17 +680,37 @@ async function ensureAiServer() {
   const port = await findFreePort();
   console.log(`[ai] Starting on port ${port}...`);
 
-  // mrmd-ai is a Python package - use 'uv tool run' which:
-  // 1. Auto-installs the package in an isolated environment
-  // 2. Runs the CLI without needing a local project directory
-  const proc = spawn('uv', [
-    'tool', 'run',
-    '--from', `mrmd-ai${PYTHON_DEPS['mrmd-ai']}`,  // e.g. mrmd-ai>=0.1.0,<0.2
-    'mrmd-ai-server',
-    '--port', port.toString(),
-  ], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+  let proc;
+
+  // Check if we have a local sibling package (development mode)
+  const siblingPath = path.join(path.dirname(__dirname), 'mrmd-ai');
+  const hasLocalPackage = !isPackaged() && fs.existsSync(path.join(siblingPath, 'pyproject.toml'));
+
+  if (hasLocalPackage) {
+    // DEV MODE: Use 'uv run --project' to run from local source
+    // This ensures we always use the latest local code during development
+    console.log(`[ai] Using local package: ${siblingPath}`);
+    proc = spawn('uv', [
+      'run', '--project', siblingPath,
+      'mrmd-ai-server',
+      '--port', port.toString(),
+    ], {
+      cwd: siblingPath,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } else {
+    // PACKAGED MODE: Use 'uv tool run' to download/run from PyPI
+    // This requires mrmd-ai to be published to PyPI for distribution
+    console.log(`[ai] Using uv tool run (packaged mode)`);
+    proc = spawn('uv', [
+      'tool', 'run',
+      '--from', `mrmd-ai${PYTHON_DEPS['mrmd-ai']}`,
+      'mrmd-ai-server',
+      '--port', port.toString(),
+    ], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  }
 
   proc.stdout.on('data', (d) => console.log('[ai]', d.toString().trim()));
   proc.stderr.on('data', (d) => console.error('[ai]', d.toString().trim()));

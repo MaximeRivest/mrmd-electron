@@ -1231,6 +1231,285 @@
       background: var(--hover-bg);
     }
 
+    /* Theme Picker Menu */
+    .theme-picker-menu {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      min-width: 200px;
+      max-height: 400px;
+      overflow-y: auto;
+      z-index: 10000;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .theme-picker-header {
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .theme-picker-section {
+      padding: 8px 0;
+    }
+
+    .theme-picker-section-title {
+      padding: 4px 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .theme-picker-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .theme-picker-item:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .theme-picker-item.selected {
+      background: var(--selected-bg);
+      color: var(--accent);
+    }
+
+    .theme-picker-delete {
+      opacity: 0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .theme-picker-item:hover .theme-picker-delete {
+      opacity: 1;
+    }
+
+    .theme-picker-delete:hover {
+      background: var(--error);
+      color: white;
+    }
+
+    .theme-picker-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    .theme-picker-import {
+      color: var(--accent);
+    }
+
+    .theme-picker-help {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .theme-picker-help span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid var(--text-muted);
+      font-size: 11px;
+      margin-right: 6px;
+    }
+
+    /* Theme Help Dialog */
+    .theme-help-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+    }
+
+    .theme-help-dialog {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 500px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      color: var(--text);
+    }
+
+    .theme-help-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .theme-help-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .theme-help-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text);
+    }
+
+    .theme-help-content {
+      padding: 16px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .theme-help-content p {
+      margin: 0 0 12px 0;
+    }
+
+    .theme-help-content pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+      margin: 12px 0;
+    }
+
+    .theme-help-content code {
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    .theme-help-content pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    .theme-help-content ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+
+    .theme-help-content li {
+      margin: 4px 0;
+    }
+
+    .theme-help-dialog-large {
+      width: 700px;
+      max-height: 85vh;
+    }
+
+    .theme-help-content h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 20px 0 10px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .theme-help-content h3:first-child {
+      margin-top: 0;
+    }
+
+    .theme-help-content h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 16px 0 8px 0;
+      color: var(--text-muted);
+    }
+
+    .theme-help-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    .theme-help-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .theme-help-table td:first-child {
+      white-space: nowrap;
+      width: 45%;
+    }
+
+    .theme-help-table td:last-child {
+      color: var(--text-muted);
+    }
+
+    .theme-help-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .theme-help-example {
+      position: relative;
+      margin: 12px 0;
+    }
+
+    .theme-help-copy {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .theme-help-copy:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    .theme-help-example pre {
+      max-height: 400px;
+      overflow-y: auto;
+      padding-right: 70px;
+    }
+
     .rail-panel-item-icon {
       width: 4px;
       height: 4px;
@@ -9256,8 +9535,51 @@ python: .venv
     // THEME MANAGEMENT
     // =========================================================================
 
-    const THEMES = ['github', 'midnight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
+    const THEMES = ['github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
     let currentThemeIndex = 0;
+    const CUSTOM_THEMES_KEY = 'mrmd-custom-themes';
+
+    // Load custom themes from localStorage
+    function loadCustomThemes() {
+      try {
+        const stored = localStorage.getItem(CUSTOM_THEMES_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.warn('Failed to load custom themes:', e);
+        return [];
+      }
+    }
+
+    // Save custom themes to localStorage
+    function saveCustomThemes(themes) {
+      try {
+        localStorage.setItem(CUSTOM_THEMES_KEY, JSON.stringify(themes));
+      } catch (e) {
+        console.warn('Failed to save custom themes:', e);
+      }
+    }
+
+    // Register custom themes with mrmd
+    function registerCustomThemes() {
+      const customThemes = loadCustomThemes();
+      for (const theme of customThemes) {
+        try {
+          if (mrmd.widgets?.registerTheme) {
+            mrmd.widgets.registerTheme(theme);
+          } else if (mrmd.registerTheme) {
+            mrmd.registerTheme(theme);
+          }
+        } catch (e) {
+          console.warn(`Failed to register custom theme "${theme.name}":`, e);
+        }
+      }
+    }
+
+    // Get all available theme names (built-in + custom)
+    function getAllThemeNames() {
+      const customNames = loadCustomThemes().map(t => t.name);
+      return [...THEMES, ...customNames];
+    }
 
     function applyTheme(themeName) {
       const theme = mrmd.getTheme(themeName);
@@ -9312,16 +9634,408 @@ python: .venv
       console.log('Applied theme:', themeName);
     }
 
+    // Theme picker menu
+    let themeMenuOpen = false;
+    let themeMenuElement = null;
+
     function cycleTheme() {
-      currentThemeIndex = (currentThemeIndex + 1) % THEMES.length;
-      applyTheme(THEMES[currentThemeIndex]);
+      // Now opens a theme picker instead of cycling
+      showThemePicker();
+    }
+
+    function showThemePicker() {
+      if (themeMenuOpen && themeMenuElement) {
+        closeThemePicker();
+        return;
+      }
+
+      const allThemes = getAllThemeNames();
+      const customThemeNames = loadCustomThemes().map(t => t.name);
+      const currentTheme = localStorage.getItem('mrmd-theme') || 'github';
+
+      // Create menu
+      themeMenuElement = document.createElement('div');
+      themeMenuElement.className = 'theme-picker-menu';
+      themeMenuElement.innerHTML = `
+        <div class="theme-picker-header">Select Theme</div>
+        <div class="theme-picker-section">
+          <div class="theme-picker-section-title">Dark</div>
+          ${THEMES.filter(t => ['github', 'midnight', 'moonlight', 'nord', 'grayscale-dark'].includes(t))
+            .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
+        </div>
+        <div class="theme-picker-section">
+          <div class="theme-picker-section-title">Light</div>
+          ${THEMES.filter(t => ['daylight', 'openresponses', 'grayscale-light'].includes(t))
+            .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
+        </div>
+        ${customThemeNames.length > 0 ? `
+        <div class="theme-picker-section">
+          <div class="theme-picker-section-title">Custom</div>
+          ${customThemeNames.map(t => `
+            <div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">
+              ${t}
+              <span class="theme-picker-delete" data-delete="${t}" title="Delete theme">×</span>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+        <div class="theme-picker-divider"></div>
+        <div class="theme-picker-item theme-picker-import" data-action="import">
+          Import Theme...
+        </div>
+        <div class="theme-picker-item theme-picker-help" data-action="help">
+          <span>?</span> How to create themes
+        </div>
+      `;
+
+      // Position menu near settings panel
+      const settingsPanel = document.getElementById('panel-settings');
+      const themeItem = settingsPanel?.querySelector('.rail-panel-item');
+      if (themeItem) {
+        const rect = themeItem.getBoundingClientRect();
+        themeMenuElement.style.position = 'fixed';
+        themeMenuElement.style.top = `${rect.bottom + 4}px`;
+        themeMenuElement.style.left = `${rect.left}px`;
+      }
+
+      document.body.appendChild(themeMenuElement);
+      themeMenuOpen = true;
+
+      // Handle clicks
+      themeMenuElement.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('[data-delete]');
+        if (deleteBtn) {
+          e.stopPropagation();
+          const themeName = deleteBtn.getAttribute('data-delete');
+          deleteCustomTheme(themeName);
+          closeThemePicker();
+          return;
+        }
+
+        const item = e.target.closest('[data-theme]');
+        if (item) {
+          const themeName = item.getAttribute('data-theme');
+          applyTheme(themeName);
+          closeThemePicker();
+          return;
+        }
+
+        const importBtn = e.target.closest('[data-action="import"]');
+        if (importBtn) {
+          closeThemePicker();
+          importThemeFile();
+          return;
+        }
+
+        const helpBtn = e.target.closest('[data-action="help"]');
+        if (helpBtn) {
+          closeThemePicker();
+          showThemeHelp();
+          return;
+        }
+      });
+
+      // Close on outside click
+      setTimeout(() => {
+        document.addEventListener('click', closeThemePickerOnOutsideClick);
+      }, 0);
+    }
+
+    function closeThemePickerOnOutsideClick(e) {
+      if (themeMenuElement && !themeMenuElement.contains(e.target)) {
+        closeThemePicker();
+      }
+    }
+
+    function closeThemePicker() {
+      if (themeMenuElement) {
+        themeMenuElement.remove();
+        themeMenuElement = null;
+      }
+      themeMenuOpen = false;
+      document.removeEventListener('click', closeThemePickerOnOutsideClick);
+    }
+
+    function importThemeFile() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.style.display = 'none';
+
+      input.onchange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const theme = JSON.parse(text);
+
+          // Validate
+          if (!theme.name || typeof theme.name !== 'string') {
+            alert('Invalid theme: must have a "name" property');
+            return;
+          }
+          if (THEMES.includes(theme.name)) {
+            alert(`Cannot use reserved theme name "${theme.name}"`);
+            return;
+          }
+
+          // Register with mrmd
+          if (mrmd.widgets?.registerTheme) {
+            mrmd.widgets.registerTheme(theme);
+          } else if (mrmd.registerTheme) {
+            mrmd.registerTheme(theme);
+          }
+
+          // Save to localStorage
+          const customThemes = loadCustomThemes();
+          const existingIndex = customThemes.findIndex(t => t.name === theme.name);
+          if (existingIndex >= 0) {
+            customThemes[existingIndex] = theme;
+          } else {
+            customThemes.push(theme);
+          }
+          saveCustomThemes(customThemes);
+
+          // Apply
+          applyTheme(theme.name);
+          alert(`Theme "${theme.name}" imported successfully!`);
+        } catch (err) {
+          console.error('Failed to import theme:', err);
+          alert(`Failed to import theme: ${err.message}`);
+        }
+        input.remove();
+      };
+
+      document.body.appendChild(input);
+      input.click();
+    }
+
+    function deleteCustomTheme(themeName) {
+      if (!confirm(`Delete custom theme "${themeName}"?`)) return;
+
+      const customThemes = loadCustomThemes();
+      const filtered = customThemes.filter(t => t.name !== themeName);
+      saveCustomThemes(filtered);
+
+      // Switch to default if deleted current
+      const current = localStorage.getItem('mrmd-theme');
+      if (current === themeName) {
+        applyTheme('github');
+      }
+    }
+
+    function showThemeHelp() {
+      const neonThemeExample = `{
+  "name": "neon",
+  "description": "Cyberpunk neon theme",
+  "isDark": true,
+
+  // ===================
+  // CUSTOM FONTS (optional)
+  // ===================
+  // Use fontFace to load custom fonts. Paths are relative to your app.
+  // "fontFace": "@font-face { font-family: 'MyFont'; src: url('./fonts/MyFont.woff2'); }",
+
+  // ===================
+  // EDITOR COLORS
+  // ===================
+  "--editor-background": "#0a0a1a",
+  "--editor-foreground": "#e0e0ff",
+  "--editor-line-number": "#444466",
+  "--editor-line-number-active": "#00ffff",
+  "--editor-selection": "#ff00ff33",
+  "--editor-cursor": "#00ffff",
+  "--editor-active-line": "rgba(0, 255, 255, 0.05)",
+
+  // ===================
+  // SYNTAX HIGHLIGHTING
+  // ===================
+  "--syntax-keyword": "#ff00ff",
+  "--syntax-control": "#ff00ff",
+  "--syntax-string": "#00ff88",
+  "--syntax-number": "#ffee00",
+  "--syntax-comment": "#555588",
+  "--syntax-function": "#00ffff",
+  "--syntax-variable": "#e0e0ff",
+  "--syntax-property": "#00aaff",
+  "--syntax-operator": "#ff00ff",
+  "--syntax-type": "#ffaa00",
+  "--syntax-class": "#ffaa00",
+
+  // ===================
+  // WIDGET/OUTPUT COLORS
+  // ===================
+  "--widget-surface": "#0a0a1a",
+  "--widget-surface-hover": "#12122a",
+  "--widget-text": "#e0e0ff",
+  "--widget-text-muted": "#8888bb",
+  "--widget-text-accent": "#00ffff",
+  "--widget-border": "rgba(0, 255, 255, 0.15)",
+  "--widget-border-accent": "#00ffff",
+
+  // ===================
+  // SEMANTIC COLORS
+  // ===================
+  "--widget-success": "#00ff88",
+  "--widget-warning": "#ffaa00",
+  "--widget-error": "#ff3366",
+  "--widget-info": "#00aaff",
+
+  // ===================
+  // ANSI TERMINAL COLORS
+  // ===================
+  "--ansi-black": "#0a0a1a",
+  "--ansi-red": "#ff3366",
+  "--ansi-green": "#00ff88",
+  "--ansi-yellow": "#ffee00",
+  "--ansi-blue": "#00aaff",
+  "--ansi-magenta": "#ff00ff",
+  "--ansi-cyan": "#00ffff",
+  "--ansi-white": "#e0e0ff",
+
+  // ===================
+  // SHELL UI (panels, menus)
+  // ===================
+  "--mrmd-panel-bg": "#0a0a1a",
+  "--mrmd-popup-bg": "#0f0f24",
+  "--mrmd-bg": "#0a0a1a",
+  "--mrmd-fg": "#e0e0ff",
+  "--mrmd-fg-muted": "#8888bb",
+  "--mrmd-border": "#ff00ff44",
+  "--mrmd-accent": "#00ffff",
+  "--mrmd-hover-bg": "rgba(0, 255, 255, 0.08)"
+}`;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'theme-help-overlay';
+      overlay.innerHTML = `
+        <div class="theme-help-dialog theme-help-dialog-large">
+          <div class="theme-help-header">
+            <span>Theme Reference Guide</span>
+            <button class="theme-help-close">&times;</button>
+          </div>
+          <div class="theme-help-content">
+            <h3>Overview</h3>
+            <p>Themes are JSON files containing CSS custom properties (variables). Save as <code>.json</code> and import via the theme picker.</p>
+
+            <h3>Required Properties</h3>
+            <table class="theme-help-table">
+              <tr><td><code>name</code></td><td>Unique identifier (e.g., "my-theme")</td></tr>
+              <tr><td><code>isDark</code></td><td><code>true</code> for dark themes, <code>false</code> for light</td></tr>
+            </table>
+
+            <h3>Optional Properties</h3>
+            <table class="theme-help-table">
+              <tr><td><code>description</code></td><td>Human-readable description</td></tr>
+              <tr><td><code>fontFace</code></td><td>CSS @font-face rules for custom fonts</td></tr>
+            </table>
+
+            <h3>Token Categories</h3>
+
+            <h4>Editor</h4>
+            <p>Core editor appearance:</p>
+            <table class="theme-help-table">
+              <tr><td><code>--editor-background</code></td><td>Main editor background</td></tr>
+              <tr><td><code>--editor-foreground</code></td><td>Default text color</td></tr>
+              <tr><td><code>--editor-selection</code></td><td>Selection highlight</td></tr>
+              <tr><td><code>--editor-cursor</code></td><td>Cursor color</td></tr>
+              <tr><td><code>--editor-line-number</code></td><td>Line numbers</td></tr>
+              <tr><td><code>--editor-active-line</code></td><td>Current line highlight</td></tr>
+            </table>
+
+            <h4>Syntax Highlighting</h4>
+            <p>Code coloring:</p>
+            <table class="theme-help-table">
+              <tr><td><code>--syntax-keyword</code></td><td>if, else, function, class</td></tr>
+              <tr><td><code>--syntax-string</code></td><td>String literals</td></tr>
+              <tr><td><code>--syntax-number</code></td><td>Numbers</td></tr>
+              <tr><td><code>--syntax-comment</code></td><td>Comments</td></tr>
+              <tr><td><code>--syntax-function</code></td><td>Function names</td></tr>
+              <tr><td><code>--syntax-variable</code></td><td>Variables</td></tr>
+              <tr><td><code>--syntax-type</code></td><td>Type names</td></tr>
+              <tr><td><code>--syntax-property</code></td><td>Object properties</td></tr>
+              <tr><td><code>--syntax-operator</code></td><td>+, -, =, etc.</td></tr>
+              <tr><td><code>--syntax-control</code></td><td>return, break, continue</td></tr>
+            </table>
+
+            <h4>Widgets & Output</h4>
+            <p>Code output and UI widgets:</p>
+            <table class="theme-help-table">
+              <tr><td><code>--widget-surface</code></td><td>Widget background</td></tr>
+              <tr><td><code>--widget-text</code></td><td>Primary text</td></tr>
+              <tr><td><code>--widget-text-muted</code></td><td>Secondary text</td></tr>
+              <tr><td><code>--widget-text-accent</code></td><td>Accent/link color</td></tr>
+              <tr><td><code>--widget-border</code></td><td>Border color</td></tr>
+              <tr><td><code>--widget-border-accent</code></td><td>Accent border (output left bar)</td></tr>
+            </table>
+
+            <h4>Semantic Colors</h4>
+            <table class="theme-help-table">
+              <tr><td><code>--widget-success</code></td><td>Success states (green)</td></tr>
+              <tr><td><code>--widget-warning</code></td><td>Warnings (yellow/orange)</td></tr>
+              <tr><td><code>--widget-error</code></td><td>Errors (red)</td></tr>
+              <tr><td><code>--widget-info</code></td><td>Info (blue)</td></tr>
+            </table>
+
+            <h4>ANSI Terminal Colors</h4>
+            <p>For terminal output. All have <code>--ansi-bright-*</code> variants too.</p>
+            <table class="theme-help-table">
+              <tr><td><code>--ansi-black</code>, <code>--ansi-red</code>, <code>--ansi-green</code>, <code>--ansi-yellow</code></td></tr>
+              <tr><td><code>--ansi-blue</code>, <code>--ansi-magenta</code>, <code>--ansi-cyan</code>, <code>--ansi-white</code></td></tr>
+            </table>
+
+            <h4>Shell UI</h4>
+            <p>Panels, menus, dialogs:</p>
+            <table class="theme-help-table">
+              <tr><td><code>--mrmd-bg</code></td><td>Main background</td></tr>
+              <tr><td><code>--mrmd-fg</code></td><td>Main foreground</td></tr>
+              <tr><td><code>--mrmd-panel-bg</code></td><td>Panel background</td></tr>
+              <tr><td><code>--mrmd-popup-bg</code></td><td>Popup/menu background</td></tr>
+              <tr><td><code>--mrmd-border</code></td><td>Border color</td></tr>
+              <tr><td><code>--mrmd-accent</code></td><td>Accent color</td></tr>
+              <tr><td><code>--mrmd-hover-bg</code></td><td>Hover state background</td></tr>
+            </table>
+
+            <h4>Typography</h4>
+            <table class="theme-help-table">
+              <tr><td><code>--widget-font-mono</code></td><td>Monospace font stack</td></tr>
+              <tr><td><code>--widget-font-sans</code></td><td>Sans-serif font stack</td></tr>
+              <tr><td><code>--editor-font-family</code></td><td>Editor font</td></tr>
+              <tr><td><code>--widget-font-size</code></td><td>Base widget font size</td></tr>
+            </table>
+
+            <h4>Custom Fonts</h4>
+            <p>Add a <code>fontFace</code> property with @font-face CSS:</p>
+            <pre><code>"fontFace": "@font-face { font-family: 'MyFont'; font-weight: 100 900; src: url('./fonts/MyFont.woff2') format('woff2'); }",
+"--widget-font-mono": "'MyFont', monospace"</code></pre>
+
+            <h3>Complete Example (Neon Theme)</h3>
+            <p>Copy this, save as <code>neon.json</code>, and import:</p>
+            <div class="theme-help-example">
+              <button class="theme-help-copy" onclick="navigator.clipboard.writeText(this.parentElement.querySelector('code').textContent.replace(/\\/\\/.*$/gm, '')); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1500)">Copy</button>
+              <pre><code>${neonThemeExample.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+            </div>
+            <p><em>Note: Remove comments before importing (JSON doesn't support comments).</em></p>
+          </div>
+        </div>
+      `;
+
+      overlay.querySelector('.theme-help-close').onclick = () => overlay.remove();
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+      document.body.appendChild(overlay);
     }
 
     function loadSavedTheme() {
+      // Register custom themes first
+      registerCustomThemes();
+
       const saved = localStorage.getItem('mrmd-theme') || 'github';
-      currentThemeIndex = THEMES.indexOf(saved);
+      const allThemes = getAllThemeNames();
+      currentThemeIndex = allThemes.indexOf(saved);
       if (currentThemeIndex < 0) currentThemeIndex = 0;
-      applyTheme(THEMES[currentThemeIndex]);
+      applyTheme(allThemes[currentThemeIndex] || 'github');
     }
 
     // =========================================================================
