@@ -18,7 +18,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Services
-import { ProjectService, SessionService, BashSessionService, PtySessionService, FileService, AssetService } from './src/services/index.js';
+import { ProjectService, SessionService, BashSessionService, RSessionService, JuliaSessionService, PtySessionService, FileService, AssetService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
@@ -149,6 +149,8 @@ if (!fs.existsSync(CONFIG_DIR)) {
 const projectService = new ProjectService();
 const sessionService = new SessionService();
 const bashSessionService = new BashSessionService();
+const rSessionService = new RSessionService();
+const juliaSessionService = new JuliaSessionService();
 const ptySessionService = new PtySessionService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
@@ -1183,6 +1185,139 @@ ipcMain.handle('bash:forDocument', async (event, { documentPath }) => {
 });
 
 // ============================================================================
+// R SESSION SERVICE IPC HANDLERS
+// ============================================================================
+
+// List all R sessions
+ipcMain.handle('r:list', () => {
+  return rSessionService.list();
+});
+
+// Start R session
+ipcMain.handle('r:start', async (event, { config }) => {
+  try {
+    return await rSessionService.start(config);
+  } catch (e) {
+    console.error('[r:start] Error:', e.message);
+    throw e;
+  }
+});
+
+// Stop R session
+ipcMain.handle('r:stop', async (event, { sessionName }) => {
+  return rSessionService.stop(sessionName);
+});
+
+// Restart R session
+ipcMain.handle('r:restart', async (event, { sessionName }) => {
+  try {
+    return await rSessionService.restart(sessionName);
+  } catch (e) {
+    console.error('[r:restart] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get or create R session for document
+ipcMain.handle('r:forDocument', async (event, { documentPath }) => {
+  console.log('[r:forDocument] Called with:', documentPath);
+  try {
+    const project = await projectService.getProject(documentPath);
+    console.log('[r:forDocument] Project:', project?.root);
+    if (!project) {
+      console.log('[r:forDocument] No project found');
+      return null;
+    }
+
+    // Parse frontmatter from document
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    console.log('[r:forDocument] Calling rSessionService.getForDocument');
+    const result = await rSessionService.getForDocument(
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+    console.log('[r:forDocument] Result:', result);
+    return result;
+  } catch (e) {
+    console.error('[r:forDocument] Error:', e.message, e.stack);
+    return null;
+  }
+});
+
+// ============================================================================
+// JULIA SESSION SERVICE IPC HANDLERS
+// ============================================================================
+
+// List all Julia sessions
+ipcMain.handle('julia:list', () => {
+  return juliaSessionService.list();
+});
+
+// Start Julia session
+ipcMain.handle('julia:start', async (event, { config }) => {
+  try {
+    return await juliaSessionService.start(config);
+  } catch (e) {
+    console.error('[julia:start] Error:', e.message);
+    throw e;
+  }
+});
+
+// Stop Julia session
+ipcMain.handle('julia:stop', async (event, { sessionName }) => {
+  return juliaSessionService.stop(sessionName);
+});
+
+// Restart Julia session
+ipcMain.handle('julia:restart', async (event, { sessionName }) => {
+  try {
+    return await juliaSessionService.restart(sessionName);
+  } catch (e) {
+    console.error('[julia:restart] Error:', e.message);
+    throw e;
+  }
+});
+
+// Get or create Julia session for document
+ipcMain.handle('julia:forDocument', async (event, { documentPath }) => {
+  console.log('[julia:forDocument] Called with:', documentPath);
+  try {
+    const project = await projectService.getProject(documentPath);
+    console.log('[julia:forDocument] Project:', project?.root);
+    if (!project) {
+      console.log('[julia:forDocument] No project found');
+      return null;
+    }
+
+    // Parse frontmatter from document
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    console.log('[julia:forDocument] Calling juliaSessionService.getForDocument');
+    const result = await juliaSessionService.getForDocument(
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+    console.log('[julia:forDocument] Result:', result);
+    return result;
+  } catch (e) {
+    console.error('[julia:forDocument] Error:', e.message, e.stack);
+    return null;
+  }
+});
+
+// Check if Julia is available
+ipcMain.handle('julia:isAvailable', () => {
+  return juliaSessionService.isAvailable();
+});
+
+// ============================================================================
 // PTY SESSION SERVICE IPC HANDLERS (for ```term blocks)
 // ============================================================================
 
@@ -1600,6 +1735,12 @@ app.on('window-all-closed', () => {
 
   // Shutdown bash sessions
   bashSessionService.shutdown();
+
+  // Shutdown R sessions
+  rSessionService.shutdown();
+
+  // Shutdown Julia sessions
+  juliaSessionService.shutdown();
 
   // Shutdown Jupyter bridges
   for (const [ipynbPath, entry] of jupyterBridges) {

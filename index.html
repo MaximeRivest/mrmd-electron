@@ -1062,6 +1062,69 @@
       color: var(--text);
     }
 
+    /* Artifact tabs */
+    .artifact-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 8px 8px 0;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      min-height: 28px;
+    }
+
+    .artifact-tabs:empty {
+      display: none;
+    }
+
+    .artifact-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      margin-bottom: -1px;
+    }
+
+    .artifact-tab:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .artifact-tab.active {
+      background: var(--bg);
+      color: var(--text);
+      border-bottom: 1px solid var(--bg);
+    }
+
+    .artifact-tab-close {
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.5;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .artifact-tab-close:hover {
+      opacity: 1;
+      background: var(--hover-bg);
+    }
+
+    .artifact-status code {
+      background: var(--bg-tertiary);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+
     /* Source panel styles */
     .source-back-btn {
       width: 28px;
@@ -5382,24 +5445,139 @@
     }
 
     // =========================================================================
-    // ARTIFACT PANEL
+    // ARTIFACT PANEL - Multi-Artifact Support
     // =========================================================================
 
+    /**
+     * State for multiple named artifacts
+     * Each artifact has: { html, css, scripts, initialized }
+     */
     const artifactState = {
-      html: '',
-      css: '',
-      scripts: [],  // JS code accumulated from cells
-      initialized: false,
+      artifacts: new Map(),  // name -> { html, css, scripts, initialized }
+      activeArtifact: null,  // Currently displayed artifact name
     };
 
     /**
-     * Initialize the artifact iframe with a basic HTML structure
+     * Get or create an artifact by name
      */
-    function initArtifactIframe() {
+    function getOrCreateArtifact(name) {
+      if (!artifactState.artifacts.has(name)) {
+        artifactState.artifacts.set(name, {
+          html: '',
+          css: '',
+          scripts: [],
+          initialized: false,
+        });
+        renderArtifactTabs();
+      }
+      return artifactState.artifacts.get(name);
+    }
+
+    /**
+     * Render the artifact tabs
+     */
+    function renderArtifactTabs() {
+      const tabsContainer = document.getElementById('artifact-tabs');
+      if (!tabsContainer) return;
+
+      const names = Array.from(artifactState.artifacts.keys());
+      tabsContainer.innerHTML = names.map(name => `
+        <button class="artifact-tab ${name === artifactState.activeArtifact ? 'active' : ''}"
+                data-artifact="${escapeHtml(name)}">
+          ${escapeHtml(name)}
+          <span class="artifact-tab-close" data-close-artifact="${escapeHtml(name)}">×</span>
+        </button>
+      `).join('');
+
+      // Click handlers for tabs
+      tabsContainer.querySelectorAll('.artifact-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          if (e.target.classList.contains('artifact-tab-close')) {
+            const name = e.target.dataset.closeArtifact;
+            closeArtifact(name);
+          } else {
+            const name = tab.dataset.artifact;
+            switchToArtifact(name);
+          }
+        });
+      });
+    }
+
+    /**
+     * Switch to displaying a specific artifact
+     */
+    function switchToArtifact(name) {
+      if (!artifactState.artifacts.has(name)) return;
+
+      artifactState.activeArtifact = name;
+      renderArtifactTabs();
+
+      const artifact = artifactState.artifacts.get(name);
+      loadArtifactIntoIframe(artifact);
+      updateArtifactStatus(`Viewing: ${name}`);
+    }
+
+    /**
+     * Close/remove an artifact
+     */
+    function closeArtifact(name) {
+      artifactState.artifacts.delete(name);
+
+      if (artifactState.activeArtifact === name) {
+        const remaining = Array.from(artifactState.artifacts.keys());
+        artifactState.activeArtifact = remaining[0] || null;
+        if (artifactState.activeArtifact) {
+          switchToArtifact(artifactState.activeArtifact);
+        } else {
+          initEmptyArtifactIframe();
+        }
+      }
+
+      renderArtifactTabs();
+    }
+
+    /**
+     * Initialize the artifact iframe with empty content
+     */
+    function initEmptyArtifactIframe() {
       const iframe = document.getElementById('artifact-iframe');
       if (!iframe) return;
 
-      // Create a basic HTML document
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              margin: 0; padding: 16px; color: #666;
+              display: flex; align-items: center; justify-content: center;
+              min-height: 100vh; text-align: center;
+            }
+            code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div>
+            <p>No artifact selected</p>
+            <p style="font-size: 12px;">Use <code>html:name</code>, <code>css:name</code>, or <code>js:name</code> cells</p>
+          </div>
+        </body>
+        </html>
+      `);
+      doc.close();
+    }
+
+    /**
+     * Load an artifact's content into the iframe
+     */
+    function loadArtifactIntoIframe(artifact) {
+      const iframe = document.getElementById('artifact-iframe');
+      if (!iframe) return;
+
       const doc = iframe.contentDocument || iframe.contentWindow.document;
       doc.open();
       doc.write(`
@@ -5409,83 +5587,104 @@
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style id="artifact-styles">
-            /* Base styles */
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              margin: 0;
-              padding: 16px;
-              line-height: 1.5;
+              margin: 0; padding: 16px; line-height: 1.5;
             }
             * { box-sizing: border-box; }
+            ${artifact.css}
           </style>
         </head>
         <body id="artifact-body">
-          <div id="artifact-content"></div>
+          <div id="artifact-content">${artifact.html}</div>
         </body>
         </html>
       `);
       doc.close();
 
-      artifactState.initialized = true;
-      updateArtifactStatus('Ready');
+      // Re-execute scripts after HTML is loaded
+      artifact.scripts.forEach(code => {
+        try {
+          iframe.contentWindow.eval(code);
+        } catch (err) {
+          console.error('[artifact] JS replay error:', err);
+        }
+      });
+
+      artifact.initialized = true;
     }
 
     /**
-     * Update the artifact with new HTML content
+     * Update an artifact with new HTML content
      */
-    function updateArtifactHtml(html) {
-      const iframe = document.getElementById('artifact-iframe');
-      if (!iframe || !artifactState.initialized) {
-        initArtifactIframe();
-      }
+    function updateArtifactHtml(name, html) {
+      const artifact = getOrCreateArtifact(name);
+      artifact.html += html;
 
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      const container = doc.getElementById('artifact-content');
-      if (container) {
-        // Append HTML (don't replace, so multiple HTML cells accumulate)
-        container.innerHTML += html;
-        artifactState.html += html;
-        updateArtifactStatus('HTML updated');
-      }
-    }
-
-    /**
-     * Update the artifact with new CSS
-     */
-    function updateArtifactCss(css) {
-      const iframe = document.getElementById('artifact-iframe');
-      if (!iframe || !artifactState.initialized) {
-        initArtifactIframe();
-      }
-
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      const styleEl = doc.getElementById('artifact-styles');
-      if (styleEl) {
-        // Append CSS
-        styleEl.textContent += '\n' + css;
-        artifactState.css += '\n' + css;
-        updateArtifactStatus('CSS updated');
+      if (artifactState.activeArtifact === name) {
+        const iframe = document.getElementById('artifact-iframe');
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        const container = doc?.getElementById('artifact-content');
+        if (container) {
+          container.innerHTML = artifact.html;
+        }
+        updateArtifactStatus(`HTML updated: ${name}`);
+      } else if (!artifactState.activeArtifact) {
+        switchToArtifact(name);
       }
     }
 
     /**
-     * Execute JS in the artifact context
+     * Update an artifact with new CSS
      */
-    function executeArtifactJs(code) {
-      const iframe = document.getElementById('artifact-iframe');
-      if (!iframe || !artifactState.initialized) {
-        initArtifactIframe();
-      }
+    function updateArtifactCss(name, css) {
+      const artifact = getOrCreateArtifact(name);
+      artifact.css += '\n' + css;
 
+      if (artifactState.activeArtifact === name) {
+        const iframe = document.getElementById('artifact-iframe');
+        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+        const styleEl = doc?.getElementById('artifact-styles');
+        if (styleEl) {
+          styleEl.textContent += '\n' + css;
+        }
+        updateArtifactStatus(`CSS updated: ${name}`);
+      } else if (!artifactState.activeArtifact) {
+        switchToArtifact(name);
+      }
+    }
+
+    /**
+     * Execute JS in an artifact's context
+     */
+    function executeArtifactJs(name, code) {
+      const artifact = getOrCreateArtifact(name);
+      artifact.scripts.push(code);
+
+      if (artifactState.activeArtifact === name) {
+        try {
+          const iframe = document.getElementById('artifact-iframe');
+          iframe.contentWindow.eval(code);
+          updateArtifactStatus(`JS executed: ${name}`);
+        } catch (err) {
+          console.error('[artifact] JS error:', err);
+          updateArtifactStatus(`JS error: ${err.message}`);
+        }
+      } else if (!artifactState.activeArtifact) {
+        switchToArtifact(name);
+      }
+    }
+
+    /**
+     * Execute JS in the main document context (js:dom)
+     */
+    function executeMainDomJs(code) {
       try {
-        const win = iframe.contentWindow;
-        // Execute in the iframe's context
-        win.eval(code);
-        artifactState.scripts.push(code);
-        updateArtifactStatus('JS executed');
+        eval(code);
+        updateArtifactStatus('JS executed in main DOM');
       } catch (err) {
-        console.error('[artifact] JS error:', err);
-        updateArtifactStatus('JS error: ' + err.message);
+        console.error('[artifact] Main DOM JS error:', err);
+        updateArtifactStatus(`Main DOM error: ${err.message}`);
       }
     }
 
@@ -5495,109 +5694,94 @@
     function updateArtifactStatus(text) {
       const statusEl = document.getElementById('artifact-status');
       if (statusEl) {
-        const hasContent = artifactState.html || artifactState.css || artifactState.scripts.length > 0;
+        const hasArtifacts = artifactState.artifacts.size > 0;
         statusEl.innerHTML = `
-          <span class="artifact-status-indicator ${hasContent ? 'active' : ''}"></span>
+          <span class="artifact-status-indicator ${hasArtifacts ? 'active' : ''}"></span>
           <span class="artifact-status-text">${text}</span>
         `;
       }
     }
 
     /**
-     * Clear the artifact
+     * Clear the current artifact
      */
-    function clearArtifact() {
-      artifactState.html = '';
-      artifactState.css = '';
-      artifactState.scripts = [];
-      artifactState.initialized = false;
-      initArtifactIframe();
-      updateArtifactStatus('Cleared');
+    function clearCurrentArtifact() {
+      if (!artifactState.activeArtifact) return;
+      const artifact = artifactState.artifacts.get(artifactState.activeArtifact);
+      if (artifact) {
+        artifact.html = '';
+        artifact.css = '';
+        artifact.scripts = [];
+        artifact.initialized = false;
+        loadArtifactIntoIframe(artifact);
+        updateArtifactStatus(`Cleared: ${artifactState.activeArtifact}`);
+      }
     }
 
     /**
-     * Reload the artifact (re-apply all accumulated content)
+     * Reload the current artifact
      */
-    function reloadArtifact() {
-      const savedHtml = artifactState.html;
-      const savedCss = artifactState.css;
-      const savedScripts = [...artifactState.scripts];
-
-      // Reset and rebuild
-      artifactState.html = '';
-      artifactState.css = '';
-      artifactState.scripts = [];
-      artifactState.initialized = false;
-      initArtifactIframe();
-
-      // Re-apply CSS
-      if (savedCss) {
-        updateArtifactCss(savedCss);
+    function reloadCurrentArtifact() {
+      if (!artifactState.activeArtifact) return;
+      const artifact = artifactState.artifacts.get(artifactState.activeArtifact);
+      if (artifact) {
+        loadArtifactIntoIframe(artifact);
+        updateArtifactStatus(`Reloaded: ${artifactState.activeArtifact}`);
       }
-
-      // Re-apply HTML
-      if (savedHtml) {
-        const iframe = document.getElementById('artifact-iframe');
-        const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
-        const container = doc?.getElementById('artifact-content');
-        if (container) {
-          container.innerHTML = savedHtml;
-          artifactState.html = savedHtml;
-        }
-      }
-
-      // Re-execute scripts
-      savedScripts.forEach(code => {
-        executeArtifactJs(code);
-      });
-
-      updateArtifactStatus('Reloaded');
     }
 
     /**
      * Initialize artifact panel
      */
     function initArtifactPanel() {
-      // Initialize iframe when panel first opens
       const originalOpenPanel = openPanel;
       const wrappedOpenPanel = function(panelId) {
         originalOpenPanel(panelId);
-        if (panelId === 'artifact' && !artifactState.initialized) {
-          initArtifactIframe();
+        if (panelId === 'artifact') {
+          if (artifactState.activeArtifact) {
+            const artifact = artifactState.artifacts.get(artifactState.activeArtifact);
+            if (artifact && !artifact.initialized) {
+              loadArtifactIntoIframe(artifact);
+            }
+          } else {
+            initEmptyArtifactIframe();
+          }
+          renderArtifactTabs();
         }
       };
-      // Only wrap if not already wrapped
       if (!openPanel._artifactWrapped) {
         openPanel = wrappedOpenPanel;
         openPanel._artifactWrapped = true;
       }
 
-      // Button handlers
-      document.getElementById('artifact-clear')?.addEventListener('click', clearArtifact);
-      document.getElementById('artifact-reload')?.addEventListener('click', reloadArtifact);
+      document.getElementById('artifact-clear')?.addEventListener('click', clearCurrentArtifact);
+      document.getElementById('artifact-reload')?.addEventListener('click', reloadCurrentArtifact);
 
       // Expose artifact API to window for JS cells to use
       window.artifact = {
-        html: updateArtifactHtml,
-        css: updateArtifactCss,
-        js: executeArtifactJs,
-        clear: clearArtifact,
-        reload: reloadArtifact,
-        // Get the artifact iframe's document
-        get document() {
-          const iframe = document.getElementById('artifact-iframe');
-          return iframe?.contentDocument || iframe?.contentWindow?.document;
+        html: (name, html) => updateArtifactHtml(name, html),
+        css: (name, css) => updateArtifactCss(name, css),
+        js: (name, code) => executeArtifactJs(name, code),
+        addHtml: (html) => updateArtifactHtml('default', html),
+        addCss: (css) => updateArtifactCss('default', css),
+        run: (code) => executeArtifactJs('default', code),
+        dom: executeMainDomJs,
+        list: () => Array.from(artifactState.artifacts.keys()),
+        switch: switchToArtifact,
+        close: closeArtifact,
+        clear: clearCurrentArtifact,
+        reload: reloadCurrentArtifact,
+        getDocument: (name) => {
+          if (artifactState.activeArtifact === name) {
+            const iframe = document.getElementById('artifact-iframe');
+            return iframe?.contentDocument || iframe?.contentWindow?.document;
+          }
+          return null;
         },
-        // Get the artifact iframe's window
-        get window() {
-          const iframe = document.getElementById('artifact-iframe');
-          return iframe?.contentWindow;
-        },
-        // Show the artifact panel
-        show() {
+        show: (name) => {
           openPanel('artifact');
-          if (!artifactState.initialized) {
-            initArtifactIframe();
+          if (name && artifactState.artifacts.has(name)) {
+            switchToArtifact(name);
           }
         }
       };
@@ -5609,7 +5793,7 @@
     });
 
     /**
-     * Hook into cell execution to update artifact
+     * Hook into cell execution to update artifacts
      */
     function setupArtifactExecutionHook() {
       if (!state.editor?.execution?.on) {
@@ -5620,29 +5804,50 @@
 
       // Listen for cell completion
       state.editor.execution.on('cellComplete', (cellIndex, result, execId) => {
-        // Get the cell to determine language
         const cells = state.editor.getCells?.() || [];
         const cell = cells[cellIndex];
         if (!cell) return;
 
-        const lang = cell.language?.toLowerCase();
-        console.log('[artifact] Cell complete:', lang, execId);
+        // Check if this cell targets an artifact
+        // Uses properties from cells.js: artifact, artifactName, mainDom, baseLanguage
+        const isArtifact = cell.artifact;
+        const artifactName = cell.artifactName;
+        const isMainDom = cell.mainDom;
+        const baseLang = cell.baseLanguage?.toLowerCase() || cell.language?.toLowerCase();
 
-        // Only update artifact panel if it's open or has content
-        if (railState.activePanel !== 'artifact' && !artifactState.initialized) {
+        console.log('[artifact] Cell complete:', cell.language, { isArtifact, artifactName, isMainDom, baseLang });
+
+        // Handle main DOM execution (js:dom)
+        if (isMainDom && (baseLang === 'javascript' || baseLang === 'js')) {
+          executeMainDomJs(cell.code);
           return;
         }
 
-        if (lang === 'html' || lang === 'htm') {
-          // For HTML cells, use the cell code itself
-          updateArtifactHtml(cell.code);
-        } else if (lang === 'css' || lang === 'style') {
-          // For CSS cells, apply the styles
-          updateArtifactCss(cell.code);
-        } else if (lang === 'javascript' || lang === 'js') {
-          // For JS cells, optionally execute in artifact context
-          // Only if the cell has a special marker like "artifact" in metadata
-          // For now, we don't auto-execute JS in artifact
+        // Handle artifact-targeted cells (with :name suffix)
+        if (isArtifact && artifactName) {
+          // Open artifact panel if not already open
+          if (railState.activePanel !== 'artifact') {
+            openPanel('artifact');
+          }
+
+          if (baseLang === 'html' || baseLang === 'htm') {
+            updateArtifactHtml(artifactName, cell.code);
+          } else if (baseLang === 'css' || baseLang === 'style') {
+            updateArtifactCss(artifactName, cell.code);
+          } else if (baseLang === 'javascript' || baseLang === 'js') {
+            executeArtifactJs(artifactName, cell.code);
+          }
+          return;
+        }
+
+        // Handle plain HTML/CSS cells (no :name) - send to "default" artifact
+        // Only if artifact panel is open or has existing artifacts
+        if (railState.activePanel === 'artifact' || artifactState.artifacts.size > 0) {
+          if (baseLang === 'html' || baseLang === 'htm') {
+            updateArtifactHtml('default', cell.code);
+          } else if (baseLang === 'css' || baseLang === 'style') {
+            updateArtifactCss('default', cell.code);
+          }
         }
       });
 

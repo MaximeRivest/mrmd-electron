@@ -202,6 +202,52 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // JULIA SESSION SERVICE API
+  // ==========================================================================
+
+  julia: {
+    /**
+     * List all running Julia sessions
+     * @returns {Promise<SessionInfo[]>}
+     */
+    list: () => ipcRenderer.invoke('julia:list'),
+
+    /**
+     * Start a new Julia session
+     * @param {object} config - Session config { name, cwd }
+     * @returns {Promise<SessionInfo>}
+     */
+    start: (config) => ipcRenderer.invoke('julia:start', { config }),
+
+    /**
+     * Stop a Julia session
+     * @param {string} sessionName - Session name to stop
+     * @returns {Promise<boolean>}
+     */
+    stop: (sessionName) => ipcRenderer.invoke('julia:stop', { sessionName }),
+
+    /**
+     * Restart a Julia session
+     * @param {string} sessionName - Session name to restart
+     * @returns {Promise<SessionInfo>}
+     */
+    restart: (sessionName) => ipcRenderer.invoke('julia:restart', { sessionName }),
+
+    /**
+     * Get or create Julia session for a document
+     * @param {string} documentPath - Path to document
+     * @returns {Promise<SessionInfo | null>}
+     */
+    forDocument: (documentPath) => ipcRenderer.invoke('julia:forDocument', { documentPath }),
+
+    /**
+     * Check if Julia is available on the system
+     * @returns {Promise<boolean>}
+     */
+    isAvailable: () => ipcRenderer.invoke('julia:isAvailable'),
+  },
+
+  // ==========================================================================
   // PTY SESSION SERVICE API (for ```term blocks)
   // ==========================================================================
 

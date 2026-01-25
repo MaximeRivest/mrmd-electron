@@ -45,6 +45,11 @@ async function bundlePackage(pkg) {
     throw new Error(`Entry point not found: ${pkg.entry}`);
   }
 
+  // WebSocket polyfill for y-websocket (needed by mrmd-monitor)
+  // y-websocket expects a global WebSocket but Node.js doesn't have one
+  // We inject code that sets up the polyfill before the bundle runs
+  const needsWsPolyfill = pkg.name === 'mrmd-monitor';
+
   const result = await build({
     entryPoints: [pkg.entry],
     bundle: true,
@@ -56,7 +61,6 @@ async function bundlePackage(pkg) {
     minify: false,
     // Include source maps for debugging
     sourcemap: true,
-    // No banner needed - we run via spawn(process.execPath, [script])
     // Mark Node.js built-ins as external (they're available in Electron's Node)
     // Also mark native modules that can't be bundled
     external: [
@@ -68,10 +72,39 @@ async function bundlePackage(pkg) {
       'perf_hooks', 'async_hooks', 'inspector', 'trace_events',
       // Native modules (can't bundle .node files)
       'fsevents',  // macOS file watcher (chokidar falls back gracefully)
+      // Keep ws external so we can polyfill globalThis.WebSocket
+      // The packaged app will have ws in node_modules
+      ...(needsWsPolyfill ? ['ws'] : []),
     ],
     // Log level
     logLevel: 'info',
   });
+
+  // Post-process: inject WebSocket polyfill for mrmd-monitor
+  // y-websocket expects a global WebSocket but Node.js doesn't have one
+  if (needsWsPolyfill) {
+    const bundleContent = fs.readFileSync(pkg.output, 'utf8');
+    const wsPolyfill = `// WebSocket polyfill for y-websocket (Node.js has no global WebSocket)
+try {
+  if (typeof globalThis.WebSocket === 'undefined') {
+    const { WebSocket } = require('ws');
+    globalThis.WebSocket = WebSocket;
+  }
+} catch (e) {
+  console.warn('[polyfill] Failed to load ws module:', e.message);
+}
+`;
+    // Insert polyfill after shebang (if present)
+    let newContent;
+    if (bundleContent.startsWith('#!')) {
+      const firstNewline = bundleContent.indexOf('\n');
+      newContent = bundleContent.slice(0, firstNewline + 1) + wsPolyfill + bundleContent.slice(firstNewline + 1);
+    } else {
+      newContent = wsPolyfill + bundleContent;
+    }
+    fs.writeFileSync(pkg.output, newContent);
+    console.log(`  ✓ Injected WebSocket polyfill`);
+  }
 
   // Make executable
   fs.chmodSync(pkg.output, 0o755);
