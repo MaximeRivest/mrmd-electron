@@ -2140,6 +2140,444 @@
       opacity: 0.7;
     }
 
+    /* =========================================================================
+       SETTINGS MODAL
+       ========================================================================= */
+
+    .settings-modal {
+      width: 700px;
+      max-height: 80vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .settings-header-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+    }
+
+    .settings-header-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .settings-header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .settings-header-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .settings-header-close:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .settings-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .settings-tabs {
+      width: 180px;
+      border-right: 1px solid var(--border);
+      padding: 12px;
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+
+    .settings-tab {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .settings-tab:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .settings-tab.active {
+      background: var(--accent);
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+    }
+
+    .settings-tab-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .settings-tab-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .settings-section {
+      margin-bottom: 28px;
+    }
+
+    .settings-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .settings-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .settings-section-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* API Key Input Row */
+    .api-key-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .api-key-row:last-child {
+      border-bottom: none;
+    }
+
+    .api-key-provider {
+      width: 120px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      flex-shrink: 0;
+    }
+
+    .api-key-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .api-key-input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .api-key-input:focus {
+      border-color: var(--accent);
+    }
+
+    .api-key-input::placeholder {
+      color: var(--text-dim);
+      font-family: inherit;
+    }
+
+    .api-key-status {
+      width: 70px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .api-key-status.valid {
+      color: #3fb950;
+    }
+
+    .api-key-status.invalid {
+      color: #f85149;
+    }
+
+    .api-key-status.testing {
+      color: var(--text-dim);
+    }
+
+    .api-key-status.empty {
+      color: var(--text-dim);
+    }
+
+    .api-key-test-btn {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .api-key-test-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .api-key-test-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Quality Level Row */
+    .quality-level-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .quality-level-row:last-child {
+      border-bottom: none;
+    }
+
+    .quality-level-badge {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .quality-level-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .quality-level-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .quality-level-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .quality-level-select,
+    .quality-level-input {
+      width: 280px;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .quality-level-select {
+      cursor: pointer;
+    }
+
+    .quality-level-select:focus,
+    .quality-level-input:focus {
+      border-color: var(--accent);
+    }
+
+    .quality-level-input::placeholder {
+      color: var(--text-dim);
+      font-family: inherit;
+    }
+
+    /* Custom Commands Tab */
+    .custom-section-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .custom-section-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .custom-section-count {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .custom-section-delete {
+      padding: 4px 8px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .custom-section-delete:hover {
+      background: rgba(248, 81, 73, 0.15);
+      color: #f85149;
+    }
+
+    .add-section-btn,
+    .add-command-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .add-section-btn:hover,
+    .add-command-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(88, 166, 255, 0.05);
+    }
+
+    /* Settings Footer */
+    .settings-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .settings-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .settings-btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .settings-btn-secondary:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .settings-btn-primary {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: white;
+    }
+
+    .settings-btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    /* AI Panel Settings Button */
+    .ai-settings-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      padding: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 4px;
+    }
+
+    .ai-settings-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .ai-settings-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
     /* Modal overlay */
     .modal-overlay {
       position: fixed;
@@ -2970,6 +3408,9 @@
       <div class="rail-panel-header">
         <span class="rail-panel-title">AI Commands</span>
         <span class="ai-keyboard-hint" id="ai-keyboard-hint" style="display: none;">Press key or Esc</span>
+        <button class="ai-settings-btn" id="ai-settings-btn" title="AI Settings (API Keys, Models)">
+          <svg viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/><path d="M13.3 8.9l.9.5c.2.1.3.4.2.6l-.9 1.5c-.1.2-.4.3-.6.2l-.9-.5c-.3.2-.6.4-1 .5l-.1 1c0 .3-.2.5-.5.5h-1.8c-.3 0-.5-.2-.5-.5l-.1-1c-.4-.1-.7-.3-1-.5l-.9.5c-.2.1-.5 0-.6-.2l-.9-1.5c-.1-.2 0-.5.2-.6l.9-.5c0-.3 0-.6 0-.9 0-.3 0-.6 0-.9l-.9-.5c-.2-.1-.3-.4-.2-.6l.9-1.5c.1-.2.4-.3.6-.2l.9.5c.3-.2.6-.4 1-.5l.1-1c0-.3.2-.5.5-.5h1.8c.3 0 .5.2.5.5l.1 1c.4.1.7.3 1 .5l.9-.5c.2-.1.5 0 .6.2l.9 1.5c.1.2 0 .5-.2.6l-.9.5c0 .3 0 .6 0 .9 0 .3 0 .6 0 .9z"/></svg>
+        </button>
         <button class="rail-panel-close" data-close-panel="ai">×</button>
       </div>
       <div class="rail-panel-content">
@@ -3161,6 +3602,112 @@
         </button>
       </div>
       <button class="notebook-dialog-cancel" id="notebook-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- AI Settings Modal -->
+  <div class="modal-overlay" id="ai-settings-overlay">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <span class="settings-header-icon">
+          <svg viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/><path d="M13.3 8.9l.9.5c.2.1.3.4.2.6l-.9 1.5c-.1.2-.4.3-.6.2l-.9-.5c-.3.2-.6.4-1 .5l-.1 1c0 .3-.2.5-.5.5h-1.8c-.3 0-.5-.2-.5-.5l-.1-1c-.4-.1-.7-.3-1-.5l-.9.5c-.2.1-.5 0-.6-.2l-.9-1.5c-.1-.2 0-.5.2-.6l.9-.5c0-.3 0-.6 0-.9 0-.3 0-.6 0-.9l-.9-.5c-.2-.1-.3-.4-.2-.6l.9-1.5c.1-.2.4-.3.6-.2l.9.5c.3-.2.6-.4 1-.5l.1-1c0-.3.2-.5.5-.5h1.8c.3 0 .5.2.5.5l.1 1c.4.1.7.3 1 .5l.9-.5c.2-.1.5 0 .6.2l.9 1.5c.1.2 0 .5-.2.6l-.9.5c0 .3 0 .6 0 .9 0 .3 0 .6 0 .9z"/></svg>
+        </span>
+        <span class="settings-header-title">AI Settings</span>
+        <button class="settings-header-close" id="ai-settings-close">&times;</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-tabs">
+          <div class="settings-tab active" data-tab="api-keys">
+            <span class="settings-tab-icon">
+              <svg viewBox="0 0 16 16"><path d="M10.5 1a4.5 4.5 0 00-4.38 5.58L2 10.7V14h3.3l.12-.12a.75.75 0 001.01-1.01l.12-.12h.7l.12-.12a.75.75 0 001.01-1.01L8.5 11.5v-.75l3.92-3.92A4.5 4.5 0 0010.5 1zm1 3a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+            </span>
+            <span>API Keys</span>
+          </div>
+          <div class="settings-tab" data-tab="quality-levels">
+            <span class="settings-tab-icon">
+              <svg viewBox="0 0 16 16"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.5 3.5L8 10l-3 1.5.5-3.5L3 5.5l3.5-.5L8 2z"/></svg>
+            </span>
+            <span>Quality Levels</span>
+          </div>
+          <div class="settings-tab" data-tab="custom-commands">
+            <span class="settings-tab-icon">
+              <svg viewBox="0 0 16 16"><path d="M4 4h8M4 8h8M4 12h5"/><path d="M12 10l2 2-2 2"/></svg>
+            </span>
+            <span>Custom Commands</span>
+          </div>
+        </div>
+        <div class="settings-content">
+          <!-- API Keys Tab -->
+          <div class="settings-tab-content" id="tab-api-keys">
+            <div class="settings-section">
+              <div class="settings-section-title">API Keys</div>
+              <div class="settings-section-desc">
+                Enter API keys for your LLM providers. Uses <a href="https://docs.litellm.ai/docs/providers" target="_blank" style="color: var(--accent);">LiteLLM</a> format.
+                Keys are stored locally and sent with each AI request.
+              </div>
+              <div id="api-keys-list">
+                <!-- Dynamically populated -->
+              </div>
+              <button class="add-section-btn" id="add-api-key-btn" style="margin-top: 12px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>
+                Add Provider
+              </button>
+              <div class="settings-section" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <div class="settings-section-title">Common Providers</div>
+                <div style="font-size: 11px; color: var(--text-dim); line-height: 1.6; font-family: 'SF Mono', Monaco, monospace;">
+                  anthropic, openai, groq, gemini, openrouter, together_ai, fireworks_ai, azure, bedrock, vertex_ai, cohere, mistral, deepseek, ollama
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quality Levels Tab -->
+          <div class="settings-tab-content" id="tab-quality-levels" style="display: none;">
+            <div class="settings-section">
+              <div class="settings-section-title">Quality Level Models</div>
+              <div class="settings-section-desc">
+                Enter model names in <a href="https://docs.litellm.ai/docs/providers" target="_blank" style="color: var(--accent);">LiteLLM format</a>: <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 3px;">provider/model-name</code>
+              </div>
+              <div id="quality-levels-list">
+                <!-- Dynamically populated -->
+              </div>
+              <div class="settings-section" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <div class="settings-section-title">Model Format Examples</div>
+                <div style="font-size: 11px; color: var(--text-dim); line-height: 1.8; font-family: 'SF Mono', Monaco, monospace;">
+                  anthropic/claude-sonnet-4-5<br>
+                  openai/gpt-4o<br>
+                  groq/llama-3.3-70b-versatile<br>
+                  gemini/gemini-2.0-flash<br>
+                  openrouter/anthropic/claude-3.5-sonnet<br>
+                  together_ai/meta-llama/Llama-3-70b<br>
+                  ollama/llama3.2
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom Commands Tab -->
+          <div class="settings-tab-content" id="tab-custom-commands" style="display: none;">
+            <div class="settings-section">
+              <div class="settings-section-title">Custom AI Commands</div>
+              <div class="settings-section-desc">
+                Create your own AI commands organized into sections. Commands will appear in the AI panel.
+              </div>
+              <div id="custom-sections-list">
+                <!-- Dynamically populated -->
+              </div>
+              <button class="add-section-btn" id="add-section-btn">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>
+                Add Section
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button class="settings-btn settings-btn-secondary" id="ai-settings-reset">Reset to Defaults</button>
+        <button class="settings-btn settings-btn-primary" id="ai-settings-done">Done</button>
+      </div>
     </div>
   </div>
 
@@ -6692,17 +7239,98 @@
         baseUrl: serverUrl.replace(/\/$/, ''),
         juiceLevel: currentJuiceLevel, // Use current panel state
         reasoningLevel: currentReasoningLevel, // Use current panel state
+        apiKeys: null, // Cached API keys (loaded lazily)
+        qualityLevels: null, // Cached quality level configs
+
+        /**
+         * Load API keys and quality levels from settings
+         */
+        async loadSettings() {
+          try {
+            // Load API keys (unmasked)
+            const keys = await electronAPI.settings.getApiKeys(false);
+            this.apiKeys = keys;
+
+            // Load quality levels
+            this.qualityLevels = await electronAPI.settings.getQualityLevels();
+          } catch (e) {
+            console.warn('[AI] Failed to load settings:', e);
+          }
+        },
+
+        /**
+         * Reload settings (call after settings change)
+         */
+        async reloadSettings() {
+          this.apiKeys = null;
+          this.qualityLevels = null;
+          await this.loadSettings();
+        },
+
+        /**
+         * Get API key headers for requests
+         */
+        getApiKeyHeaders() {
+          const headers = {};
+          if (!this.apiKeys) return headers;
+
+          // Map settings keys to header names
+          const headerMap = {
+            anthropic: 'X-Api-Key-Anthropic',
+            openai: 'X-Api-Key-Openai',
+            groq: 'X-Api-Key-Groq',
+            gemini: 'X-Api-Key-Gemini',
+            openrouter: 'X-Api-Key-Openrouter',
+          };
+
+          for (const [provider, headerName] of Object.entries(headerMap)) {
+            const key = this.apiKeys[provider];
+            if (key && key.length > 0) {
+              headers[headerName] = key;
+            }
+          }
+
+          return headers;
+        },
+
+        /**
+         * Get model override for a juice level from settings
+         */
+        getModelOverride(juiceLevel) {
+          if (!this.qualityLevels) return null;
+          const config = this.qualityLevels[juiceLevel + 1]; // Settings uses 1-5, internal uses 0-4
+          if (config && config.model) {
+            return config.model;
+          }
+          return null;
+        },
 
         async execute(program, params, options = {}) {
+          // Ensure settings are loaded
+          if (!this.apiKeys) {
+            await this.loadSettings();
+          }
+
           const juiceLevel = options.juiceLevel ?? this.juiceLevel;
           const reasoningLevel = options.reasoningLevel ?? this.reasoningLevel;
+
+          // Build headers with API keys
+          const headers = {
+            'Content-Type': 'application/json',
+            'X-Juice-Level': String(juiceLevel),
+            'X-Reasoning-Level': String(reasoningLevel),
+            ...this.getApiKeyHeaders(),
+          };
+
+          // Add model override if configured
+          const modelOverride = this.getModelOverride(juiceLevel);
+          if (modelOverride) {
+            headers['X-Model-Override'] = modelOverride;
+          }
+
           const response = await fetch(`${this.baseUrl}/${program}`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Juice-Level': String(juiceLevel),
-              'X-Reasoning-Level': String(reasoningLevel),
-            },
+            headers,
             body: JSON.stringify(params),
           });
 
@@ -6718,16 +7346,32 @@
          * Execute with streaming progress updates
          */
         async executeStream(program, params, callbacks = {}, options = {}) {
+          // Ensure settings are loaded
+          if (!this.apiKeys) {
+            await this.loadSettings();
+          }
+
           const juiceLevel = options.juiceLevel ?? this.juiceLevel;
           const reasoningLevel = options.reasoningLevel ?? this.reasoningLevel;
+
+          // Build headers with API keys
+          const headers = {
+            'Content-Type': 'application/json',
+            'X-Juice-Level': String(juiceLevel),
+            'X-Reasoning-Level': String(reasoningLevel),
+            'Accept': 'text/event-stream',
+            ...this.getApiKeyHeaders(),
+          };
+
+          // Add model override if configured
+          const modelOverride = this.getModelOverride(juiceLevel);
+          if (modelOverride) {
+            headers['X-Model-Override'] = modelOverride;
+          }
+
           const response = await fetch(`${this.baseUrl}/${program}/stream`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Juice-Level': String(juiceLevel),
-              'X-Reasoning-Level': String(reasoningLevel),
-              'Accept': 'text/event-stream',
-            },
+            headers,
             body: JSON.stringify(params),
           });
 
@@ -7577,7 +8221,475 @@
     // Initialize AI panel on load
     document.addEventListener('DOMContentLoaded', () => {
       initAiPanel();
+      initAiSettingsModal();
     });
+
+    // =========================================================================
+    // AI SETTINGS MODAL
+    // =========================================================================
+
+    /**
+     * LiteLLM model format examples for documentation
+     */
+    const LITELLM_EXAMPLES = [
+      { provider: 'Anthropic', format: 'anthropic/claude-sonnet-4-5', envVar: 'ANTHROPIC_API_KEY' },
+      { provider: 'OpenAI', format: 'openai/gpt-4o', envVar: 'OPENAI_API_KEY' },
+      { provider: 'Groq', format: 'groq/llama-3.3-70b-versatile', envVar: 'GROQ_API_KEY' },
+      { provider: 'Google', format: 'gemini/gemini-2.0-flash', envVar: 'GEMINI_API_KEY' },
+      { provider: 'OpenRouter', format: 'openrouter/anthropic/claude-3.5-sonnet', envVar: 'OPENROUTER_API_KEY' },
+      { provider: 'Together', format: 'together_ai/meta-llama/Llama-3-70b', envVar: 'TOGETHERAI_API_KEY' },
+      { provider: 'Fireworks', format: 'fireworks_ai/llama-v3-70b-instruct', envVar: 'FIREWORKS_API_KEY' },
+    ];
+
+    /**
+     * Initialize the AI Settings Modal
+     */
+    function initAiSettingsModal() {
+      const overlay = document.getElementById('ai-settings-overlay');
+      const settingsBtn = document.getElementById('ai-settings-btn');
+      const closeBtn = document.getElementById('ai-settings-close');
+      const doneBtn = document.getElementById('ai-settings-done');
+      const resetBtn = document.getElementById('ai-settings-reset');
+      const tabs = document.querySelectorAll('.settings-tab');
+
+      if (!overlay || !settingsBtn) return;
+
+      // Open modal
+      settingsBtn.addEventListener('click', () => {
+        openAiSettingsModal();
+      });
+
+      // Close modal
+      closeBtn.addEventListener('click', closeAiSettingsModal);
+      doneBtn.addEventListener('click', closeAiSettingsModal);
+
+      // Close on overlay click
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeAiSettingsModal();
+        }
+      });
+
+      // Close on Escape
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAiSettingsModal();
+        }
+      });
+
+      // Tab switching
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabId = tab.dataset.tab;
+          switchSettingsTab(tabId);
+        });
+      });
+
+      // Reset button
+      resetBtn.addEventListener('click', async () => {
+        if (confirm('Reset all AI settings to defaults? This will clear your API keys and custom commands.')) {
+          await electronAPI.settings.reset();
+          await loadAiSettings();
+        }
+      });
+
+      // Add section button
+      const addSectionBtn = document.getElementById('add-section-btn');
+      if (addSectionBtn) {
+        addSectionBtn.addEventListener('click', async () => {
+          const name = prompt('Enter section name:');
+          if (name && name.trim()) {
+            await electronAPI.settings.addCustomSection(name.trim());
+            await loadCustomSections();
+          }
+        });
+      }
+    }
+
+    /**
+     * Open the AI Settings modal and load data
+     */
+    async function openAiSettingsModal() {
+      const overlay = document.getElementById('ai-settings-overlay');
+      overlay.classList.add('visible');
+      await loadAiSettings();
+    }
+
+    /**
+     * Close the AI Settings modal
+     */
+    function closeAiSettingsModal() {
+      const overlay = document.getElementById('ai-settings-overlay');
+      overlay.classList.remove('visible');
+
+      // Reload settings into aiClient so changes take effect immediately
+      if (aiClient) {
+        aiClient.reloadSettings();
+      }
+    }
+
+    /**
+     * Switch between settings tabs
+     */
+    function switchSettingsTab(tabId) {
+      // Update tab buttons
+      document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+      });
+
+      // Update tab content
+      document.querySelectorAll('.settings-tab-content').forEach(content => {
+        content.style.display = content.id === `tab-${tabId}` ? 'block' : 'none';
+      });
+    }
+
+    /**
+     * Load all AI settings into the modal
+     */
+    async function loadAiSettings() {
+      await Promise.all([
+        loadApiKeys(),
+        loadQualityLevels(),
+        loadCustomSections(),
+      ]);
+    }
+
+    /**
+     * Load API keys into the settings panel
+     */
+    async function loadApiKeys() {
+      const container = document.getElementById('api-keys-list');
+      if (!container) return;
+
+      const providers = await electronAPI.settings.getApiProviders();
+      const keys = await electronAPI.settings.getApiKeys(true); // masked
+
+      let html = '';
+      for (const [providerId, provider] of Object.entries(providers)) {
+        const maskedKey = keys[providerId] || '';
+        const hasKey = maskedKey.length > 0;
+
+        html += `
+          <div class="api-key-row" data-provider="${providerId}">
+            <div class="api-key-provider">${provider.name}</div>
+            <div class="api-key-input-wrap">
+              <input type="password" class="api-key-input"
+                     placeholder="Enter ${provider.name} API key..."
+                     data-provider="${providerId}"
+                     value="${hasKey ? maskedKey : ''}"
+                     ${hasKey ? 'data-has-key="true"' : ''}>
+            </div>
+            <div class="api-key-status ${hasKey ? 'valid' : 'empty'}">
+              ${hasKey ? '✓ Set' : '—'}
+            </div>
+            <button class="api-key-test-btn" data-provider="${providerId}" ${!hasKey ? 'disabled' : ''}>
+              Test
+            </button>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Add event listeners for API key inputs
+      container.querySelectorAll('.api-key-input').forEach(input => {
+        // On focus, if key exists, clear to allow new input
+        input.addEventListener('focus', function() {
+          if (this.dataset.hasKey === 'true') {
+            this.value = '';
+            this.type = 'text';
+          }
+        });
+
+        // On blur, save if changed
+        input.addEventListener('blur', async function() {
+          const provider = this.dataset.provider;
+          const value = this.value.trim();
+
+          // If user cleared the field and there was a key, don't save empty
+          if (value === '' && this.dataset.hasKey === 'true') {
+            // Restore masked value
+            const keys = await electronAPI.settings.getApiKeys(true);
+            this.value = keys[provider] || '';
+            this.type = 'password';
+            return;
+          }
+
+          // If user entered a new key (not the masked placeholder)
+          if (value && !value.includes('•')) {
+            await electronAPI.settings.setApiKey(provider, value);
+            this.dataset.hasKey = 'true';
+            this.type = 'password';
+
+            // Update status
+            const row = this.closest('.api-key-row');
+            const status = row.querySelector('.api-key-status');
+            const testBtn = row.querySelector('.api-key-test-btn');
+            status.className = 'api-key-status valid';
+            status.textContent = '✓ Set';
+            testBtn.disabled = false;
+
+            // Mask the value
+            const keys = await electronAPI.settings.getApiKeys(true);
+            this.value = keys[provider] || '';
+          }
+        });
+
+        // Show as text while typing
+        input.addEventListener('input', function() {
+          if (!this.value.includes('•')) {
+            this.type = 'text';
+          }
+        });
+      });
+
+      // Add test button listeners
+      container.querySelectorAll('.api-key-test-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const provider = this.dataset.provider;
+          await testApiKey(provider, this);
+        });
+      });
+    }
+
+    /**
+     * Test an API key
+     */
+    async function testApiKey(provider, button) {
+      const row = button.closest('.api-key-row');
+      const status = row.querySelector('.api-key-status');
+
+      button.disabled = true;
+      button.textContent = 'Testing...';
+      status.className = 'api-key-status testing';
+      status.textContent = '...';
+
+      try {
+        // Get the actual key
+        const key = await electronAPI.settings.getApiKey(provider);
+        if (!key) {
+          throw new Error('No key set');
+        }
+
+        // Test based on provider
+        const providers = await electronAPI.settings.getApiProviders();
+        const providerInfo = providers[provider];
+
+        let testUrl = providerInfo.testEndpoint;
+        let headers = { 'Content-Type': 'application/json' };
+
+        // Set auth header based on provider
+        if (provider === 'anthropic') {
+          headers['x-api-key'] = key;
+          headers['anthropic-version'] = '2023-06-01';
+        } else if (provider === 'gemini') {
+          testUrl = `${testUrl}?key=${key}`;
+        } else {
+          headers['Authorization'] = `Bearer ${key}`;
+        }
+
+        const response = await fetch(testUrl, {
+          method: 'GET',
+          headers,
+        });
+
+        if (response.ok || response.status === 200) {
+          status.className = 'api-key-status valid';
+          status.textContent = '✓ Valid';
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (e) {
+        status.className = 'api-key-status invalid';
+        status.textContent = '✗ Invalid';
+        console.warn(`[Settings] API key test failed for ${provider}:`, e.message);
+      }
+
+      button.disabled = false;
+      button.textContent = 'Test';
+    }
+
+    /**
+     * Load quality levels into the settings panel
+     */
+    async function loadQualityLevels() {
+      const container = document.getElementById('quality-levels-list');
+      if (!container) return;
+
+      const levels = await electronAPI.settings.getQualityLevels();
+
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        const level = levels[i];
+        const isMulti = level.type === 'multi';
+
+        html += `
+          <div class="quality-level-row" data-level="${i}">
+            <div class="quality-level-badge">${i}</div>
+            <div class="quality-level-info">
+              <div class="quality-level-name">${level.name}</div>
+              <div class="quality-level-desc">${isMulti ? 'Multi-model synthesis' : 'Single model'}</div>
+            </div>
+            ${isMulti ? `
+              <div style="font-size: 11px; color: var(--text-dim);">
+                Multi-model (configure in code)
+              </div>
+            ` : `
+              <input type="text" class="quality-level-input" data-level="${i}"
+                     value="${level.model || ''}"
+                     placeholder="provider/model-name">
+            `}
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Add blur listeners for text inputs (save on blur)
+      container.querySelectorAll('.quality-level-input').forEach(input => {
+        input.addEventListener('blur', async function() {
+          const level = parseInt(this.dataset.level);
+          const model = this.value.trim();
+          if (model) {
+            await electronAPI.settings.setQualityLevelModel(level, model);
+          }
+        });
+
+        // Also save on Enter key
+        input.addEventListener('keydown', async function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            this.blur();
+          }
+        });
+      });
+    }
+
+    /**
+     * Load custom sections into the settings panel
+     */
+    async function loadCustomSections() {
+      const container = document.getElementById('custom-sections-list');
+      if (!container) return;
+
+      const sections = await electronAPI.settings.getCustomSections();
+
+      if (sections.length === 0) {
+        container.innerHTML = `
+          <div style="color: var(--text-dim); font-size: 12px; padding: 16px; text-align: center;">
+            No custom sections yet. Create one to add custom AI commands.
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (const section of sections) {
+        html += `
+          <div class="custom-section-row" data-section-id="${section.id}">
+            <div class="custom-section-name">${section.name}</div>
+            <div class="custom-section-count">${section.commands.length} commands</div>
+            <button class="custom-section-delete" data-section-id="${section.id}" title="Delete section">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4l8 8M12 4l-8 8"/>
+              </svg>
+            </button>
+          </div>
+        `;
+
+        // Show commands in this section
+        if (section.commands.length > 0) {
+          html += '<div style="margin-left: 40px; margin-bottom: 12px;">';
+          for (const cmd of section.commands) {
+            html += `
+              <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px;">
+                <span style="color: var(--text);">${cmd.name}</span>
+                <span style="color: var(--text-dim);">— ${cmd.inputType} → ${cmd.outputType}</span>
+                <button class="custom-section-delete" data-section-id="${section.id}" data-command-id="${cmd.id}"
+                        style="margin-left: auto;" title="Delete command">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 4l8 8M12 4l-8 8"/>
+                  </svg>
+                </button>
+              </div>
+            `;
+          }
+          html += '</div>';
+        }
+
+        // Add command button for this section
+        html += `
+          <button class="add-command-btn" data-section-id="${section.id}" style="margin-bottom: 16px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>
+            Add Command to "${section.name}"
+          </button>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Delete section handlers
+      container.querySelectorAll('.custom-section-delete').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+          e.stopPropagation();
+          const sectionId = this.dataset.sectionId;
+          const commandId = this.dataset.commandId;
+
+          if (commandId) {
+            if (confirm('Delete this command?')) {
+              await electronAPI.settings.removeCustomCommand(sectionId, commandId);
+              await loadCustomSections();
+            }
+          } else {
+            if (confirm('Delete this section and all its commands?')) {
+              await electronAPI.settings.removeCustomSection(sectionId);
+              await loadCustomSections();
+            }
+          }
+        });
+      });
+
+      // Add command handlers
+      container.querySelectorAll('.add-command-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const sectionId = this.dataset.sectionId;
+          await showAddCommandDialog(sectionId);
+        });
+      });
+    }
+
+    /**
+     * Show dialog to add a custom command
+     */
+    async function showAddCommandDialog(sectionId) {
+      // Simple prompt-based UI for now - can be enhanced with a proper form later
+      const name = prompt('Command name (e.g., "Simplify Text"):');
+      if (!name) return;
+
+      const inputType = prompt('Input type (selection, cursor, or fullDoc):', 'selection');
+      if (!inputType || !['selection', 'cursor', 'fullDoc'].includes(inputType)) {
+        alert('Invalid input type. Use: selection, cursor, or fullDoc');
+        return;
+      }
+
+      const outputType = prompt('Output type (replace or insert):', 'replace');
+      if (!outputType || !['replace', 'insert'].includes(outputType)) {
+        alert('Invalid output type. Use: replace or insert');
+        return;
+      }
+
+      const instructions = prompt('Instructions for AI (what should it do?):');
+      if (!instructions) return;
+
+      await electronAPI.settings.addCustomCommand(sectionId, {
+        name: name.trim(),
+        inputType,
+        outputType,
+        instructions: instructions.trim(),
+      });
+
+      await loadCustomSections();
+    }
 
     // =========================================================================
     // TABLE OF CONTENTS

@@ -19,29 +19,22 @@ import path from 'path';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from '../utils/index.js';
-import { SESSIONS_DIR } from '../config.js';
+import { SESSIONS_DIR, PYTHON_DEPS } from '../config.js';
 
 // Create require for resolving package paths
 const require = createRequire(import.meta.url);
 
 /**
- * Resolve the path to mrmd-pty package directory
+ * Get the sibling path for mrmd-pty (development mode)
+ * Returns null if not in dev mode or sibling doesn't exist
  */
-function resolvePtyPackageDir() {
-  try {
-    const packageJson = require.resolve('mrmd-pty/package.json');
-    return path.dirname(packageJson);
-  } catch (e) {
-    // Fallback to sibling directory for development
-    // From src/services/ -> ../../../ gets us to mrmd-packages/, then into mrmd-pty/
-    const siblingPath = path.resolve(path.dirname(import.meta.url.replace('file://', '')), '../../../mrmd-pty');
-    console.log('[pty-session] Trying sibling path:', siblingPath);
-    if (fs.existsSync(siblingPath)) {
-      console.log('[pty-session] Using sibling path for mrmd-pty (development mode)');
-      return siblingPath;
-    }
-    throw new Error(`Cannot resolve mrmd-pty: ${e.message}`);
+function getPtySiblingPath() {
+  // From src/services/ -> ../../../ gets us to mrmd-packages/, then into mrmd-pty/
+  const siblingPath = path.resolve(path.dirname(import.meta.url.replace('file://', '')), '../../../mrmd-pty');
+  if (fs.existsSync(path.join(siblingPath, 'pyproject.toml'))) {
+    return siblingPath;
   }
+  return null;
 }
 
 class PtySessionService {
@@ -134,26 +127,40 @@ class PtySessionService {
       }
     }
 
-    // 2. Find mrmd-pty package
-    const ptyPackageDir = resolvePtyPackageDir();
-
-    // 3. Find free port
+    // 2. Find free port
     const port = await findFreePort();
 
-    // 4. Spawn mrmd-pty using uv run
+    // 3. Spawn mrmd-pty - use local source in dev, PyPI in packaged mode
     console.log(`[pty-session] Starting "${config.name}" on port ${port} with cwd ${config.cwd}...`);
 
-    const args = [
-      'run', '--project', ptyPackageDir,
-      'mrmd-pty',
-      '--port', port.toString(),
-    ];
+    let proc;
+    const siblingPath = getPtySiblingPath();
 
-    const proc = spawn('uv', args, {
-      cwd: ptyPackageDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      detached: false,
-    });
+    if (siblingPath) {
+      // DEV MODE: Use local source via uv run --project
+      console.log(`[pty-session] Using local package: ${siblingPath}`);
+      proc = spawn('uv', [
+        'run', '--project', siblingPath,
+        'mrmd-pty',
+        '--port', port.toString(),
+      ], {
+        cwd: siblingPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: false,
+      });
+    } else {
+      // PACKAGED MODE: Download from PyPI via uv tool run
+      console.log(`[pty-session] Using uv tool run (packaged mode)`);
+      proc = spawn('uv', [
+        'tool', 'run',
+        '--from', `mrmd-pty${PYTHON_DEPS['mrmd-pty']}`,
+        'mrmd-pty',
+        '--port', port.toString(),
+      ], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: false,
+      });
+    }
 
     proc.stdout.on('data', (d) => console.log(`[pty-session:${config.name}]`, d.toString().trim()));
     proc.stderr.on('data', (d) => console.error(`[pty-session:${config.name}]`, d.toString().trim()));

@@ -435,6 +435,181 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // SETTINGS SERVICE API
+  // ==========================================================================
+
+  settings: {
+    /**
+     * Get all settings
+     * @returns {Promise<object>}
+     */
+    getAll: () => ipcRenderer.invoke('settings:getAll'),
+
+    /**
+     * Get a specific setting by key path (dot notation)
+     * @param {string} key - Setting key (e.g., "apiKeys.anthropic")
+     * @param {any} defaultValue - Default if not found
+     * @returns {Promise<any>}
+     */
+    get: (key, defaultValue) => ipcRenderer.invoke('settings:get', { key, defaultValue }),
+
+    /**
+     * Set a specific setting by key path
+     * @param {string} key - Setting key
+     * @param {any} value - Value to set
+     * @returns {Promise<boolean>}
+     */
+    set: (key, value) => ipcRenderer.invoke('settings:set', { key, value }),
+
+    /**
+     * Update multiple settings at once
+     * @param {object} updates - Key-value pairs to update
+     * @returns {Promise<boolean>}
+     */
+    update: (updates) => ipcRenderer.invoke('settings:update', { updates }),
+
+    /**
+     * Reset settings to defaults
+     * @returns {Promise<boolean>}
+     */
+    reset: () => ipcRenderer.invoke('settings:reset'),
+
+    /**
+     * Get API keys (masked by default for display)
+     * @param {boolean} masked - Whether to mask keys
+     * @returns {Promise<object>}
+     */
+    getApiKeys: (masked = true) => ipcRenderer.invoke('settings:getApiKeys', { masked }),
+
+    /**
+     * Set an API key for a provider
+     * @param {string} provider - Provider name (anthropic, openai, etc.)
+     * @param {string} key - API key
+     * @returns {Promise<boolean>}
+     */
+    setApiKey: (provider, key) => ipcRenderer.invoke('settings:setApiKey', { provider, key }),
+
+    /**
+     * Get a single API key (unmasked) - for sending to AI server
+     * @param {string} provider - Provider name
+     * @returns {Promise<string>}
+     */
+    getApiKey: (provider) => ipcRenderer.invoke('settings:getApiKey', { provider }),
+
+    /**
+     * Get API provider metadata
+     * @returns {Promise<object>}
+     */
+    getApiProviders: () => ipcRenderer.invoke('settings:getApiProviders'),
+
+    /**
+     * Check if a provider has an API key configured
+     * @param {string} provider - Provider name
+     * @returns {Promise<boolean>}
+     */
+    hasApiKey: (provider) => ipcRenderer.invoke('settings:hasApiKey', { provider }),
+
+    /**
+     * Get all quality level configurations
+     * @returns {Promise<object>}
+     */
+    getQualityLevels: () => ipcRenderer.invoke('settings:getQualityLevels'),
+
+    /**
+     * Set the model for a quality level
+     * @param {number} level - Quality level (1-5)
+     * @param {string} model - Model identifier
+     * @returns {Promise<boolean>}
+     */
+    setQualityLevelModel: (level, model) =>
+      ipcRenderer.invoke('settings:setQualityLevelModel', { level, model }),
+
+    /**
+     * Get all custom command sections
+     * @returns {Promise<Array>}
+     */
+    getCustomSections: () => ipcRenderer.invoke('settings:getCustomSections'),
+
+    /**
+     * Add a new custom section
+     * @param {string} name - Section name
+     * @returns {Promise<object>}
+     */
+    addCustomSection: (name) => ipcRenderer.invoke('settings:addCustomSection', { name }),
+
+    /**
+     * Remove a custom section
+     * @param {string} sectionId - Section ID
+     * @returns {Promise<boolean>}
+     */
+    removeCustomSection: (sectionId) =>
+      ipcRenderer.invoke('settings:removeCustomSection', { sectionId }),
+
+    /**
+     * Add a custom command to a section
+     * @param {string} sectionId - Section ID
+     * @param {object} command - Command definition
+     * @returns {Promise<object|null>}
+     */
+    addCustomCommand: (sectionId, command) =>
+      ipcRenderer.invoke('settings:addCustomCommand', { sectionId, command }),
+
+    /**
+     * Update a custom command
+     * @param {string} sectionId - Section ID
+     * @param {string} commandId - Command ID
+     * @param {object} updates - Fields to update
+     * @returns {Promise<boolean>}
+     */
+    updateCustomCommand: (sectionId, commandId, updates) =>
+      ipcRenderer.invoke('settings:updateCustomCommand', { sectionId, commandId, updates }),
+
+    /**
+     * Remove a custom command
+     * @param {string} sectionId - Section ID
+     * @param {string} commandId - Command ID
+     * @returns {Promise<boolean>}
+     */
+    removeCustomCommand: (sectionId, commandId) =>
+      ipcRenderer.invoke('settings:removeCustomCommand', { sectionId, commandId }),
+
+    /**
+     * Get all custom commands as a flat list
+     * @returns {Promise<Array>}
+     */
+    getAllCustomCommands: () => ipcRenderer.invoke('settings:getAllCustomCommands'),
+
+    /**
+     * Get default juice and reasoning levels
+     * @returns {Promise<{juiceLevel, reasoningLevel}>}
+     */
+    getDefaults: () => ipcRenderer.invoke('settings:getDefaults'),
+
+    /**
+     * Set default juice and/or reasoning levels
+     * @param {object} defaults - { juiceLevel?, reasoningLevel? }
+     * @returns {Promise<{success}>}
+     */
+    setDefaults: (defaults) => ipcRenderer.invoke('settings:setDefaults', defaults),
+
+    /**
+     * Export settings to JSON string
+     * @param {boolean} includeKeys - Whether to include API keys
+     * @returns {Promise<string>}
+     */
+    export: (includeKeys = false) => ipcRenderer.invoke('settings:export', { includeKeys }),
+
+    /**
+     * Import settings from JSON string
+     * @param {string} json - JSON string
+     * @param {boolean} mergeKeys - Whether to merge API keys
+     * @returns {Promise<boolean>}
+     */
+    import: (json, mergeKeys = false) =>
+      ipcRenderer.invoke('settings:import', { json, mergeKeys }),
+  },
+
+  // ==========================================================================
   // DATA LOSS PREVENTION
   // ==========================================================================
   // Added after investigating unexplained data loss on 2026-01-16.

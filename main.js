@@ -18,7 +18,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Services
-import { ProjectService, SessionService, BashSessionService, RSessionService, JuliaSessionService, PtySessionService, FileService, AssetService } from './src/services/index.js';
+import { ProjectService, SessionService, BashSessionService, RSessionService, JuliaSessionService, PtySessionService, FileService, AssetService, SettingsService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
@@ -154,6 +154,7 @@ const juliaSessionService = new JuliaSessionService();
 const ptySessionService = new PtySessionService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
+const settingsService = new SettingsService();
 
 // ============================================================================
 // RECENT FILES/VENVS PERSISTENCE
@@ -1673,6 +1674,133 @@ ipcMain.handle('asset:delete', async (event, { projectRoot, assetPath }) => {
     console.error('[asset:delete] Error:', e.message);
     return { success: false, error: e.message };
   }
+});
+
+// ============================================================================
+// SETTINGS SERVICE IPC HANDLERS
+// ============================================================================
+
+// Get all settings
+ipcMain.handle('settings:getAll', () => {
+  return settingsService.getAll();
+});
+
+// Get a specific setting
+ipcMain.handle('settings:get', (event, { key, defaultValue }) => {
+  return settingsService.get(key, defaultValue);
+});
+
+// Set a specific setting
+ipcMain.handle('settings:set', (event, { key, value }) => {
+  return settingsService.set(key, value);
+});
+
+// Update multiple settings
+ipcMain.handle('settings:update', (event, { updates }) => {
+  return settingsService.update(updates);
+});
+
+// Reset to defaults
+ipcMain.handle('settings:reset', () => {
+  return settingsService.reset();
+});
+
+// Get API keys (masked by default)
+ipcMain.handle('settings:getApiKeys', (event, { masked = true } = {}) => {
+  return settingsService.getApiKeys(masked);
+});
+
+// Set an API key
+ipcMain.handle('settings:setApiKey', (event, { provider, key }) => {
+  return settingsService.setApiKey(provider, key);
+});
+
+// Get API key (unmasked) - for sending to AI server
+ipcMain.handle('settings:getApiKey', (event, { provider }) => {
+  return settingsService.getApiKey(provider);
+});
+
+// Get API providers metadata
+ipcMain.handle('settings:getApiProviders', () => {
+  return settingsService.getApiProviders();
+});
+
+// Check if provider has key
+ipcMain.handle('settings:hasApiKey', (event, { provider }) => {
+  return settingsService.hasApiKey(provider);
+});
+
+// Get quality levels
+ipcMain.handle('settings:getQualityLevels', () => {
+  return settingsService.getQualityLevels();
+});
+
+// Set quality level model
+ipcMain.handle('settings:setQualityLevelModel', (event, { level, model }) => {
+  return settingsService.setQualityLevelModel(level, model);
+});
+
+// Get custom sections
+ipcMain.handle('settings:getCustomSections', () => {
+  return settingsService.getCustomSections();
+});
+
+// Add custom section
+ipcMain.handle('settings:addCustomSection', (event, { name }) => {
+  return settingsService.addCustomSection(name);
+});
+
+// Remove custom section
+ipcMain.handle('settings:removeCustomSection', (event, { sectionId }) => {
+  return settingsService.removeCustomSection(sectionId);
+});
+
+// Add custom command
+ipcMain.handle('settings:addCustomCommand', (event, { sectionId, command }) => {
+  return settingsService.addCustomCommand(sectionId, command);
+});
+
+// Update custom command
+ipcMain.handle('settings:updateCustomCommand', (event, { sectionId, commandId, updates }) => {
+  return settingsService.updateCustomCommand(sectionId, commandId, updates);
+});
+
+// Remove custom command
+ipcMain.handle('settings:removeCustomCommand', (event, { sectionId, commandId }) => {
+  return settingsService.removeCustomCommand(sectionId, commandId);
+});
+
+// Get all custom commands (flat list)
+ipcMain.handle('settings:getAllCustomCommands', () => {
+  return settingsService.getAllCustomCommands();
+});
+
+// Get/set defaults
+ipcMain.handle('settings:getDefaults', () => {
+  return {
+    juiceLevel: settingsService.getDefaultJuiceLevel(),
+    reasoningLevel: settingsService.getDefaultReasoningLevel(),
+  };
+});
+
+ipcMain.handle('settings:setDefaults', (event, { juiceLevel, reasoningLevel }) => {
+  if (juiceLevel !== undefined) {
+    settingsService.setDefaultJuiceLevel(juiceLevel);
+  }
+  if (reasoningLevel !== undefined) {
+    settingsService.setDefaultReasoningLevel(reasoningLevel);
+  }
+  return { success: true };
+});
+
+// Export settings
+ipcMain.handle('settings:export', (event, { includeKeys = false } = {}) => {
+  return settingsService.export(includeKeys);
+});
+
+// Import settings
+ipcMain.handle('settings:import', (event, { json, mergeKeys = false }) => {
+  return settingsService.import(json, mergeKeys);
 });
 
 // ============================================================================

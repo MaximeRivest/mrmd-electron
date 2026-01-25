@@ -24,6 +24,11 @@ export const CONFIG_DIR = path.join(os.homedir(), '.config', 'mrmd');
 export const RECENT_FILE = path.join(CONFIG_DIR, 'recent.json');
 
 /**
+ * User settings file (API keys, model mappings, custom commands)
+ */
+export const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json');
+
+/**
  * Legacy runtimes directory (for old-style runtime registration)
  */
 export const RUNTIMES_DIR = path.join(os.homedir(), '.mrmd', 'runtimes');
@@ -220,7 +225,7 @@ export const UNORDERED_FILES = new Set([
 /**
  * Current mrmd-electron version
  */
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '0.2.0';
 
 /**
  * Python package version requirements for this electron version.
@@ -232,6 +237,12 @@ export const PYTHON_DEPS = {
 
   // AI features - required for full experience
   'mrmd-ai': '>=0.1.0,<0.2',
+
+  // Bash runtime - for ```bash blocks
+  'mrmd-bash': '>=0.1.0,<0.2',
+
+  // PTY runtime - for ```term blocks
+  'mrmd-pty': '>=0.1.0,<0.2',
 
   // Orchestrator (optional, for advanced multi-runtime setups)
   // 'mrmd': '>=0.2.0,<0.3',

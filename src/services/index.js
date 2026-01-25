@@ -13,6 +13,7 @@ import JuliaSessionService from './julia-session-service.js';
 import PtySessionService from './pty-session-service.js';
 import FileService from './file-service.js';
 import AssetService from './asset-service.js';
+import SettingsService from './settings-service.js';
 
 export {
   ProjectService,
@@ -23,4 +24,5 @@ export {
   PtySessionService,
   FileService,
   AssetService,
+  SettingsService,
 };

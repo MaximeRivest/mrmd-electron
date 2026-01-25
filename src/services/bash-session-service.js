@@ -19,29 +19,22 @@ import path from 'path';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from '../utils/index.js';
-import { SESSIONS_DIR } from '../config.js';
+import { SESSIONS_DIR, PYTHON_DEPS } from '../config.js';
 
 // Create require for resolving package paths
 const require = createRequire(import.meta.url);
 
 /**
- * Resolve the path to mrmd-bash package directory
+ * Get the sibling path for mrmd-bash (development mode)
+ * Returns null if not in dev mode or sibling doesn't exist
  */
-function resolveBashPackageDir() {
-  try {
-    const packageJson = require.resolve('mrmd-bash/package.json');
-    return path.dirname(packageJson);
-  } catch (e) {
-    // Fallback to sibling directory for development
-    // From src/services/ → ../../../ gets us to mrmd-packages/, then into mrmd-bash/
-    const siblingPath = path.resolve(path.dirname(import.meta.url.replace('file://', '')), '../../../mrmd-bash');
-    console.log('[bash-session] Trying sibling path:', siblingPath);
-    if (fs.existsSync(siblingPath)) {
-      console.log('[bash-session] Using sibling path for mrmd-bash (development mode)');
-      return siblingPath;
-    }
-    throw new Error(`Cannot resolve mrmd-bash: ${e.message}`);
+function getBashSiblingPath() {
+  // From src/services/ → ../../../ gets us to mrmd-packages/, then into mrmd-bash/
+  const siblingPath = path.resolve(path.dirname(import.meta.url.replace('file://', '')), '../../../mrmd-bash');
+  if (fs.existsSync(path.join(siblingPath, 'pyproject.toml'))) {
+    return siblingPath;
   }
+  return null;
 }
 
 class BashSessionService {
@@ -133,25 +126,42 @@ class BashSessionService {
       }
     }
 
-    // 2. Find mrmd-bash package
-    const bashPackageDir = resolveBashPackageDir();
-
-    // 3. Find free port
+    // 2. Find free port
     const port = await findFreePort();
 
-    // 4. Spawn mrmd-bash using uv run
+    // 3. Spawn mrmd-bash - use local source in dev, PyPI in packaged mode
     console.log(`[bash-session] Starting "${config.name}" on port ${port} with cwd ${config.cwd}...`);
 
-    const proc = spawn('uv', [
-      'run', '--project', bashPackageDir,
-      'mrmd-bash',
-      '--port', port.toString(),
-      '--cwd', config.cwd,
-    ], {
-      cwd: bashPackageDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      detached: false,
-    });
+    let proc;
+    const siblingPath = getBashSiblingPath();
+
+    if (siblingPath) {
+      // DEV MODE: Use local source via uv run --project
+      console.log(`[bash-session] Using local package: ${siblingPath}`);
+      proc = spawn('uv', [
+        'run', '--project', siblingPath,
+        'mrmd-bash',
+        '--port', port.toString(),
+        '--cwd', config.cwd,
+      ], {
+        cwd: siblingPath,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: false,
+      });
+    } else {
+      // PACKAGED MODE: Download from PyPI via uv tool run
+      console.log(`[bash-session] Using uv tool run (packaged mode)`);
+      proc = spawn('uv', [
+        'tool', 'run',
+        '--from', `mrmd-bash${PYTHON_DEPS['mrmd-bash']}`,
+        'mrmd-bash',
+        '--port', port.toString(),
+        '--cwd', config.cwd,
+      ], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: false,
+      });
+    }
 
     proc.stdout.on('data', (d) => console.log(`[bash-session:${config.name}]`, d.toString().trim()));
     proc.stderr.on('data', (d) => console.error(`[bash-session:${config.name}]`, d.toString().trim()));
