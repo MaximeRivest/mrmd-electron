@@ -5572,6 +5572,32 @@
       // Button handlers
       document.getElementById('artifact-clear')?.addEventListener('click', clearArtifact);
       document.getElementById('artifact-reload')?.addEventListener('click', reloadArtifact);
+
+      // Expose artifact API to window for JS cells to use
+      window.artifact = {
+        html: updateArtifactHtml,
+        css: updateArtifactCss,
+        js: executeArtifactJs,
+        clear: clearArtifact,
+        reload: reloadArtifact,
+        // Get the artifact iframe's document
+        get document() {
+          const iframe = document.getElementById('artifact-iframe');
+          return iframe?.contentDocument || iframe?.contentWindow?.document;
+        },
+        // Get the artifact iframe's window
+        get window() {
+          const iframe = document.getElementById('artifact-iframe');
+          return iframe?.contentWindow;
+        },
+        // Show the artifact panel
+        show() {
+          openPanel('artifact');
+          if (!artifactState.initialized) {
+            initArtifactIframe();
+          }
+        }
+      };
     }
 
     // Initialize on load
@@ -5592,8 +5618,7 @@
       // Listen for cell completion
       state.editor.execution.on('cellComplete', (cellIndex, result, execId) => {
         // Get the cell to determine language
-        const content = state.editor.getContent();
-        const cells = state.editor.findCells?.(content) || [];
+        const cells = state.editor.getCells?.() || [];
         const cell = cells[cellIndex];
         if (!cell) return;
 
