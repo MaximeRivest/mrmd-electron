@@ -1,0 +1,124 @@
+name: Build Electron App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Clone sibling packages (they use file: references)
+      - name: Clone mrmd-editor
+        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-editor.git ../mrmd-editor
+
+      - name: Clone mrmd-sync
+        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-sync.git ../mrmd-sync
+
+      - name: Clone mrmd-monitor
+        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-monitor.git ../mrmd-monitor
+
+      - name: Clone mrmd-project
+        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-project.git ../mrmd-project
+
+      - name: Clone mrmd-jupyter-bridge
+        run: git clone --depth 1 https://github.com/MaximeRivest/mrmd-jupyter-bridge.git ../mrmd-jupyter-bridge
+
+      # Build mrmd-editor (required by electron)
+      - name: Build mrmd-editor
+        run: |
+          cd ../mrmd-editor
+          npm ci
+          npm run build
+
+      # Install sibling deps
+      - name: Install sibling packages
+        run: |
+          cd ../mrmd-sync && npm ci
+          cd ../mrmd-monitor && npm ci
+          cd ../mrmd-project && npm ci || npm install
+          cd ../mrmd-jupyter-bridge && npm ci
+
+      # Build electron
+      - name: Install electron dependencies
+        run: npm ci
+
+      - name: Build electron app
+        run: npm run build:${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload artifacts
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mrmd-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: warn
+
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mrmd-macos
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: warn
+
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'win'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mrmd-windows
+          path: |
+            dist/*.exe
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            artifacts/mrmd-linux/*
+            artifacts/mrmd-macos/*
+            artifacts/mrmd-windows/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
