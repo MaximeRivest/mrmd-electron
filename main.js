@@ -678,13 +678,16 @@ async function ensureAiServer() {
   const port = await findFreePort();
   console.log(`[ai] Starting on port ${port}...`);
 
-  const aiPackageDir = resolvePackageDir('mrmd-ai');
+  // mrmd-ai is a Python package - use 'uv tool run' which:
+  // 1. Auto-installs the package in an isolated environment
+  // 2. Runs the CLI without needing a local project directory
   const proc = spawn('uv', [
-    'run', '--project', aiPackageDir,
-    'mrmd-ai-server', '--port', port.toString(),
+    'tool', 'run',
+    '--from', `mrmd-ai${PYTHON_DEPS['mrmd-ai']}`,  // e.g. mrmd-ai>=0.1.0,<0.2
+    'mrmd-ai-server',
+    '--port', port.toString(),
   ], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    cwd: aiPackageDir,
   });
 
   proc.stdout.on('data', (d) => console.log('[ai]', d.toString().trim()));

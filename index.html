@@ -2537,16 +2537,19 @@
     <!-- Panel: Artifact Preview -->
     <div class="rail-panel rail-panel-artifact" id="panel-artifact">
       <div class="rail-panel-header">
-        <span class="rail-panel-title">Artifact</span>
-        <button class="rail-panel-btn" id="artifact-clear" title="Clear"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M4 12l8-8"/></svg></button>
-        <button class="rail-panel-btn" id="artifact-reload" title="Reload"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <span class="rail-panel-title">Artifacts</span>
+        <button class="rail-panel-btn" id="artifact-clear" title="Clear current"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M4 12l8-8"/></svg></button>
+        <button class="rail-panel-btn" id="artifact-reload" title="Reload current"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
         <button class="rail-panel-close" data-close-panel="artifact">×</button>
       </div>
+      <div class="artifact-tabs" id="artifact-tabs">
+        <!-- Tabs generated dynamically -->
+      </div>
       <div class="artifact-content">
-        <iframe id="artifact-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-modals" title="Artifact Preview"></iframe>
+        <iframe id="artifact-iframe" title="Artifact Preview"></iframe>
       </div>
       <div class="artifact-status" id="artifact-status">
-        <span class="artifact-status-text">No artifact yet. Run HTML, CSS, or JS cells to build.</span>
+        <span class="artifact-status-text">Use <code>html:name</code>, <code>css:name</code>, <code>js:name</code> cells to create artifacts</span>
       </div>
     </div>
 
