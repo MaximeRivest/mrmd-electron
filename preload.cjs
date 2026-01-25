@@ -627,4 +627,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('sync-server-died');
     ipcRenderer.on('sync-server-died', (event, data) => callback(data));
   },
+
+  // ==========================================================================
+  // FILE ASSOCIATION HANDLING
+  // ==========================================================================
+  // When MRMD is set as the default app for .md files, the OS sends the file
+  // path to open. This listener receives those files from the main process.
+  // ==========================================================================
+
+  /**
+   * Register callback for when the app is opened with a file (e.g., double-click .md)
+   * The callback receives: { filePath: string }
+   * The renderer should open this file as if selected via Ctrl+P
+   */
+  onOpenWithFile: (callback) => {
+    ipcRenderer.removeAllListeners('open-with-file');
+    ipcRenderer.on('open-with-file', (event, data) => callback(data));
+  },
 });

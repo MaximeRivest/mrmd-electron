@@ -24,6 +24,7 @@ import { Project } from 'mrmd-project';
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from './src/utils/index.js';
 import { getEnvInfo, installMrmdPython, createVenv, ensureUv, getUvVersion } from './src/utils/index.js';
+import { walkDir, findDirs, getVenvPython, getVenvExecutable, isProcessAlive, killProcessTree } from './src/utils/index.js';
 import {
   CONFIG_DIR,
   RECENT_FILE,
@@ -212,12 +213,7 @@ function listRuntimes() {
         const info = JSON.parse(fs.readFileSync(path.join(RUNTIMES_DIR, file), 'utf8'));
         // Check if process is alive
         if (info.pid) {
-          try {
-            process.kill(info.pid, 0); // Signal 0 = check if alive
-            info.alive = true;
-          } catch (e) {
-            info.alive = false;
-          }
+          info.alive = isProcessAlive(info.pid);
         }
         runtimes.push(info);
       } catch (e) {
@@ -230,7 +226,7 @@ function listRuntimes() {
   return runtimes;
 }
 
-function killRuntime(runtimeId) {
+async function killRuntime(runtimeId) {
   const runtimeFile = path.join(RUNTIMES_DIR, `${runtimeId}.json`);
   if (!fs.existsSync(runtimeFile)) return false;
 
@@ -238,7 +234,7 @@ function killRuntime(runtimeId) {
     const info = JSON.parse(fs.readFileSync(runtimeFile, 'utf8'));
     if (info.pid) {
       try {
-        process.kill(info.pid, 'SIGTERM');
+        await killProcessTree(info.pid, 'SIGTERM');
         // Remove the file
         fs.unlinkSync(runtimeFile);
         return true;
@@ -284,44 +280,31 @@ function computeDirHash(dir) {
 // ============================================================================
 
 function scanFiles(searchDir, callback) {
-  // Use find (universally available)
+  // Cross-platform file discovery using walkDir
   // Find both .md and .ipynb files, excluding system folders
-  const proc = spawn('find', [
-    searchDir,
-    '-maxdepth', String(FILE_SCAN_MAX_DEPTH),
-    '-type', 'f',
-    '(', '-name', '*.md', '-o', '-name', '*.ipynb', ')',
-    '-not', '-path', '*/node_modules/*',
-    '-not', '-path', '*/.git/*',
-    '-not', '-path', '*/.mrmd/*',
-  ], { stdio: ['pipe', 'pipe', 'pipe'] });
-
-  let buffer = '';
-  proc.stdout.on('data', (data) => {
-    buffer += data.toString();
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (line.trim()) {
-        callback({ type: 'file', path: line.trim() });
-      }
-    }
+  walkDir(searchDir, {
+    maxDepth: FILE_SCAN_MAX_DEPTH,
+    extensions: ['.md', '.ipynb'],
+    ignoreDirs: ['node_modules', '.git', '.mrmd'],
+    onFile: (filePath) => {
+      callback({ type: 'file', path: filePath });
+    },
+    onDone: () => {
+      callback({ type: 'done' });
+    },
+    onError: (e) => {
+      console.error('[scan] error:', e.message);
+      callback({ type: 'error', error: e.message });
+    },
   });
 
-  proc.on('close', () => {
-    if (buffer.trim()) {
-      callback({ type: 'file', path: buffer.trim() });
-    }
-    callback({ type: 'done' });
-  });
-
-  proc.on('error', (e) => {
-    console.error('[scan] find error:', e.message);
-    callback({ type: 'error', error: e.message });
-  });
-
-  return proc;
+  // Return an object with a kill method for compatibility
+  return {
+    kill: () => {
+      // walkDir is synchronous-ish (uses setImmediate), can't really cancel
+      // but this maintains API compatibility
+    },
+  };
 }
 
 // ============================================================================
@@ -354,7 +337,7 @@ function discoverVenvs(projectDir, callback) {
   ];
 
   for (const p of obviousPaths) {
-    if (fs.existsSync(path.join(p, 'bin', 'python'))) {
+    if (fs.existsSync(getVenvPython(p))) {
       found.add(p);
       const info = getEnvInfo(p, 'venv');
       callback({ type: 'venv', ...info, source: 'project' });
@@ -369,7 +352,7 @@ function discoverVenvs(projectDir, callback) {
         const envs = fs.readdirSync(condaEnvs);
         for (const env of envs) {
           const envPath = path.join(condaEnvs, env);
-          if (!found.has(envPath) && fs.existsSync(path.join(envPath, 'bin', 'python'))) {
+          if (!found.has(envPath) && fs.existsSync(getVenvPython(envPath))) {
             found.add(envPath);
             const info = getEnvInfo(envPath, 'conda');
             callback({ type: 'venv', ...info, source: 'conda' });
@@ -386,7 +369,7 @@ function discoverVenvs(projectDir, callback) {
       const versions = fs.readdirSync(pyenvVersions);
       for (const ver of versions) {
         const envPath = path.join(pyenvVersions, ver);
-        if (!found.has(envPath) && fs.existsSync(path.join(envPath, 'bin', 'python'))) {
+        if (!found.has(envPath) && fs.existsSync(getVenvPython(envPath))) {
           found.add(envPath);
           const info = getEnvInfo(envPath, 'pyenv');
           callback({ type: 'venv', ...info, source: 'pyenv' });
@@ -398,48 +381,36 @@ function discoverVenvs(projectDir, callback) {
   // Phase 4: Recent environments
   const recent = loadRecent();
   for (const v of recent.venvs) {
-    if (!found.has(v.path) && fs.existsSync(path.join(v.path, 'bin', 'python'))) {
+    if (!found.has(v.path) && fs.existsSync(getVenvPython(v.path))) {
       found.add(v.path);
       const info = getEnvInfo(v.path, 'venv');
       callback({ type: 'venv', ...info, source: 'recent', used: v.used });
     }
   }
 
-  // Phase 5: Background discovery using find (for venvs)
-  const proc = spawn('find', [
-    os.homedir(),
-    '-maxdepth', String(VENV_SCAN_MAX_DEPTH),
-    '-type', 'd',
-    '(', '-name', '.venv', '-o', '-name', 'venv', '-o', '-name', 'env', ')',
-    '-not', '-path', '*/node_modules/*',
-  ], { stdio: ['pipe', 'pipe', 'pipe'] });
-
-  let buffer = '';
-  proc.stdout.on('data', (data) => {
-    buffer += data.toString();
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      const p = line.trim();
-      if (p && !found.has(p) && fs.existsSync(path.join(p, 'bin', 'python'))) {
+  // Phase 5: Background discovery using cross-platform findDirs
+  findDirs(os.homedir(), ['.venv', 'venv', 'env'], {
+    maxDepth: VENV_SCAN_MAX_DEPTH,
+    ignoreDirs: ['node_modules'],
+    onFound: (p) => {
+      if (!found.has(p) && fs.existsSync(getVenvPython(p))) {
         found.add(p);
         const info = getEnvInfo(p, 'venv');
         callback({ type: 'venv', ...info, source: 'discovered' });
       }
-    }
+    },
+    onDone: () => {
+      callback({ type: 'done' });
+    },
   });
 
-  proc.on('close', () => {
-    callback({ type: 'done' });
-  });
-
-  proc.on('error', (e) => {
-    console.error('[venv] find error:', e.message);
-    callback({ type: 'done' });
-  });
-
-  return proc;
+  // Return an object with a kill method for compatibility
+  return {
+    kill: () => {
+      // findDirs is async via setImmediate, can't really cancel
+      // but this maintains API compatibility
+    },
+  };
 }
 
 // Note: getEnvInfo is now imported from src/utils/python.js
@@ -508,13 +479,12 @@ async function getSyncServer(projectDir) {
   try {
     if (fs.existsSync(syncStatePath)) {
       const pidData = JSON.parse(fs.readFileSync(syncStatePath, 'utf8'));
-      try {
-        process.kill(pidData.pid, 0);
+      if (isProcessAlive(pidData.pid)) {
         console.log(`[sync] Found existing server on port ${pidData.port}`);
         const server = { proc: null, port: pidData.port, dir: projectDir, refCount: 1, owned: false };
         syncServers.set(dirHash, server);
         return server;
-      } catch {
+      } else {
         fs.unlinkSync(syncStatePath);
       }
     }
@@ -598,7 +568,7 @@ async function startPythonRuntime(venvPath, windowId, forceNew = false) {
   // Ensure we have a valid ID
   if (!runtimeId) runtimeId = 'python-runtime';
 
-  const mrmdPythonPath = path.join(venvPath, 'bin', 'mrmd-python');
+  const mrmdPythonPath = getVenvExecutable(venvPath, 'mrmd-python');
 
   if (!fs.existsSync(mrmdPythonPath)) {
     throw new Error('mrmd-python not installed in this venv');
@@ -831,9 +801,9 @@ ipcMain.handle('list-runtimes', () => {
 });
 
 // Kill a runtime (LEGACY - use session:stop for projects)
-ipcMain.handle('kill-runtime', (event, { runtimeId }) => {
+ipcMain.handle('kill-runtime', async (event, { runtimeId }) => {
   logDeprecation('kill-runtime', 'session:stop');
-  const success = killRuntime(runtimeId);
+  const success = await killRuntime(runtimeId);
   return { success };
 });
 
@@ -1804,6 +1774,94 @@ ipcMain.handle('settings:import', (event, { json, mergeKeys = false }) => {
 });
 
 // ============================================================================
+// FILE ASSOCIATION HANDLING
+// ============================================================================
+// When users set MRMD as their default .md app, the OS will:
+// - macOS: Fire 'open-file' event (can happen before app is ready)
+// - Windows/Linux: Pass file path in argv via 'second-instance' event
+// ============================================================================
+
+// Files queued to open before app was ready (macOS open-file before ready)
+const pendingFilesToOpen = [];
+
+/**
+ * Send a file path to the renderer to be opened (like Ctrl+P selection)
+ * @param {string} filePath - Absolute path to the file
+ */
+function sendFileToOpen(filePath) {
+  // Validate it's a supported file type
+  const ext = path.extname(filePath).toLowerCase();
+  if (!['.md', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
+    console.log(`[open-with] Ignoring unsupported file: ${filePath}`);
+    return;
+  }
+
+  // Check file exists
+  if (!fs.existsSync(filePath)) {
+    console.log(`[open-with] File does not exist: ${filePath}`);
+    return;
+  }
+
+  // Find the first available window, or queue for later
+  const win = BrowserWindow.getAllWindows()[0];
+  if (win && !win.isDestroyed()) {
+    console.log(`[open-with] Sending file to renderer: ${filePath}`);
+    win.webContents.send('open-with-file', { filePath });
+    win.focus();
+  } else {
+    // Queue for when window is ready
+    console.log(`[open-with] Queueing file for later: ${filePath}`);
+    pendingFilesToOpen.push(filePath);
+  }
+}
+
+/**
+ * Extract file path from command line arguments
+ * On Windows/Linux, when a file is double-clicked, the path is passed as an argument
+ * @param {string[]} argv - Command line arguments
+ * @returns {string|null} - File path or null if not found
+ */
+function getFileFromArgv(argv) {
+  // Skip the first arg (electron executable) and any flags
+  for (let i = 1; i < argv.length; i++) {
+    const arg = argv[i];
+    // Skip flags and Electron internal args
+    if (arg.startsWith('-') || arg.startsWith('--')) continue;
+    // Skip if it's the app path itself
+    if (arg.endsWith('.js') || arg.endsWith('electron') || arg.includes('app.asar')) continue;
+    // Check if it looks like a file path
+    const ext = path.extname(arg).toLowerCase();
+    if (['.md', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
+      return arg;
+    }
+  }
+  return null;
+}
+
+// ============================================================================
+// macOS: Handle open-file event
+// ============================================================================
+// This event can fire BEFORE app.whenReady(), so we set it up early
+// and queue files if the app isn't ready yet.
+//
+// NOTE: We intentionally do NOT use requestSingleInstanceLock() because
+// MRMD is a single-document app (no tabs). Each file opens in its own
+// window/instance, like opening multiple PDFs in separate viewers.
+// ============================================================================
+
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  console.log(`[open-file] macOS open-file event: ${filePath}`);
+
+  if (app.isReady()) {
+    sendFileToOpen(filePath);
+  } else {
+    // App not ready yet, queue the file
+    pendingFilesToOpen.push(filePath);
+  }
+});
+
+// ============================================================================
 // WINDOW MANAGEMENT
 // ============================================================================
 
@@ -1858,7 +1916,28 @@ app.whenReady().then(async () => {
   // Log Python deps for this version
   console.log('[startup] Python dependencies:', Object.entries(PYTHON_DEPS).map(([k, v]) => `${k}${v}`).join(', '));
 
-  createWindow();
+  // Check for file in command line args (Windows/Linux initial launch)
+  const initialFile = getFileFromArgv(process.argv);
+  if (initialFile) {
+    console.log(`[startup] Found file in argv: ${initialFile}`);
+    pendingFilesToOpen.push(initialFile);
+  }
+
+  const win = createWindow();
+
+  // Process any pending files once the window is ready to receive them
+  win.webContents.once('did-finish-load', () => {
+    // Small delay to ensure renderer is fully initialized
+    setTimeout(() => {
+      if (pendingFilesToOpen.length > 0) {
+        console.log(`[startup] Processing ${pendingFilesToOpen.length} pending file(s)`);
+        for (const filePath of pendingFilesToOpen) {
+          sendFileToOpen(filePath);
+        }
+        pendingFilesToOpen.length = 0; // Clear the queue
+      }
+    }, 500);
+  });
 
   ensureAiServer().catch(e => console.error('[ai] Failed:', e.message));
 

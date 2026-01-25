@@ -10,6 +10,12 @@ import path from 'path';
 import os from 'os';
 import { PYTHON_DEPS, getPythonInstallArgs } from '../config.js';
 import { findUv, ensureUv } from './uv-installer.js';
+import {
+  getVenvPython,
+  getVenvExecutable,
+  getVenvBinDir,
+  getPythonCommand,
+} from './platform.js';
 
 // Re-export for backwards compatibility
 export { findUv, ensureUv };
@@ -48,7 +54,7 @@ export async function installMrmdPython(venvPath, options = {}) {
     if (onProgress) onProgress(stage, detail);
   };
 
-  const pythonPath = path.join(venvPath, 'bin', 'python');
+  const pythonPath = getVenvPython(venvPath);
 
   // Validate venv exists
   if (!fs.existsSync(pythonPath)) {
@@ -175,7 +181,8 @@ export function createVenv(venvPath) {
  */
 function createVenvWithPython(venvPath) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('python3', ['-m', 'venv', venvPath], {
+    const pythonCmd = getPythonCommand();
+    const proc = spawn(pythonCmd, ['-m', 'venv', venvPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -211,7 +218,7 @@ export function getEnvInfo(envPath, envType) {
   let name = '';
 
   try {
-    hasPython = fs.existsSync(path.join(envPath, 'bin', 'python'));
+    hasPython = fs.existsSync(getVenvPython(envPath));
 
     // Get Python version from pyvenv.cfg
     const pyvenvCfg = path.join(envPath, 'pyvenv.cfg');
@@ -222,7 +229,7 @@ export function getEnvInfo(envPath, envType) {
     }
 
     // Check if mrmd-python is installed
-    hasMrmdPython = fs.existsSync(path.join(envPath, 'bin', 'mrmd-python'));
+    hasMrmdPython = fs.existsSync(getVenvExecutable(envPath, 'mrmd-python'));
 
     // Set name based on environment type
     switch (envType) {

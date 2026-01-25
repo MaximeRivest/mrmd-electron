@@ -12,6 +12,39 @@ module.exports = {
   appId: "com.mrmd.electron",
   productName: "MRMD",
 
+  // File associations - register MRMD as handler for markdown files
+  // Users can set MRMD as default app for .md files in their OS
+  fileAssociations: [
+    {
+      ext: "md",
+      name: "Markdown",
+      description: "Markdown document",
+      role: "Editor",
+      mimeType: "text/markdown"
+    },
+    {
+      ext: "markdown",
+      name: "Markdown",
+      description: "Markdown document",
+      role: "Editor",
+      mimeType: "text/markdown"
+    },
+    {
+      ext: "mdown",
+      name: "Markdown",
+      description: "Markdown document",
+      role: "Editor",
+      mimeType: "text/markdown"
+    },
+    {
+      ext: "mdx",
+      name: "MDX",
+      description: "MDX document",
+      role: "Editor",
+      mimeType: "text/mdx"
+    }
+  ],
+
   directories: {
     output: "dist",
     buildResources: "build"

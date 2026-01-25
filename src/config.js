@@ -7,6 +7,15 @@
 
 import os from 'os';
 import path from 'path';
+import {
+  isWin,
+  getConfigDir,
+  getDataDir,
+  getUvInstallDir,
+  getSystemPythonPaths,
+  getUvPaths,
+  getCondaPaths,
+} from './utils/platform.js';
 
 // ============================================================================
 // PATHS
@@ -14,9 +23,11 @@ import path from 'path';
 
 /**
  * User configuration directory
- * TODO: Support XDG_CONFIG_HOME on Linux, ~/Library on macOS, %APPDATA% on Windows
+ * Windows: %APPDATA%/mrmd
+ * macOS: ~/Library/Application Support/mrmd
+ * Linux: ~/.config/mrmd (or XDG_CONFIG_HOME)
  */
-export const CONFIG_DIR = path.join(os.homedir(), '.config', 'mrmd');
+export const CONFIG_DIR = getConfigDir();
 
 /**
  * Recent files/venvs persistence file
@@ -166,32 +177,21 @@ export const DEFAULT_BACKGROUND_COLOR = '#0d1117';
 
 /**
  * Common system Python paths to check
+ * Platform-aware: includes Windows paths on Windows, Unix paths on Unix
  */
-export const SYSTEM_PYTHON_PATHS = [
-  '/usr/bin/python3',
-  '/usr/local/bin/python3',
-  '/opt/homebrew/bin/python3',  // macOS Homebrew
-];
+export const SYSTEM_PYTHON_PATHS = getSystemPythonPaths();
 
 /**
  * Common conda installation paths (relative to home)
+ * Platform-aware: uses backslashes on Windows
  */
-export const CONDA_PATHS = [
-  'anaconda3/envs',
-  'miniconda3/envs',
-  'miniforge3/envs',
-  '.conda/envs',
-];
+export const CONDA_PATHS = getCondaPaths();
 
 /**
  * Common uv installation paths
+ * Platform-aware: includes Windows paths on Windows
  */
-export const UV_PATHS = [
-  '/usr/local/bin/uv',
-  '/usr/bin/uv',
-  path.join(os.homedir(), '.local', 'bin', 'uv'),
-  path.join(os.homedir(), '.cargo', 'bin', 'uv'),
-];
+export const UV_PATHS = getUvPaths();
 
 // ============================================================================
 // SPECIAL FILES
@@ -225,7 +225,7 @@ export const UNORDERED_FILES = new Set([
 /**
  * Current mrmd-electron version
  */
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.3.0';
 
 /**
  * Python package version requirements for this electron version.
@@ -276,13 +276,15 @@ export const UV_DOWNLOAD_URLS = {
 
 /**
  * Default uv install location (user-local)
+ * Windows: %LOCALAPPDATA%/uv/bin
+ * Unix: ~/.local/bin
  */
-export const UV_INSTALL_DIR = path.join(os.homedir(), '.local', 'bin');
+export const UV_INSTALL_DIR = getUvInstallDir();
 
 /**
  * Path where uv will be installed
  */
 export const UV_INSTALL_PATH = path.join(
   UV_INSTALL_DIR,
-  process.platform === 'win32' ? 'uv.exe' : 'uv'
+  isWin ? 'uv.exe' : 'uv'
 );

@@ -18,19 +18,14 @@ import path from 'path';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort } from '../utils/index.js';
+import { killProcessTree, isProcessAlive, getDirname, getRscriptPaths } from '../utils/platform.js';
 import { SESSIONS_DIR } from '../config.js';
 
 /**
  * Find the Rscript executable
  */
 function findRscript() {
-  const candidates = [
-    '/usr/bin/Rscript',
-    '/usr/local/bin/Rscript',
-    '/opt/homebrew/bin/Rscript',  // macOS Homebrew
-    '/opt/R/arm64/bin/Rscript',   // macOS R.app ARM
-    '/opt/R/x86_64/bin/Rscript',  // macOS R.app Intel
-  ];
+  const candidates = getRscriptPaths();
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {
@@ -49,7 +44,7 @@ function resolveRPackageDir() {
   // Check sibling directory (development mode)
   // From src/services/ → ../../../ gets us to mrmd-packages/, then into mrmd-r/
   const siblingPath = path.resolve(
-    path.dirname(import.meta.url.replace('file://', '')),
+    getDirname(import.meta.url),
     '../../../mrmd-r'
   );
 
@@ -87,11 +82,10 @@ class RSessionService {
 
           // Check if process is still alive
           if (info.pid) {
-            try {
-              process.kill(info.pid, 0); // Signal 0 = check if alive
+            if (isProcessAlive(info.pid)) {
               info.alive = true;
               this.sessions.set(info.name, info);
-            } catch {
+            } else {
               // Process dead, remove registry file
               fs.unlinkSync(path.join(SESSIONS_DIR, file));
             }
@@ -113,10 +107,9 @@ class RSessionService {
   list() {
     // Refresh alive status
     for (const [name, info] of this.sessions) {
-      try {
-        process.kill(info.pid, 0);
+      if (isProcessAlive(info.pid)) {
         info.alive = true;
-      } catch {
+      } else {
         info.alive = false;
         this.sessions.delete(name);
         this.removeRegistry(name);
@@ -140,10 +133,9 @@ class RSessionService {
       const existing = this.sessions.get(config.name);
       if (existing.alive) {
         // Verify it's actually alive
-        try {
-          process.kill(existing.pid, 0);
+        if (isProcessAlive(existing.pid)) {
           return existing;
-        } catch {
+        } else {
           // Actually dead, clean up
           this.sessions.delete(config.name);
           this.removeRegistry(config.name);
@@ -226,13 +218,7 @@ class RSessionService {
 
     try {
       if (session.pid) {
-        try {
-          // Try to kill the process group
-          process.kill(-session.pid, 'SIGTERM');
-        } catch {
-          // Fall back to killing just the process
-          process.kill(session.pid, 'SIGTERM');
-        }
+        await killProcessTree(session.pid, 'SIGTERM');
       }
     } catch (e) {
       console.error(`[r-session] Error killing ${sessionName}:`, e.message);
@@ -281,11 +267,10 @@ class RSessionService {
     if (!session) return null;
 
     // Verify alive
-    try {
-      process.kill(session.pid, 0);
+    if (isProcessAlive(session.pid)) {
       session.alive = true;
       return session;
-    } catch {
+    } else {
       session.alive = false;
       this.sessions.delete(sessionName);
       this.removeRegistry(sessionName);
@@ -326,14 +311,13 @@ class RSessionService {
     const existing = this.sessions.get(resolved.name);
     if (existing?.alive) {
       // Verify still alive
-      try {
-        process.kill(existing.pid, 0);
+      if (isProcessAlive(existing.pid)) {
         result.alive = true;
         result.pid = existing.pid;
         result.port = existing.port;
         result.startedAt = existing.startedAt;
         return result;
-      } catch {
+      } else {
         // Dead, clean up
         this.sessions.delete(resolved.name);
         this.removeRegistry(resolved.name);
