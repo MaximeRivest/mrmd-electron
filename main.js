@@ -687,7 +687,8 @@ async function ensureAiServer() {
   proc.stderr.on('data', (d) => console.error('[ai]', d.toString().trim()));
   proc.on('exit', () => { aiServer = null; });
 
-  await waitForPort(port);
+  // AI server imports heavy libs (dspy, litellm) - needs 30s timeout
+  await waitForPort(port, { timeout: 30000 });
   aiServer = { proc, port };
   return aiServer;
 }

@@ -225,7 +225,7 @@ export const UNORDERED_FILES = new Set([
 /**
  * Current mrmd-electron version
  */
-export const APP_VERSION = '0.3.0';
+export const APP_VERSION = '0.3.1';
 
 /**
  * Python package version requirements for this electron version.
