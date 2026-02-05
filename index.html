@@ -4020,6 +4020,34 @@
     window._state = state;
 
     // =========================================================================
+    // DOCUMENT EXTENSIONS
+    // =========================================================================
+
+    const DOC_EXTENSIONS = ['.md', '.qmd'];
+
+    function getDocExtension(filePath) {
+      if (!filePath) return '';
+      const lower = filePath.toLowerCase();
+      for (const ext of DOC_EXTENSIONS) {
+        if (lower.endsWith(ext)) return ext;
+      }
+      return '';
+    }
+
+    function isDocFile(filePath) {
+      return !!getDocExtension(filePath);
+    }
+
+    function stripDocExtension(filePath) {
+      const ext = getDocExtension(filePath);
+      return ext ? filePath.slice(0, -ext.length) : filePath.replace(/\.[^.]+$/, '');
+    }
+
+    function ensureDocExtension(filePath, preferredExt = '.md') {
+      return isDocFile(filePath) ? filePath : filePath + preferredExt;
+    }
+
+    // =========================================================================
     // FSML HELPERS (for wiki-link completion)
     // =========================================================================
 
@@ -4062,7 +4090,7 @@
     function parseProjectFiles(files) {
       if (!files) return [];
       return files
-        .filter(f => f.endsWith('.md') && f !== 'mrmd.md')
+        .filter(f => isDocFile(f) && f !== 'mrmd.md')
         .map(parseProjectFile);
     }
 
@@ -4082,7 +4110,7 @@
 
       // Path prefixes trigger path mode
       if (query.match(/^[.~\/]/)) {
-        const endsWithMd = query.toLowerCase().endsWith('.md');
+        const endsWithDoc = isDocFile(query);
         const endsWithIpynb = query.toLowerCase().endsWith('.ipynb');
         const endsWithSlash = query.endsWith('/');
         const hasExtension = query.includes('.') && !query.endsWith('.');
@@ -4101,7 +4129,7 @@
           }
         }
 
-        if (endsWithMd || endsWithIpynb) {
+        if (endsWithDoc || endsWithIpynb) {
           return { mode: 'path', mayCreate: true, isFile: true, basePath };
         }
 
@@ -4114,7 +4142,7 @@
 
       // Check if query looks like it wants to create something
       // (no matches and valid filename pattern)
-      const looksLikeFilename = /^[\w-]+\.(md|ipynb)$/i.test(query);
+      const looksLikeFilename = /^[\w-]+\.(md|qmd|ipynb)$/i.test(query);
       const looksLikeFolderName = /^[\w-]+$/.test(query) && !query.includes('.');
 
       return {
@@ -4507,9 +4535,9 @@
 
         const displayPath = createPath.replace(state.homeDir, '~');
 
-        if (modeInfo.isFile || query.toLowerCase().endsWith('.md')) {
+        if (modeInfo.isFile || isDocFile(query)) {
           // Create file option
-          const fileName = query.endsWith('.md') ? query : query + '.md';
+          const fileName = ensureDocExtension(query);
           const isSelected = currentIndex === state.selectedFileIndex;
           html += `
             <div class="picker-item create ${isSelected ? 'selected' : ''}"
@@ -4676,7 +4704,7 @@
      */
     async function createNewFile() {
       const query = document.getElementById('file-search').value;
-      let fileName = query.endsWith('.md') ? query : query + '.md';
+      let fileName = ensureDocExtension(query);
 
       // Remove path prefixes for display
       fileName = fileName.replace(/^\.\//, '').replace(/^~\//, '');
@@ -4693,7 +4721,7 @@
         const modeInfo = detectPickerMode(query);
         if (modeInfo.basePath) {
           targetPath = modeInfo.basePath;
-          if (!targetPath.endsWith('.md')) targetPath += '.md';
+          targetPath = ensureDocExtension(targetPath);
         } else {
           console.warn('Cannot determine where to create file');
           return;
@@ -5012,7 +5040,7 @@
 
           // Register runtime with existing editor if open
           if (state.editor && state.currentFile) {
-            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
               { session: docName, languages: ['python', 'py', 'python3'] }
@@ -5086,7 +5114,7 @@
 
           // Register runtime with existing editor if open
           if (state.editor && state.currentFile) {
-            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
               { session: docName, languages: ['python', 'py', 'python3'] }
@@ -5131,7 +5159,7 @@
 
           // Register runtime with existing editor if open
           if (state.editor && state.currentFile) {
-            const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+            const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
               { session: docName, languages: ['python', 'py', 'python3'] }
@@ -5526,8 +5554,9 @@
       const orderPrefix = orderMatch ? orderMatch[1] : '';
 
       // Build new filename
-      const extension = oldFilename.endsWith('.md') ? '.md' : '';
-      const isFolder = !oldFilename.includes('.');
+      const extMatch = oldFilename.match(/\.[^.]+$/);
+      const extension = extMatch ? extMatch[0] : '';
+      const isFolder = !extMatch;
 
       // Convert title to filename (lowercase, replace spaces with hyphens)
       const newSlug = newTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -6121,9 +6150,10 @@
 
         // Add Python runtime if available
         if (state.pythonPort) {
+          const runtimeDocName = stripDocExtension(filePath.split('/').pop());
           const pythonClient = new mrmd.MRPClient(
             `http://127.0.0.1:${state.pythonPort}/mrp/v1`,
-            { session: docName, languages: ['python', 'py', 'python3'] }
+            { session: runtimeDocName, languages: ['python', 'py', 'python3'] }
           );
           editorOptions.runtimes.python = pythonClient;
         }
@@ -6200,6 +6230,12 @@
 
         // Register global bash runtime (always available)
         registerBashWithEditor();
+
+        // Register R runtime if available
+        registerRWithEditor();
+
+        // Register Julia runtime if available
+        registerJuliaWithEditor();
 
         // Register PTY for terminal blocks (```term)
         registerPtyWithEditor();
@@ -9797,11 +9833,11 @@
         ? documentPath.slice(root.length + 1)
         : documentPath;
 
-      // Filter to only .md files (content files), excluding mrmd.md
-      const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'mrmd.md');
+      // Filter to only doc files (content files), excluding mrmd.md
+      const docFiles = files.filter(f => isDocFile(f) && f !== 'mrmd.md');
 
       // Sort by FSML order (numeric prefix, then alphabetical)
-      const sorted = [...mdFiles].sort((a, b) => {
+      const sorted = [...docFiles].sort((a, b) => {
         // Extract first path segment's numeric prefix for top-level ordering
         const aSegments = a.split('/');
         const bSegments = b.split('/');
@@ -9845,8 +9881,15 @@
           const parts = fromDocument.split('/');
           if (parts.length > 1) {
             const parentDir = parts.slice(0, -1).join('/');
-            // Look for index.md in parent
-            const parentIndex = sorted.find(f => f === parentDir + '/index.md');
+            const preferredExt = getDocExtension(fromDocument) || '.md';
+            // Look for index in parent, preferring same extension
+            let parentIndex = sorted.find(f => f === parentDir + '/index' + preferredExt);
+            if (!parentIndex) {
+              for (const ext of DOC_EXTENSIONS) {
+                parentIndex = sorted.find(f => f === parentDir + '/index' + ext);
+                if (parentIndex) break;
+              }
+            }
             if (parentIndex) return parentIndex;
             // Or first file in parent
             const parentFile = sorted.find(f => f.startsWith(parentDir + '/'));
@@ -9914,12 +9957,12 @@
         let matchedFile = null;
 
         for (const filePath of project.files) {
-          if (!filePath.endsWith('.md')) continue;
+          if (!isDocFile(filePath)) continue;
 
           // Get filename without extension and order prefix
           const segments = filePath.split('/');
           const filename = segments[segments.length - 1];
-          const name = filename.replace(/\.md$/, '').replace(/^\d+-/, '');
+          const name = stripDocExtension(filename).replace(/^\d+-/, '');
 
           // Check for match
           if (name.toLowerCase() === targetLower) {
@@ -9928,7 +9971,7 @@
           }
 
           // Also check full path match
-          const pathWithoutExt = filePath.replace(/\.md$/, '');
+          const pathWithoutExt = stripDocExtension(filePath);
           if (pathWithoutExt.toLowerCase().endsWith(targetLower)) {
             matchedFile = filePath;
             // Don't break - prefer exact name match
@@ -9978,8 +10021,8 @@
 
         console.log(`[LinkNav] Resolved: ${relativePath} -> ${resolvedPath}`);
 
-        // Check if it's a markdown file
-        if (resolvedPath.endsWith('.md')) {
+        // Check if it's a markdown-like doc file
+        if (isDocFile(resolvedPath)) {
           // Open in editor
           openFile(resolvedPath);
         } else {
@@ -10389,7 +10432,7 @@
     function registerSessionWithEditor(port) {
       if (!state.editor || !port) return;
 
-      const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+      const docName = stripDocExtension(state.currentFile.split('/').pop());
       const pythonClient = new mrmd.MRPClient(
         `http://127.0.0.1:${port}/mrp/v1`,
         { session: docName, languages: ['python', 'py', 'python3'] }
@@ -10531,6 +10574,116 @@
         }
       } catch (e) {
         console.error('Error registering bash runtime:', e);
+      }
+    }
+
+    /**
+     * Register R runtime with editor for R code execution.
+     * R runtime is per-project, respects session.r config in mrmd.md.
+     */
+    async function registerRWithEditor() {
+      console.log('[r] registerRWithEditor called');
+
+      if (!state.editor || !state.currentFile) {
+        console.log('[r] No editor or currentFile, skipping');
+        return;
+      }
+
+      // Check if electronAPI.r exists (requires app restart after preload changes)
+      if (!electronAPI.r) {
+        console.log('[r] electronAPI.r not available - R runtime not supported');
+        return;
+      }
+
+      try {
+        console.log('[r] Calling r.forDocument for:', state.currentFile);
+        // Get or create R session for this document
+        const rConfig = await electronAPI.r.forDocument(state.currentFile);
+        console.log('[r] Got config:', rConfig);
+
+        if (!rConfig) {
+          console.log('[r] No R session config for this document');
+          return;
+        }
+
+        // Check for errors
+        if (rConfig.error) {
+          console.error('[r] R session error:', rConfig.error);
+          return;
+        }
+
+        // Check if session is alive (auto-started or existing)
+        if (rConfig.alive && rConfig.port) {
+          state.rPort = rConfig.port;
+          state.rSession = rConfig;
+
+          // Create MRP client for R
+          const rClient = new mrmd.MRPClient(
+            `http://127.0.0.1:${rConfig.port}/mrp/v1`,
+            { session: 'default', languages: ['r', 'R', 'rlang'] }
+          );
+          state.editor.registerRuntime('r', rClient);
+          console.log('[r] Registered R runtime with editor on port', rConfig.port, 'cwd:', rConfig.cwd);
+        } else {
+          console.log('[r] R session not started (auto_start may be false)');
+        }
+      } catch (e) {
+        console.error('[r] Error registering R runtime:', e);
+      }
+    }
+
+    /**
+     * Register Julia runtime with editor for Julia code execution.
+     * Julia runtime is per-project, respects session.julia config in mrmd.md.
+     */
+    async function registerJuliaWithEditor() {
+      console.log('[julia] registerJuliaWithEditor called');
+
+      if (!state.editor || !state.currentFile) {
+        console.log('[julia] No editor or currentFile, skipping');
+        return;
+      }
+
+      // Check if electronAPI.julia exists
+      if (!electronAPI.julia) {
+        console.log('[julia] electronAPI.julia not available - Julia runtime not supported');
+        return;
+      }
+
+      try {
+        console.log('[julia] Calling julia.forDocument for:', state.currentFile);
+        // Get or create Julia session for this document
+        const juliaConfig = await electronAPI.julia.forDocument(state.currentFile);
+        console.log('[julia] Got config:', juliaConfig);
+
+        if (!juliaConfig) {
+          console.log('[julia] No Julia session config for this document');
+          return;
+        }
+
+        // Check for errors
+        if (juliaConfig.error) {
+          console.error('[julia] Julia session error:', juliaConfig.error);
+          return;
+        }
+
+        // Check if session is alive (auto-started or existing)
+        if (juliaConfig.alive && juliaConfig.port) {
+          state.juliaPort = juliaConfig.port;
+          state.juliaSession = juliaConfig;
+
+          // Create MRP client for Julia
+          const juliaClient = new mrmd.MRPClient(
+            `http://127.0.0.1:${juliaConfig.port}/mrp/v1`,
+            { session: 'default', languages: ['julia', 'jl'] }
+          );
+          state.editor.registerRuntime('julia', juliaClient);
+          console.log('[julia] Registered Julia runtime with editor on port', juliaConfig.port, 'cwd:', juliaConfig.cwd);
+        } else {
+          console.log('[julia] Julia session not started (auto_start may be false)');
+        }
+      } catch (e) {
+        console.error('[julia] Error registering Julia runtime:', e);
       }
     }
 
@@ -10924,7 +11077,7 @@
 
         // Register with editor
         if (state.editor && state.currentFile) {
-          const docName = state.currentFile.split('/').pop().replace(/\.md$/, '');
+          const docName = stripDocExtension(state.currentFile.split('/').pop());
           const pythonClient = new mrmd.MRPClient(
             `http://127.0.0.1:${startResult.port}/mrp/v1`,
             { session: docName, languages: ['python', 'py', 'python3'] }
@@ -12178,7 +12331,9 @@ python: .venv
 
       try {
         const content = state.editor.getContent ? state.editor.getContent() : '';
-        const filename = state.currentFile.split('/').pop().replace(/\.md$/, '') + '-backup-' + Date.now() + '.md';
+        const baseName = stripDocExtension(state.currentFile.split('/').pop());
+        const ext = getDocExtension(state.currentFile) || '.md';
+        const filename = `${baseName}-backup-${Date.now()}${ext}`;
 
         const blob = new Blob([content], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);

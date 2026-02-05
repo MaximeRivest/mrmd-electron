@@ -202,16 +202,21 @@ export const UV_PATHS = getUvPaths();
  */
 export const UNORDERED_FILES = new Set([
   'readme.md',
+  'readme.qmd',
   'readme',
   'license.md',
+  'license.qmd',
   'license',
   'license.txt',
   'changelog.md',
+  'changelog.qmd',
   'changelog',
   'contributing.md',
+  'contributing.qmd',
   'contributing',
   'mrmd.md',
   'index.md',
+  'index.qmd',
   '.gitignore',
   '.gitattributes',
 ]);

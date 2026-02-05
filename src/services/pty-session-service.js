@@ -160,11 +160,26 @@ class PtySessionService {
       });
     }
 
+    // Handle spawn errors (e.g., uv not installed)
+    const spawnError = new Promise((_, reject) => {
+      proc.on('error', (err) => {
+        console.error(`[pty-session] Spawn error for "${config.name}":`, err.message);
+        if (err.code === 'ENOENT') {
+          reject(new Error(`'uv' is not installed. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh`));
+        } else {
+          reject(err);
+        }
+      });
+    });
+
     proc.stdout.on('data', (d) => console.log(`[pty-session:${config.name}]`, d.toString().trim()));
     proc.stderr.on('data', (d) => console.error(`[pty-session:${config.name}]`, d.toString().trim()));
 
-    // 5. Wait for ready
-    await waitForPort(port);
+    // 5. Wait for ready (race with spawn error)
+    await Promise.race([
+      waitForPort(port),
+      spawnError,
+    ]);
 
     // 6. Register session
     const info = {

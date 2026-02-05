@@ -281,10 +281,10 @@ function computeDirHash(dir) {
 
 function scanFiles(searchDir, callback) {
   // Cross-platform file discovery using walkDir
-  // Find both .md and .ipynb files, excluding system folders
+  // Find both markdown-like docs and .ipynb files, excluding system folders
   walkDir(searchDir, {
     maxDepth: FILE_SCAN_MAX_DEPTH,
-    extensions: ['.md', '.ipynb'],
+    extensions: ['.md', '.qmd', '.ipynb'],
     ignoreDirs: ['node_modules', '.git', '.mrmd'],
     onFile: (filePath) => {
       callback({ type: 'file', path: filePath });
@@ -955,11 +955,13 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
 
   const projectDir = path.dirname(filePath);
-  const fileName = path.basename(filePath, '.md');
+  const fileName = path.basename(filePath);
+  const ext = path.extname(fileName).toLowerCase();
+  const docName = ext === '.md' ? fileName.replace(/\.md$/i, '') : fileName;
 
   console.log(`[open] File: ${filePath}`);
   console.log(`[open] Project: ${projectDir}`);
-  console.log(`[open] Doc: ${fileName}`);
+  console.log(`[open] Doc: ${docName}`);
 
   try {
     const sync = await getSyncServer(projectDir);
@@ -975,9 +977,9 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
     }
     state.projectDir = projectDir;
 
-    if (!state.monitors.has(fileName)) {
-      const monitor = startMonitor(fileName, sync.port);
-      state.monitors.set(fileName, monitor);
+    if (!state.monitors.has(docName)) {
+      const monitor = startMonitor(docName, sync.port);
+      state.monitors.set(docName, monitor);
     }
 
     // Track as recent
@@ -986,7 +988,7 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
     return {
       success: true,
       syncPort: sync.port,
-      docName: fileName,
+      docName: docName,
       pythonPort: state.python?.port || null,
       projectDir,
     };
@@ -1792,7 +1794,7 @@ const pendingFilesToOpen = [];
 function sendFileToOpen(filePath) {
   // Validate it's a supported file type
   const ext = path.extname(filePath).toLowerCase();
-  if (!['.md', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
+  if (!['.md', '.qmd', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
     console.log(`[open-with] Ignoring unsupported file: ${filePath}`);
     return;
   }
@@ -1832,7 +1834,7 @@ function getFileFromArgv(argv) {
     if (arg.endsWith('.js') || arg.endsWith('electron') || arg.includes('app.asar')) continue;
     // Check if it looks like a file path
     const ext = path.extname(arg).toLowerCase();
-    if (['.md', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
+    if (['.md', '.qmd', '.markdown', '.mdown', '.mdx', '.ipynb'].includes(ext)) {
       return arg;
     }
   }

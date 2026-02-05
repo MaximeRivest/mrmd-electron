@@ -12,7 +12,7 @@
  */
 
 import { Project } from 'mrmd-project';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -39,6 +39,7 @@ function findRscript() {
 
 /**
  * Resolve the path to mrmd-r package directory
+ * Returns null if not found (instead of throwing)
  */
 function resolveRPackageDir() {
   // Check sibling directory (development mode)
@@ -53,7 +54,47 @@ function resolveRPackageDir() {
     return siblingPath;
   }
 
-  throw new Error('Cannot find mrmd-r package. Expected at: ' + siblingPath);
+  // TODO: Support installed package location (extraResources in packaged mode)
+  return null;
+}
+
+/**
+ * Check if R is installed and working
+ */
+function checkRInstalled(rscriptPath) {
+  if (!rscriptPath) {
+    console.log('[r-session] checkRInstalled: no rscriptPath provided');
+    return false;
+  }
+
+  console.log('[r-session] checkRInstalled: checking', rscriptPath);
+
+  // If it's just 'Rscript' (PATH fallback), try to run it
+  if (rscriptPath === 'Rscript') {
+    try {
+      execSync('Rscript --version', { stdio: 'pipe', timeout: 5000 });
+      console.log('[r-session] checkRInstalled: Rscript found in PATH');
+      return true;
+    } catch (e) {
+      console.log('[r-session] checkRInstalled: Rscript not in PATH:', e.message);
+      return false;
+    }
+  }
+
+  // For absolute paths, check file exists first
+  if (!fs.existsSync(rscriptPath)) {
+    console.log('[r-session] checkRInstalled: file does not exist:', rscriptPath);
+    return false;
+  }
+
+  try {
+    execSync(`"${rscriptPath}" --version`, { stdio: 'pipe', timeout: 5000 });
+    console.log('[r-session] checkRInstalled: R found at', rscriptPath);
+    return true;
+  } catch (e) {
+    console.log('[r-session] checkRInstalled: R check failed:', e.message);
+    return false;
+  }
 }
 
 class RSessionService {
@@ -61,7 +102,41 @@ class RSessionService {
     this.sessions = new Map(); // name -> SessionInfo
     this.processes = new Map(); // name -> ChildProcess
     this.rscriptPath = findRscript();
+    this.packageDir = resolveRPackageDir();
     this.loadRegistry();
+  }
+
+  /**
+   * Check if R runtime is available
+   * @returns {boolean}
+   */
+  isAvailable() {
+    return this.rscriptPath !== null &&
+           this.packageDir !== null &&
+           checkRInstalled(this.rscriptPath);
+  }
+
+  /**
+   * Get availability status with details
+   * @returns {{ available: boolean, rInstalled: boolean, packageFound: boolean, error?: string }}
+   */
+  getAvailabilityStatus() {
+    const rInstalled = checkRInstalled(this.rscriptPath);
+    const packageFound = this.packageDir !== null;
+
+    let error = null;
+    if (!rInstalled) {
+      error = 'R is not installed. Please install R from https://cran.r-project.org/';
+    } else if (!packageFound) {
+      error = 'mrmd-r package not found. Please ensure mrmd-r is available.';
+    }
+
+    return {
+      available: rInstalled && packageFound,
+      rInstalled,
+      packageFound,
+      error,
+    };
   }
 
   /**
@@ -128,6 +203,12 @@ class RSessionService {
    * @returns {Promise<SessionInfo>}
    */
   async start(config) {
+    // 0. Check if R is available
+    if (!this.isAvailable()) {
+      const status = this.getAvailabilityStatus();
+      throw new Error(status.error || 'R runtime is not available');
+    }
+
     // 1. Check if already running
     if (this.sessions.has(config.name)) {
       const existing = this.sessions.get(config.name);
@@ -144,8 +225,7 @@ class RSessionService {
     }
 
     // 2. Find mrmd-r package
-    const rPackageDir = resolveRPackageDir();
-    const cliScript = path.join(rPackageDir, 'inst', 'bin', 'mrmd-r');
+    const cliScript = path.join(this.packageDir, 'inst', 'bin', 'mrmd-r');
 
     // 3. Find free port
     const port = await findFreePort();
@@ -158,7 +238,7 @@ class RSessionService {
       '--port', port.toString(),
       '--cwd', config.cwd,
     ], {
-      cwd: rPackageDir,
+      cwd: this.packageDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       detached: false,
       env: {
@@ -296,6 +376,9 @@ class RSessionService {
     const resolved = Project.resolveSessionForLanguage('r', documentPath, projectRoot, merged);
     console.log('[r-session] resolved:', resolved);
 
+    // Check availability status
+    const availability = this.getAvailabilityStatus();
+
     // Build result with config info
     const result = {
       name: resolved.name,
@@ -305,7 +388,16 @@ class RSessionService {
       alive: false,
       pid: null,
       port: null,
+      available: availability.available,
+      rInstalled: availability.rInstalled,
+      packageFound: availability.packageFound,
     };
+
+    // Return early if R is not available
+    if (!availability.available) {
+      result.error = availability.error;
+      return result;
+    }
 
     // Check if session exists and is alive
     const existing = this.sessions.get(resolved.name);

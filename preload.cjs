@@ -202,6 +202,46 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // R SESSION SERVICE API
+  // ==========================================================================
+
+  r: {
+    /**
+     * List all running R sessions
+     * @returns {Promise<SessionInfo[]>}
+     */
+    list: () => ipcRenderer.invoke('r:list'),
+
+    /**
+     * Start a new R session
+     * @param {object} config - Session config { name, cwd }
+     * @returns {Promise<SessionInfo>}
+     */
+    start: (config) => ipcRenderer.invoke('r:start', { config }),
+
+    /**
+     * Stop an R session
+     * @param {string} sessionName - Session name to stop
+     * @returns {Promise<boolean>}
+     */
+    stop: (sessionName) => ipcRenderer.invoke('r:stop', { sessionName }),
+
+    /**
+     * Restart an R session
+     * @param {string} sessionName - Session name to restart
+     * @returns {Promise<SessionInfo>}
+     */
+    restart: (sessionName) => ipcRenderer.invoke('r:restart', { sessionName }),
+
+    /**
+     * Get or create R session for a document
+     * @param {string} documentPath - Path to document
+     * @returns {Promise<SessionInfo | null>}
+     */
+    forDocument: (documentPath) => ipcRenderer.invoke('r:forDocument', { documentPath }),
+  },
+
+  // ==========================================================================
   // JULIA SESSION SERVICE API
   // ==========================================================================
 

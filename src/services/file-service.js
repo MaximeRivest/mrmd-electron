@@ -13,6 +13,14 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { UNORDERED_FILES, ASSETS_DIR_NAME } from '../config.js';
 
+const DOC_EXTENSIONS = ['.md', '.qmd'];
+
+function isDocFilename(filename) {
+  if (!filename) return false;
+  const lower = filename.toLowerCase();
+  return DOC_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
 class FileService {
   /**
    * @param {ProjectService} projectService - Reference to ProjectService for cache invalidation
@@ -34,7 +42,7 @@ class FileService {
   async scan(root, options = {}) {
     const {
       includeHidden = false,
-      extensions = ['.md'],
+      extensions = DOC_EXTENSIONS,
       maxDepth = 10,
     } = options;
 
@@ -116,7 +124,7 @@ class FileService {
     let finalPath = relativePath;
     const filename = path.basename(relativePath);
 
-    // Skip ordering for special files (README.md, LICENSE, etc.)
+    // Skip ordering for special files (README.md/README.qmd, LICENSE, etc.)
     if (FileService.shouldBypassOrdering(filename)) {
       const fullPath = path.join(projectRoot, finalPath);
       await this.createFile(fullPath, content);
@@ -131,13 +139,13 @@ class FileService {
     if (await this.dirExists(dirPath)) {
       try {
         const siblings = await fsPromises.readdir(dirPath);
-        const mdSiblings = siblings.filter(f => f.endsWith('.md'));
+        const docSiblings = siblings.filter(isDocFilename);
 
         // Find max order among siblings
         let maxOrder = 0;
         let hasOrderedFiles = false;
 
-        for (const sibling of mdSiblings) {
+        for (const sibling of docSiblings) {
           const parsed = FSML.parsePath(sibling);
           if (parsed.order !== null) {
             hasOrderedFiles = true;
@@ -253,7 +261,7 @@ class FileService {
 
     const updatedFiles = [];
 
-    // 1. Read all .md files in project (include hidden folders for complete refactoring)
+    // 1. Read all markdown-like doc files in project (include hidden folders for complete refactoring)
     const files = await this.scan(projectRoot, { includeHidden: true });
 
     // 2. For each file, check if it references the moved file

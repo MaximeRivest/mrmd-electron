@@ -42,6 +42,13 @@ module.exports = {
       description: "MDX document",
       role: "Editor",
       mimeType: "text/mdx"
+    },
+    {
+      ext: "qmd",
+      name: "Quarto Markdown",
+      description: "Quarto markdown document",
+      role: "Editor",
+      mimeType: "text/markdown"
     }
   ],
 

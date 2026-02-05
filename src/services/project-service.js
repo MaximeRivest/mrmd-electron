@@ -17,6 +17,14 @@ import chokidar from 'chokidar';
 import { createVenv, installMrmdPython } from '../utils/index.js';
 import { PROJECT_SCAN_MAX_DEPTH } from '../config.js';
 
+const DOC_EXTENSIONS = ['.md', '.qmd'];
+
+function isDocPath(filePath) {
+  if (!filePath) return false;
+  const lower = filePath.toLowerCase();
+  return DOC_EXTENSIONS.some(ext => lower.endsWith(ext));
+}
+
 class ProjectService {
   constructor() {
     this.cache = new Map(); // projectRoot -> ProjectInfo
@@ -131,8 +139,8 @@ class ProjectService {
     });
 
     const handleChange = (filePath) => {
-      // Only care about .md files and directories
-      if (filePath.endsWith('.md') || !path.extname(filePath)) {
+      // Only care about markdown-like doc files and directories
+      if (isDocPath(filePath) || !path.extname(filePath)) {
         this.invalidate(projectRoot);
         onChange();
       }
@@ -184,7 +192,7 @@ class ProjectService {
           // Skip _assets and node_modules
           if (entry.name === 'node_modules') continue;
           await walk(fullPath, depth + 1);
-        } else if (entry.name.endsWith('.md')) {
+        } else if (isDocPath(entry.name)) {
           files.push(relativePath);
         }
       }
