@@ -21,6 +21,20 @@ function isDocFilename(filename) {
   return DOC_EXTENSIONS.some(ext => lower.endsWith(ext));
 }
 
+function semanticLinkName(filePath) {
+  if (!filePath) return '';
+  return filePath
+    .split('/')
+    .pop()
+    .replace(/\.[^.]+$/, '')
+    .replace(/^\d+-/, '')
+    .toLowerCase();
+}
+
+function needsGlobalLinkRefactor(fromPath, toPath) {
+  return semanticLinkName(fromPath) !== semanticLinkName(toPath);
+}
+
 class FileService {
   /**
    * @param {ProjectService} projectService - Reference to ProjectService for cache invalidation
@@ -261,30 +275,33 @@ class FileService {
 
     const updatedFiles = [];
 
-    // 1. Read all markdown-like doc files in project (include hidden folders for complete refactoring)
-    const files = await this.scan(projectRoot, { includeHidden: true });
+    const shouldRefactorLinks = needsGlobalLinkRefactor(fromPath, toPath);
+    if (shouldRefactorLinks) {
+      // 1. Read all markdown-like doc files in project (include hidden folders for complete refactoring)
+      const files = await this.scan(projectRoot, { includeHidden: true });
 
-    // 2. For each file, check if it references the moved file
-    for (const file of files) {
-      if (file === fromPath) continue;
+      // 2. For each file, check if it references the moved file
+      for (const file of files) {
+        if (file === fromPath) continue;
 
-      const fullPath = path.join(projectRoot, file);
-      let content;
-      try {
-        content = await fsPromises.readFile(fullPath, 'utf8');
-      } catch (e) {
-        console.warn(`[file] Could not read ${file} for link refactoring:`, e.message);
-        continue;
-      }
+        const fullPath = path.join(projectRoot, file);
+        let content;
+        try {
+          content = await fsPromises.readFile(fullPath, 'utf8');
+        } catch (e) {
+          console.warn(`[file] Could not read ${file} for link refactoring:`, e.message);
+          continue;
+        }
 
-      // Update links using mrmd-project
-      const updatedContent = Links.refactor(content, [
-        { from: fromPath, to: toPath },
-      ], file);
+        // Update links using mrmd-project
+        const updatedContent = Links.refactor(content, [
+          { from: fromPath, to: toPath },
+        ], file);
 
-      if (updatedContent !== content) {
-        await fsPromises.writeFile(fullPath, updatedContent);
-        updatedFiles.push(file);
+        if (updatedContent !== content) {
+          await fsPromises.writeFile(fullPath, updatedContent);
+          updatedFiles.push(file);
+        }
       }
     }
 
@@ -345,30 +362,33 @@ class FileService {
       }
     }
 
-    // 3. Update links in files NOT being moved that reference moved files
-    for (const file of allFiles) {
-      if (file.startsWith(fromPath + '/')) continue; // Skip files being moved
+    const shouldRefactorLinks = movedFiles.some(moved => needsGlobalLinkRefactor(moved.from, moved.to));
+    if (shouldRefactorLinks) {
+      // 3. Update links in files NOT being moved that reference moved files
+      for (const file of allFiles) {
+        if (file.startsWith(fromPath + '/')) continue; // Skip files being moved
 
-      const fullPath = path.join(projectRoot, file);
-      let content;
-      try {
-        content = await fsPromises.readFile(fullPath, 'utf8');
-      } catch (e) {
-        console.warn(`[file] Could not read ${file} for directory refactoring:`, e.message);
-        continue;
-      }
+        const fullPath = path.join(projectRoot, file);
+        let content;
+        try {
+          content = await fsPromises.readFile(fullPath, 'utf8');
+        } catch (e) {
+          console.warn(`[file] Could not read ${file} for directory refactoring:`, e.message);
+          continue;
+        }
 
-      // Update all links to moved files
-      let updatedContent = content;
-      for (const moved of movedFiles) {
-        updatedContent = Links.refactor(updatedContent, [
-          { from: moved.from, to: moved.to },
-        ], file);
-      }
+        // Update all links to moved files
+        let updatedContent = content;
+        for (const moved of movedFiles) {
+          updatedContent = Links.refactor(updatedContent, [
+            { from: moved.from, to: moved.to },
+          ], file);
+        }
 
-      if (updatedContent !== content) {
-        await fsPromises.writeFile(fullPath, updatedContent);
-        updatedFiles.push(file);
+        if (updatedContent !== content) {
+          await fsPromises.writeFile(fullPath, updatedContent);
+          updatedFiles.push(file);
+        }
       }
     }
 

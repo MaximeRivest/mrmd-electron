@@ -289,6 +289,9 @@ function scanFiles(searchDir, callback) {
     onFile: (filePath) => {
       callback({ type: 'file', path: filePath });
     },
+    onDir: (dirPath) => {
+      callback({ type: 'dir', path: dirPath });
+    },
     onDone: () => {
       callback({ type: 'done' });
     },
@@ -831,17 +834,45 @@ ipcMain.handle('scan-files', (event, { searchDir }) => {
 
   // Kill previous scanner
   if (state.fileScanner) state.fileScanner.kill();
-
+  const scanToken = (state.fileScanToken || 0) + 1;
+  state.fileScanToken = scanToken;
   const files = [];
+  const dirs = [];
+  let pendingFileChunk = [];
+  let pendingDirChunk = [];
+  const flushChunk = (done = false) => {
+    if (!pendingFileChunk.length && !pendingDirChunk.length && !done) return;
+    event.sender.send('files-update', {
+      scanToken,
+      filesChunk: pendingFileChunk,
+      dirsChunk: pendingDirChunk,
+      totalFiles: files.length,
+      totalDirs: dirs.length,
+      done,
+    });
+    pendingFileChunk = [];
+    pendingDirChunk = [];
+  };
+
+  // Tell renderer to reset any stale scan state
+  event.sender.send('files-update', { scanToken, reset: true, done: false, totalFiles: 0, totalDirs: 0 });
+
   state.fileScanner = scanFiles(searchDir || os.homedir(), (result) => {
+    if (state.fileScanToken !== scanToken) return;
+
     if (result.type === 'file') {
       files.push(result.path);
-      // Send batch updates
-      if (files.length % 50 === 0) {
-        event.sender.send('files-update', { files: [...files] });
-      }
+      pendingFileChunk.push(result.path);
+      // Stream small chunks to avoid O(n^2) payload copies while scanning
+      if (pendingFileChunk.length >= 200) flushChunk(false);
+    } else if (result.type === 'dir') {
+      dirs.push(result.path);
+      pendingDirChunk.push(result.path);
+      if (pendingDirChunk.length >= 120) flushChunk(false);
     } else if (result.type === 'done') {
-      event.sender.send('files-update', { files, done: true });
+      flushChunk(true);
+    } else if (result.type === 'error') {
+      event.sender.send('files-update', { scanToken, error: result.error || 'scan failed', done: true });
     }
   });
 
@@ -873,9 +904,25 @@ ipcMain.handle('discover-venvs', (event, { projectDir }) => {
 // Read file preview
 ipcMain.handle('read-preview', async (event, { filePath, lines = 30 }) => {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const preview = content.split('\n').slice(0, lines).join('\n');
-    return { success: true, preview };
+    const maxBytes = 96 * 1024;
+    const normalizedLines = Number.isFinite(lines) ? Math.max(1, Math.min(lines, 200)) : 30;
+    const fd = await fs.promises.open(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(maxBytes);
+      const { bytesRead } = await fd.read(buffer, 0, maxBytes, 0);
+      if (bytesRead <= 0) return { success: true, preview: '' };
+
+      const snippet = buffer.subarray(0, bytesRead);
+      if (snippet.includes(0)) {
+        return { success: true, preview: '[binary file]' };
+      }
+
+      const content = snippet.toString('utf8');
+      const preview = content.split('\n').slice(0, normalizedLines).join('\n');
+      return { success: true, preview };
+    } finally {
+      await fd.close();
+    }
   } catch (e) {
     return { success: false, error: e.message };
   }

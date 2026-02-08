@@ -306,6 +306,7 @@ export function getDirname(importMetaUrl) {
  * @param {string[]} options.extensions - File extensions to include (e.g., ['.md', '.ipynb'])
  * @param {string[]} options.ignoreDirs - Directory names to skip (e.g., ['node_modules', '.git'])
  * @param {function} options.onFile - Callback for each file found
+ * @param {function} options.onDir - Callback for each directory visited
  * @param {function} options.onDone - Callback when done
  * @param {function} options.onError - Callback on error
  */
@@ -315,6 +316,7 @@ export function walkDir(dir, options = {}) {
     extensions = null,
     ignoreDirs = ['node_modules', '.git', '.mrmd'],
     onFile = () => {},
+    onDir = () => {},
     onDone = () => {},
     onError = () => {},
   } = options;
@@ -323,6 +325,7 @@ export function walkDir(dir, options = {}) {
 
   function walk(currentDir, depth) {
     if (depth > maxDepth) return;
+    onDir(currentDir);
 
     let entries;
     try {
