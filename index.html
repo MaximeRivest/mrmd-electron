@@ -3850,6 +3850,46 @@
             <pre class="help-snippet-code" id="help-js-import-code"></pre>
           </div>
         </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Runtimes Configuration</div>
+          <div class="rail-panel-item" style="cursor: default; align-items: flex-start;">
+            <div class="rail-panel-item-icon"></div>
+            <span class="rail-panel-item-label" style="white-space: normal;">
+              Configure named runtime sessions in your document's YAML frontmatter using the <code>session</code> key.
+            </span>
+          </div>
+          <div class="help-snippet-block">
+            <div class="help-snippet-header">
+              <span class="help-snippet-title">Example Frontmatter</span>
+            </div>
+            <pre class="help-snippet-code">---
+session:
+  python:
+    name: python-env
+    venv: .venv
+  bash:
+    name: bash-session
+    cwd: /tmp
+  node:
+    name: node-backend
+    cwd: ./backend
+  julia:
+    name: julia-session
+    cwd: /tmp
+  r:
+    name: r-session
+    cwd: /tmp
+---</pre>
+          </div>
+          <div class="rail-panel-item" style="cursor: default; align-items: flex-start;">
+            <div class="rail-panel-item-icon"></div>
+            <span class="rail-panel-item-label" style="white-space: normal;">
+              <strong>name</strong> — display name for the session<br>
+              <strong>venv</strong> — Python virtual environment path (Python only)<br>
+              <strong>cwd</strong> — working directory for the runtime
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
