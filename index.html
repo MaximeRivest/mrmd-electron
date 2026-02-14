@@ -14261,9 +14261,10 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
         state.scannedDirs.push(...payload.dirsChunk);
       }
 
-      state.fileScanStatus = payload.done ? 'ready' : 'scanning';
+      const isDone = payload.done === true || (hasLegacyFiles && payload.done == null);
+      state.fileScanStatus = isDone ? 'ready' : 'scanning';
       setPickerStatus(state.fileIndex.ready ? state.filteredFiles.length : state.files.length);
-      scheduleFileIndexRefresh({ immediate: Boolean(payload.done) });
+      scheduleFileIndexRefresh({ immediate: Boolean(isDone) });
     });
 
     electronAPI.onVenvFound((venv) => {
@@ -14592,6 +14593,20 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
               const parsedFiles = parseProjectFiles(project.files);
               state.editor.setProjectFiles(parsedFiles);
               console.log(`[watch] Wiki-link completion updated with ${parsedFiles.length} files`);
+            }
+
+            // Keep Ctrl+P index fresh while picker is open
+            if (isFilePickerVisible()) {
+              state.previewCache.clear();
+              const activeScope = getActiveScopePath()
+                || state.folderContext
+                || state.defaultScopeRoot
+                || project.root;
+              if (activeScope) {
+                startFileScan(activeScope);
+              } else {
+                scheduleFileIndexRefresh({ immediate: true });
+              }
             }
           }
         }
