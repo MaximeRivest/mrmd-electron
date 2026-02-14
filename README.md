@@ -6,6 +6,12 @@
 
 ![paste-2026-01-25T22-09-05](_assets/paste-2026-01-25T22-09-05.png)
 
+## Documentation
+
+- Start here: [docs/README.md](./docs/README.md)
+- Quick explain: [docs/00-quick-explain.md](./docs/00-quick-explain.md)
+- Architecture: [docs/10-architecture-overview.md](./docs/10-architecture-overview.md)
+
 ---
 
 ## What is MRMD?
