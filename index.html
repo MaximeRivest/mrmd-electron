@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws://127.0.0.1:* http://127.0.0.1:*; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:* https: http: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https:; img-src 'self' data: blob: https: http:; frame-src 'self' blob: data:">
   <title>mrmd</title>
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icon-32.png">
@@ -45,6 +45,12 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* Prevent pull-to-refresh on mobile — this is an app, not a webpage */
+    html, body {
+      overscroll-behavior: none;
+      overscroll-behavior-y: none;
+    }
 
     /* Theme variables - will be set by applyTheme() */
     :root {
@@ -9372,25 +9378,29 @@ session:
     document.addEventListener('DOMContentLoaded', () => {
 
       // ---- Hamburger → nav sidebar ----
-      document.getElementById('mobile-nav-btn')?.addEventListener('click', () => {
+      document.getElementById('mobile-nav-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         toggleMobileNav();
       });
 
       // ---- Search → file picker (Ctrl+P equivalent) ----
-      document.getElementById('mobile-search-btn')?.addEventListener('click', () => {
+      document.getElementById('mobile-search-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (typeof showFilePicker === 'function') showFilePicker();
       });
 
       // ---- AI → Ctrl+K modal ----
-      document.getElementById('mobile-ai-btn')?.addEventListener('click', () => {
+      document.getElementById('mobile-ai-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
         const view = state.editor?.view;
         if (!view) return;
 
         // Check if AI client exists (set by connectToAI)
         if (!aiClient) {
-          // No AI connected — open the AI panel so user can set up
-          openPanel('ai');
-          addMobileRailScrim('ai');
+          // No AI connected — open the AI settings so user can add keys
+          const aiSettingsBtn = document.getElementById('ai-settings-btn');
+          if (aiSettingsBtn) aiSettingsBtn.click();
+          else { openPanel('ai'); addMobileRailScrim('ai'); }
           return;
         }
 
