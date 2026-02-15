@@ -9130,10 +9130,18 @@ session:
       // ---- AI → Ctrl+K modal ----
       document.getElementById('mobile-ai-btn')?.addEventListener('click', () => {
         const view = state.editor?.view;
-        if (view) {
+        if (!view) return;
+
+        // Focus editor first so coordsAtPos works
+        view.focus();
+
+        // Small delay to let focus settle, then open modal
+        requestAnimationFrame(() => {
           const ctrlK = mrmd.default?.ctrlK || mrmd.ctrlK;
-          ctrlK?.showCtrlKModal?.(view);
-        }
+          if (ctrlK?.showCtrlKModal) {
+            ctrlK.showCtrlKModal(view);
+          }
+        });
       });
 
       // Close mobile nav on Escape
