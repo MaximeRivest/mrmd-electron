@@ -3606,6 +3606,426 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.85; }
     }
+
+    /* =========================================================================
+       MOBILE RESPONSIVE LAYER
+       
+       Inspired by Quarto, Astro docs, MkDocs Material, Docusaurus, and the
+       best tech-blog reading experiences. These sites share a pattern:
+       
+       - Full-width, single-column content on mobile
+       - Hamburger menu for navigation (off-canvas sidebar)
+       - Generous typography, padding, and touch targets
+       - Tables/code scroll horizontally within the content column
+       - Sticky minimal header
+       - No TOC on mobile (or behind a toggle)
+       - Clean reading experience by default
+       
+       Uses @media (max-width: 768px) for narrow screens and
+       @media (pointer: coarse) for touch-primary devices.
+       ========================================================================= */
+
+    /* ---- CORE LAYOUT: Single column, full-width content ---- */
+    @media (max-width: 768px) {
+
+      /* Hide sidebars, side rail, floating toggles — all of it */
+      .nav-sidebar,
+      .toc-sidebar,
+      .side-rail,
+      .sidebar-toggle-floating,
+      .nav-toggle-floating,
+      .toc-toggle-floating {
+        display: none !important;
+      }
+
+      /* Titlebar becomes a slim sticky mobile header */
+      .titlebar {
+        height: 44px;
+        -webkit-app-region: no-drag;
+        position: sticky;
+        top: 0;
+        z-index: 500;
+        padding: 0 12px;
+        justify-content: space-between;
+        background: var(--bg-secondary);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .titlebar-title {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--text);
+        max-width: 60vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Titlebar button (hamburger / rail toggle) — larger touch target */
+      .titlebar-btn {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+        width: 44px;
+        height: 44px;
+      }
+
+      .titlebar-btn svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      /* Content area: full width, proper spacing */
+      .content {
+        flex-direction: column;
+        margin-right: 0 !important; /* Override panel-pinned margins */
+      }
+
+      /* Editor container: generous mobile padding, no artificial max-width */
+      #editor-container {
+        padding: 16px 0 80px 0; /* Bottom padding for status bar / safe area */
+        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* The editor wrapper: full width with reading-comfortable margins */
+      #editor-container > #editor {
+        max-width: 100%;
+        margin: 0;
+      }
+
+      /* The CM editor itself: comfortable reading padding */
+      #editor .cm-editor {
+        font-size: 17px; /* Slightly larger for readability, like iA Writer */
+      }
+
+      #editor .cm-editor .cm-scroller {
+        padding: 0 16px;
+      }
+
+      #editor .cm-editor .cm-content {
+        max-width: 100%;
+      }
+
+      /* Status bar: bigger, mobile-friendly */
+      .status-bar {
+        padding: 10px 16px;
+        gap: 12px;
+        font-size: 13px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 400;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .status-item {
+        padding: 8px 12px;
+        margin: -8px -12px;
+        min-height: 44px; /* Apple's minimum touch target */
+        display: flex;
+        align-items: center;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+      }
+
+      /* Hide less important status items on mobile */
+      .status-file {
+        max-width: 50vw;
+      }
+
+      /* Side rail panels become bottom sheets on mobile */
+      .rail-panel {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 70vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        border-radius: 16px 16px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+        z-index: 600;
+      }
+
+      .rail-panel.open {
+        transform: translateY(0);
+      }
+
+      .rail-panel-header {
+        padding: 12px 16px;
+        position: relative;
+      }
+
+      /* Bottom sheet drag handle */
+      .rail-panel-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: var(--text-dim);
+        border-radius: 2px;
+        opacity: 0.4;
+      }
+
+      /* Session hover trigger — larger on mobile */
+      .session-hover-trigger {
+        margin: 8px 16px;
+      }
+
+      .session-hover-action {
+        min-height: 44px;
+        font-size: 14px;
+        padding: 10px 16px;
+      }
+
+      /* Setup hints — full width */
+      .setup-hints {
+        margin: 0 16px;
+      }
+
+      .setup-hint {
+        font-size: 13px;
+        padding: 12px;
+      }
+
+      /* Context menus become bottom sheets */
+      .nav-context-menu {
+        position: fixed !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+        padding: 8px 0;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        z-index: 1000;
+      }
+
+      .nav-context-item {
+        padding: 14px 20px;
+        font-size: 16px;
+        min-height: 48px;
+      }
+
+      /* Sync warning banner — stack buttons */
+      .sync-warning-banner {
+        flex-wrap: wrap;
+      }
+
+      .sync-warning-banner .warning-message {
+        width: 100%;
+      }
+
+      .warning-actions {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .sync-warning-banner button {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    /* ---- TOUCH TARGETS: Bigger hit areas for coarse pointers ---- */
+    @media (pointer: coarse) {
+
+      /* All buttons & interactive elements: minimum 44px touch target */
+      .titlebar-btn,
+      .nav-action,
+      .status-item,
+      .rail-btn,
+      .rail-panel-close,
+      .rail-panel-pin,
+      .rail-panel-refresh {
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .rail-btn {
+        height: 48px;
+      }
+
+      /* Nav items — bigger for finger tapping */
+      .nav-item {
+        padding: 12px 16px;
+        font-size: 15px;
+        min-height: 44px;
+      }
+
+      .nav-item.folder {
+        padding: 12px 16px;
+        margin-top: 20px;
+        font-size: 13px;
+      }
+
+      /* TOC items — bigger */
+      .toc-item {
+        padding: 10px 16px;
+        font-size: 14px;
+        min-height: 44px;
+      }
+
+      /* Context menu items */
+      .nav-context-item {
+        padding: 14px 16px;
+        font-size: 15px;
+      }
+    }
+
+    /* ---- MOBILE HAMBURGER OVERLAY (Nav as a full-screen slide-over) ---- */
+    @media (max-width: 768px) {
+
+      /* When nav is explicitly shown on mobile, it overlays everything */
+      .nav-sidebar.mobile-open {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 85vw;
+        max-width: 320px;
+        z-index: 700;
+        border-right: 1px solid var(--border);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+        animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes slideInLeft {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+
+      /* Scrim/backdrop behind the mobile nav */
+      .mobile-nav-scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 699;
+        animation: fadeIn 0.2s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      /* Override collapsed states on mobile — we control visibility ourselves */
+      .nav-sidebar.collapsed.mobile-open {
+        width: 85vw !important;
+        max-width: 320px !important;
+        padding: 0 !important;
+        border-right: 1px solid var(--border) !important;
+      }
+
+      .nav-sidebar.collapsed.mobile-open > .nav-header,
+      .nav-sidebar.collapsed.mobile-open > .nav-tree {
+        display: flex !important;
+      }
+
+      .nav-sidebar.collapsed.mobile-open > .nav-tree {
+        display: block !important;
+      }
+
+      /* Hide the collapse toggle inside the mobile nav — not needed */
+      .nav-sidebar.mobile-open > .nav-toggle {
+        display: none !important;
+      }
+
+      /* Nav tree items — larger on mobile overlay */
+      .nav-sidebar.mobile-open .nav-item {
+        padding: 14px 20px;
+        font-size: 15px;
+        min-height: 48px;
+        border-left-width: 3px;
+      }
+
+      .nav-sidebar.mobile-open .nav-item.folder {
+        padding: 14px 20px;
+        font-size: 12px;
+      }
+
+      .nav-sidebar.mobile-open .nav-header {
+        padding: 16px 20px;
+        min-height: 56px;
+      }
+
+      .nav-sidebar.mobile-open .nav-action {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+      }
+    }
+
+    /* ---- TYPOGRAPHY & READING COMFORT ---- */
+    @media (max-width: 768px) {
+
+      /* Code blocks: ensure horizontal scroll, no wrapping on narrow screens */
+      #editor .cm-codeblock-line {
+        font-size: max(var(--code-font-size, 0.8em), 13px);
+      }
+
+      #editor .cm-codeblock-fence {
+        font-size: 0.55em;
+      }
+
+      /* Tables: horizontal scroll wrapper */
+      #editor .cm-table-widget {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Images: full-width, respect safe area */
+      #editor .cm-image-block-img {
+        max-width: calc(100vw - 32px);
+      }
+
+      /* Wide images: don't break out of viewport on mobile */
+      #editor .cm-image-pos-wide {
+        width: calc(100vw - 32px);
+        max-width: calc(100vw - 32px);
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      /* Blockquotes: slightly less padding */
+      #editor .cm-md-blockquote-line {
+        padding-left: 0.75em;
+      }
+
+      /* Inline code: ensure it doesn't overflow */
+      #editor .cm-md-inline-code {
+        word-break: break-all;
+      }
+    }
+
+    /* ---- DARK THEME ADJUSTMENTS FOR MOBILE ---- */
+    /* On mobile OLED screens, pure black backgrounds save battery */
+    @media (max-width: 768px) and (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --bg-secondary: #0a0a0a;
+      }
+    }
   </style>
 </head>
 <body>
@@ -8064,6 +8484,98 @@ session:
     // Initialize rail on page load
     document.addEventListener('DOMContentLoaded', () => {
       initSideRail();
+    });
+
+    // =========================================================================
+    // MOBILE NAVIGATION
+    // On narrow screens, the titlebar button becomes a hamburger that opens
+    // the nav sidebar as a full-screen slide-over overlay (Quarto/Astro pattern).
+    // =========================================================================
+
+    let mobileNavOpen = false;
+    let mobileNavScrim = null;
+
+    function isMobileLayout() {
+      return window.matchMedia('(max-width: 768px)').matches;
+    }
+
+    function openMobileNav() {
+      if (mobileNavOpen) return;
+      mobileNavOpen = true;
+
+      const sidebar = document.getElementById('nav-sidebar');
+      if (!sidebar) return;
+
+      sidebar.classList.add('mobile-open');
+
+      // Create scrim backdrop
+      mobileNavScrim = document.createElement('div');
+      mobileNavScrim.className = 'mobile-nav-scrim';
+      mobileNavScrim.addEventListener('click', closeMobileNav);
+      document.body.appendChild(mobileNavScrim);
+
+      // Prevent body scrolling while nav is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileNav() {
+      if (!mobileNavOpen) return;
+      mobileNavOpen = false;
+
+      const sidebar = document.getElementById('nav-sidebar');
+      sidebar?.classList.remove('mobile-open');
+
+      if (mobileNavScrim) {
+        mobileNavScrim.remove();
+        mobileNavScrim = null;
+      }
+
+      document.body.style.overflow = '';
+    }
+
+    function toggleMobileNav() {
+      if (mobileNavOpen) {
+        closeMobileNav();
+      } else {
+        openMobileNav();
+      }
+    }
+
+    // Rewire the titlebar button on mobile
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('rail-toggle');
+
+      if (toggle) {
+        // Intercept clicks on mobile: open nav instead of side rail
+        toggle.addEventListener('click', (e) => {
+          if (isMobileLayout()) {
+            e.stopImmediatePropagation();
+            toggleMobileNav();
+          }
+        }, true); // useCapture to fire before the rail handler
+      }
+
+      // Close mobile nav on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileNavOpen) {
+          closeMobileNav();
+        }
+      });
+
+      // Close mobile nav when a nav item is clicked (file selected)
+      document.getElementById('nav-tree')?.addEventListener('click', (e) => {
+        if (isMobileLayout() && e.target.closest('.nav-item:not(.folder)')) {
+          // Small delay so the file opens first
+          setTimeout(closeMobileNav, 150);
+        }
+      });
+
+      // Handle orientation change / resize — close nav if we leave mobile
+      window.addEventListener('resize', () => {
+        if (!isMobileLayout() && mobileNavOpen) {
+          closeMobileNav();
+        }
+      });
     });
 
     // =========================================================================
