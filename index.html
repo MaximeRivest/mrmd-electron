@@ -9132,16 +9132,25 @@ session:
         const view = state.editor?.view;
         if (!view) return;
 
-        // Focus editor first so coordsAtPos works
-        view.focus();
+        // Check if AI client exists (set by connectToAI)
+        if (!aiClient) {
+          // No AI connected — open the AI panel so user can set up
+          openPanel('ai');
+          addMobileRailScrim('ai');
+          return;
+        }
 
-        // Small delay to let focus settle, then open modal
-        requestAnimationFrame(() => {
+        // Focus editor and scroll cursor into view
+        view.focus();
+        view.dispatch({ scrollIntoView: true });
+
+        // Wait for focus + scroll + keyboard layout to fully settle
+        setTimeout(() => {
           const ctrlK = mrmd.default?.ctrlK || mrmd.ctrlK;
           if (ctrlK?.showCtrlKModal) {
             ctrlK.showCtrlKModal(view);
           }
-        });
+        }, 200);
       });
 
       // Close mobile nav on Escape
