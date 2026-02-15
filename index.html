@@ -536,7 +536,7 @@
       border-radius: 6px;
       padding: 4px 0;
       min-width: 160px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
       z-index: 1000;
       display: none;
     }
@@ -918,16 +918,10 @@
       z-index: 99;
       transform: translateX(calc(100% + 48px));
       transition: transform 0.2s ease;
-      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
     }
 
     .rail-panel.open {
       transform: translateX(0);
-    }
-
-    /* Pinned panel: no shadow, editor makes room */
-    .rail-panel.pinned {
-      box-shadow: none;
     }
 
     /* When a panel is pinned, push editor content left */
@@ -3558,8 +3552,8 @@
       font-size: 14px;
       font-weight: 500;
       z-index: 9999;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      animation: pulse-warning 2s ease-in-out infinite;
+      box-shadow: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .sync-warning-banner.visible {
@@ -4273,7 +4267,6 @@
         -webkit-backdrop-filter: blur(16px);
         transform: none !important;
         z-index: 450 !important;
-        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
       }
 
       /* Always show rail on mobile (override .side-rail without .open) */
@@ -4478,6 +4471,54 @@
         background: rgba(0, 0, 0, 0.45);
         z-index: 550;
         animation: fadeIn 0.2s ease;
+      }
+    }
+
+    /* ---- KILL UGLY SHADOWS ON MOBILE ---- */
+    /* Tech blogs like Quarto/Astro use flat design with subtle borders,
+       not heavy box-shadows. On mobile especially, shadows look muddy
+       and cheap. Replace with clean borders or nothing. */
+    @media (max-width: 768px) {
+
+      /* Sync warning banner — the most visible offender */
+      .sync-warning-banner {
+        box-shadow: none !important;
+      }
+
+      /* Side rail bottom bar */
+      .side-rail {
+        box-shadow: none !important;
+      }
+
+      /* Rail panels (bottom sheets keep a very subtle one) */
+      .rail-panel {
+        box-shadow: 0 -1px 0 var(--border) !important;
+      }
+
+      /* Nav sidebar mobile overlay */
+      .nav-sidebar.mobile-open {
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15) !important;
+      }
+
+      /* File picker */
+      .file-picker {
+        box-shadow: none !important;
+      }
+
+      /* Venv picker */
+      .venv-picker {
+        box-shadow: none !important;
+      }
+
+      /* Context menus as bottom sheets */
+      .nav-context-menu {
+        box-shadow: none !important;
+        border-top: 1px solid var(--border) !important;
+      }
+
+      /* Any modal overlays */
+      .modal-overlay > * {
+        box-shadow: none !important;
       }
     }
 
