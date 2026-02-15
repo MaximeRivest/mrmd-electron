@@ -14891,11 +14891,12 @@ session:
         console.log('[noRuntime] Event received for', language);
         const normalized = normalizeRuntimeLanguage(language);
 
-        // Fast-path UX: auto-recover non-Python runtimes once before showing a prompt.
-        // This makes stopped Bash/R/Julia runtimes feel self-healing.
-        if (!autoRecovering && ['bash', 'r', 'julia'].includes(normalized)) {
+        // Fast-path UX: auto-recover stopped runtimes once before showing a prompt.
+        // This makes stopped Python/Bash/R/Julia runtimes feel self-healing.
+        if (!autoRecovering && ['python', 'bash', 'r', 'julia'].includes(normalized)) {
           autoRecovering = true;
           try {
+            if (normalized === 'python') await resolveProjectSession();
             if (normalized === 'bash') await registerBashWithEditor();
             if (normalized === 'r') await registerRWithEditor();
             if (normalized === 'julia') await registerJuliaWithEditor();
