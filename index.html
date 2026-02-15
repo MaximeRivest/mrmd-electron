@@ -4485,6 +4485,244 @@
       }
     }
 
+    /* ---- PANELS & SETTINGS: Keyboard-aware, full-screen on mobile ---- */
+    /* The virtual keyboard on phones shrinks the visual viewport but NOT
+       the layout viewport. Using `vh` units means panels hide behind the
+       keyboard. We use `dvh` (dynamic viewport height) where supported,
+       and a JS-based fallback via CSS custom property --mobile-vh. */
+    @media (max-width: 768px) {
+
+      /* Rail panels: use full visual viewport, top-anchored */
+      .rail-panel {
+        top: 0 !important;
+        bottom: auto !important;
+        height: 100dvh !important;
+        height: calc(var(--mobile-vh, 100vh)) !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+      }
+
+      .rail-panel.open {
+        transform: translateY(0) !important;
+      }
+
+      /* Panel content: fill remaining space, scroll */
+      .rail-panel-content {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* AI panel: bigger touch targets for commands and selectors */
+      .ai-juice-selector,
+      .ai-reasoning-selector {
+        display: flex;
+        gap: 6px;
+      }
+
+      .ai-juice-btn,
+      .ai-reasoning-btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 16px !important;
+        border-radius: 10px;
+      }
+
+      .ai-cmd {
+        min-height: 52px;
+        padding: 14px 16px !important;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .ai-cmd-key {
+        min-width: 32px;
+        height: 32px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+      }
+
+      .ai-cmd-label {
+        font-size: 15px;
+      }
+
+      .ai-cmd-hint {
+        font-size: 12px;
+      }
+
+      .ai-level-hint {
+        display: none; /* Hide keyboard shortcut hints */
+      }
+
+      .ai-settings-btn {
+        min-width: 44px;
+        min-height: 44px;
+      }
+
+      .ai-panel-status {
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .rail-panel-section-title {
+        padding: 12px 16px 8px !important;
+        font-size: 12px !important;
+      }
+
+      /* --- AI Settings modal: full screen on mobile --- */
+      #ai-settings-overlay.visible {
+        align-items: stretch !important;
+        padding-top: 0 !important;
+      }
+
+      .settings-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100dvh !important;
+        max-height: calc(var(--mobile-vh, 100vh)) !important;
+        height: 100dvh;
+        height: calc(var(--mobile-vh, 100vh));
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Tabs: horizontal scroll row at top instead of side column */
+      .settings-body {
+        flex-direction: column !important;
+      }
+
+      .settings-tabs {
+        width: 100% !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 12px !important;
+        display: flex;
+        flex-direction: row !important;
+        gap: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-shrink: 0;
+      }
+
+      .settings-tab {
+        flex-shrink: 0;
+        padding: 10px 14px !important;
+        font-size: 13px;
+        white-space: nowrap;
+        border-radius: 8px;
+        min-height: 44px;
+      }
+
+      .settings-content {
+        flex: 1;
+        padding: 16px !important;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .settings-header {
+        padding: 12px 16px;
+        min-height: 52px;
+      }
+
+      .settings-header-title {
+        font-size: 16px;
+      }
+
+      .settings-header-close {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 24px;
+      }
+
+      .settings-footer {
+        padding: 12px 16px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        gap: 12px;
+      }
+
+      .settings-btn {
+        min-height: 44px;
+        font-size: 15px;
+        padding: 12px 20px;
+        border-radius: 10px;
+      }
+
+      .settings-section-title {
+        font-size: 13px !important;
+      }
+
+      .settings-section-desc {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      /* All inputs in settings: 16px to prevent iOS zoom */
+      .settings-modal input,
+      .settings-modal textarea,
+      .settings-modal select {
+        font-size: 16px !important;
+        padding: 12px !important;
+        border-radius: 8px;
+        min-height: 44px;
+      }
+
+      /* API key rows: stack vertically */
+      .api-key-row {
+        flex-direction: column !important;
+        gap: 8px;
+      }
+
+      .api-key-row input {
+        width: 100% !important;
+      }
+
+      .api-key-remove {
+        min-width: 44px;
+        min-height: 44px;
+        align-self: flex-end;
+      }
+
+      /* Quality level rows */
+      .quality-level-row {
+        flex-direction: column !important;
+        gap: 8px;
+      }
+
+      .quality-level-row input {
+        width: 100% !important;
+      }
+
+      /* Add buttons */
+      .add-section-btn {
+        min-height: 48px;
+        font-size: 15px;
+        padding: 12px 16px;
+        border-radius: 10px;
+      }
+
+      /* --- Notebook settings dialog: same treatment --- */
+      #notebook-dialog-overlay.visible {
+        align-items: stretch !important;
+        padding-top: 0 !important;
+      }
+
+      .notebook-dialog {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        border: none !important;
+      }
+    }
+
     /* ---- MOBILE RAIL PANEL SCRIM ---- */
     /* JS adds .mobile-rail-scrim when a panel opens on mobile */
     @media (max-width: 768px) {
@@ -9112,6 +9350,22 @@ session:
       } else {
         openMobileNav();
       }
+    }
+
+    // =========================================================================
+    // MOBILE VISUAL VIEWPORT TRACKING
+    // The virtual keyboard on phones shrinks the visual viewport but CSS `vh`
+    // still refers to the full layout viewport. We track the visual viewport
+    // height via a CSS custom property so panels stay above the keyboard.
+    // =========================================================================
+    if (typeof window.visualViewport !== 'undefined') {
+      function updateMobileVh() {
+        const vh = window.visualViewport.height;
+        document.documentElement.style.setProperty('--mobile-vh', `${vh}px`);
+      }
+      window.visualViewport.addEventListener('resize', updateMobileVh);
+      window.visualViewport.addEventListener('scroll', updateMobileVh);
+      updateMobileVh();
     }
 
     // Wire up mobile titlebar buttons
