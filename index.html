@@ -276,10 +276,30 @@
       color: var(--accent);
     }
 
-    /* Mobile-only titlebar buttons: hidden on desktop */
-    .titlebar-mobile-btn,
-    .titlebar-mobile-actions {
+    /* Mobile-only: hamburger nav button hidden on desktop */
+    .titlebar-mobile-btn {
       display: none;
+    }
+
+    /* Search + AI actions: always visible (desktop position adjusted by CTA/account injection) */
+    .titlebar-mobile-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      position: absolute;
+      right: 48px;
+      top: 50%;
+      transform: translateY(-50%);
+      -webkit-app-region: no-drag;
+    }
+    .titlebar-mobile-actions .titlebar-mobile-btn {
+      display: flex;
+      position: static;
+      transform: none;
+      width: 28px;
+      height: 28px;
+      min-width: unset;
+      min-height: unset;
     }
 
     /* Main content */
@@ -3677,7 +3697,7 @@
         display: none !important;
       }
 
-      /* Show mobile buttons */
+      /* Show ALL mobile buttons (hamburger too) */
       .titlebar-mobile-btn {
         display: flex !important;
         position: relative;
@@ -3687,9 +3707,13 @@
         width: 44px;
         height: 44px;
         flex-shrink: 0;
+        min-width: 44px;
+        min-height: 44px;
       }
 
       .titlebar-mobile-actions {
+        position: static;
+        transform: none;
         display: flex !important;
         align-items: center;
         gap: 0;
@@ -4840,6 +4864,14 @@
             <circle cx="7" cy="7" r="4.5"/>
             <line x1="10.2" y1="10.2" x2="13.5" y2="13.5"/>
           </svg>
+        </button>
+        <button class="titlebar-btn titlebar-mobile-btn" id="mobile-image-btn" title="Add image">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>
+            <circle cx="5" cy="6.5" r="1.5"/>
+            <path d="M1.5 11l3.5-3.5 2.5 2.5 2-2 5 5"/>
+          </svg>
+          <input type="file" id="mobile-image-input" accept="image/*" style="display:none">
         </button>
         <button class="titlebar-btn titlebar-mobile-btn" id="mobile-ai-btn" title="AI edit">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -9387,6 +9419,53 @@ session:
       document.getElementById('mobile-search-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (typeof showFilePicker === 'function') showFilePicker();
+      });
+
+      // ---- Image upload (camera/gallery picker) ----
+      const imageBtn = document.getElementById('mobile-image-btn');
+      const imageInput = document.getElementById('mobile-image-input');
+      imageBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        imageInput?.click();
+      });
+      imageInput?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !file.type.startsWith('image/')) return;
+
+        const view = state.editor?.view;
+        const projectRoot = state.project?.root;
+        if (!view || !projectRoot) return;
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'png';
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          const filename = `photo-${timestamp}.${ext}`;
+
+          console.log(`[MobileImage] Saving ${filename} (${uint8Array.length} bytes)`);
+
+          const result = await electronAPI.asset.save(projectRoot, uint8Array, filename);
+          const relativeDocPath = state.currentFile.replace(projectRoot + '/', '');
+          const relativePath = await electronAPI.asset.relativePath(result.path, relativeDocPath);
+
+          const pos = view.state.selection.main.head;
+          const altText = filename.replace(/\.[^.]+$/, '');
+          const markdown = `![${altText}](${relativePath})\n`;
+          view.dispatch({
+            changes: { from: pos, insert: markdown },
+            selection: { anchor: pos + markdown.length },
+          });
+
+          console.log(`[MobileImage] Inserted: ${markdown.trim()}`);
+        } catch (err) {
+          console.error('[MobileImage] Error:', err);
+          alert('Failed to upload image: ' + err.message);
+        }
+
+        // Reset input so the same file can be selected again
+        imageInput.value = '';
       });
 
       // ---- AI → Ctrl+K modal ----
