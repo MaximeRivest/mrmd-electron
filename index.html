@@ -270,6 +270,12 @@
       color: var(--accent);
     }
 
+    /* Mobile-only titlebar buttons: hidden on desktop */
+    .titlebar-mobile-btn,
+    .titlebar-mobile-actions {
+      display: none;
+    }
+
     /* Main content */
     .content {
       flex: 1;
@@ -3634,41 +3640,58 @@
 
       /* Titlebar becomes a slim sticky mobile header */
       .titlebar {
-        height: 44px;
+        height: 48px;
         -webkit-app-region: no-drag;
         position: sticky;
         top: 0;
         z-index: 500;
-        padding: 0 12px;
+        padding: 0 4px;
         justify-content: space-between;
+        align-items: center;
+        gap: 0;
         background: var(--bg-secondary);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
       }
 
       .titlebar-title {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 500;
         color: var(--text);
-        max-width: 60vw;
+        flex: 1;
+        text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        padding: 0 4px;
       }
 
-      /* Titlebar button (hamburger / rail toggle) — larger touch target */
-      .titlebar-btn {
+      /* Hide desktop rail toggle on mobile */
+      .titlebar-desktop-btn {
+        display: none !important;
+      }
+
+      /* Show mobile buttons */
+      .titlebar-mobile-btn {
+        display: flex !important;
         position: relative;
         right: auto;
         top: auto;
         transform: none;
         width: 44px;
         height: 44px;
+        flex-shrink: 0;
       }
 
-      .titlebar-btn svg {
-        width: 20px;
-        height: 20px;
+      .titlebar-mobile-actions {
+        display: flex !important;
+        align-items: center;
+        gap: 0;
+      }
+
+      .titlebar-mobile-btn svg {
+        width: 18px;
+        height: 18px;
       }
 
       /* Content area: full width, proper spacing */
@@ -4555,8 +4578,35 @@
 
   <div class="app">
     <div class="titlebar">
+      <!-- Mobile: nav hamburger (left) — hidden on desktop -->
+      <button class="titlebar-btn titlebar-mobile-btn" id="mobile-nav-btn" title="Menu">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <line x1="2.5" y1="4" x2="13.5" y2="4"/>
+          <line x1="2.5" y1="8" x2="13.5" y2="8"/>
+          <line x1="2.5" y1="12" x2="13.5" y2="12"/>
+        </svg>
+      </button>
+
       <span class="titlebar-title" id="titlebar-title">mrmd</span>
-      <button class="titlebar-btn rail-toggle" id="rail-toggle" title="Toggle tools (Ctrl+\)">
+
+      <!-- Mobile: search + AI (right) — hidden on desktop -->
+      <div class="titlebar-mobile-actions">
+        <button class="titlebar-btn titlebar-mobile-btn" id="mobile-search-btn" title="Find file">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="7" cy="7" r="4.5"/>
+            <line x1="10.2" y1="10.2" x2="13.5" y2="13.5"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn titlebar-mobile-btn" id="mobile-ai-btn" title="AI edit">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v3M8 11v3M2 8h3M11 8h3"/>
+            <path d="M4.5 4.5l2 2M9.5 9.5l2 2M11.5 4.5l-2 2M4.5 11.5l2-2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Desktop: rail toggle (right, absolute) -->
+      <button class="titlebar-btn rail-toggle titlebar-desktop-btn" id="rail-toggle" title="Toggle tools (Ctrl+\)">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <line x1="3" y1="4" x2="13" y2="4"/>
           <line x1="3" y1="8" x2="13" y2="8"/>
@@ -9064,19 +9114,27 @@ session:
       }
     }
 
-    // Rewire the titlebar button on mobile
+    // Wire up mobile titlebar buttons
     document.addEventListener('DOMContentLoaded', () => {
-      const toggle = document.getElementById('rail-toggle');
 
-      if (toggle) {
-        // Intercept clicks on mobile: open nav instead of side rail
-        toggle.addEventListener('click', (e) => {
-          if (isMobileLayout()) {
-            e.stopImmediatePropagation();
-            toggleMobileNav();
-          }
-        }, true); // useCapture to fire before the rail handler
-      }
+      // ---- Hamburger → nav sidebar ----
+      document.getElementById('mobile-nav-btn')?.addEventListener('click', () => {
+        toggleMobileNav();
+      });
+
+      // ---- Search → file picker (Ctrl+P equivalent) ----
+      document.getElementById('mobile-search-btn')?.addEventListener('click', () => {
+        if (typeof showFilePicker === 'function') showFilePicker();
+      });
+
+      // ---- AI → Ctrl+K modal ----
+      document.getElementById('mobile-ai-btn')?.addEventListener('click', () => {
+        const view = state.editor?.view;
+        if (view) {
+          const ctrlK = mrmd.default?.ctrlK || mrmd.ctrlK;
+          ctrlK?.showCtrlKModal?.(view);
+        }
+      });
 
       // Close mobile nav on Escape
       document.addEventListener('keydown', (e) => {
@@ -9088,12 +9146,11 @@ session:
       // Close mobile nav when a nav item is clicked (file selected)
       document.getElementById('nav-tree')?.addEventListener('click', (e) => {
         if (isMobileLayout() && e.target.closest('.nav-item:not(.folder)')) {
-          // Small delay so the file opens first
           setTimeout(closeMobileNav, 150);
         }
       });
 
-      // Handle orientation change / resize — close nav if we leave mobile
+      // Handle orientation change / resize
       window.addEventListener('resize', () => {
         if (!isMobileLayout() && mobileNavOpen) {
           closeMobileNav();
