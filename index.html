@@ -13611,7 +13611,9 @@ session:
         return;
       }
 
-      // Create resolver function that converts relative paths to file:// URLs
+      // Create resolver function.
+      // Desktop/Electron: relative asset path -> file:// URL
+      // Sandbox/browser: relative asset path -> blob: URL from IndexedDB cache
       const resolver = (url) => {
         if (!url) return url;
 
@@ -13619,8 +13621,17 @@ session:
         // Handle ../_assets/..., ./_assets/..., _assets/... patterns
         let resolvedPath;
         if (url.startsWith('/')) {
-          // Absolute path - use project root
-          resolvedPath = projectRoot + url;
+          // Absolute path:
+          // - If already rooted at projectRoot, keep as-is
+          // - If rooted at /_assets, make project-root absolute
+          // - Else, treat as project-root absolute fallback
+          if (url.startsWith(projectRoot + '/')) {
+            resolvedPath = url;
+          } else if (url.startsWith('/_assets/')) {
+            resolvedPath = projectRoot + url;
+          } else {
+            resolvedPath = projectRoot + (url.startsWith('/') ? url : ('/' + url));
+          }
         } else if (url.startsWith('../') || url.startsWith('./')) {
           // Relative path - resolve from document directory
           const parts = documentDir.split('/');
@@ -13639,11 +13650,39 @@ session:
           resolvedPath = documentDir + '/' + url;
         }
 
-        // Convert to file:// URL
+        // Sandbox/browser mode: resolve from IndexedDB asset cache.
+        if (window.MRMD_SANDBOX && window._sandboxAssetCache) {
+          const blobUrl = window._sandboxAssetCache.resolve(resolvedPath);
+          if (blobUrl) {
+            console.log(`[AssetResolver:sandbox] ${url} -> ${blobUrl}`);
+            return blobUrl;
+          }
+          // Prevent browser security errors from file:// and keep UI clean while cache warms.
+          console.warn(`[AssetResolver:sandbox] Cache miss for ${resolvedPath}`);
+          return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        }
+
+        // Desktop/Electron mode: use file://
         const fileUrl = 'file://' + resolvedPath;
         console.log(`[AssetResolver] ${url} -> ${fileUrl}`);
         return fileUrl;
       };
+
+      // In sandbox mode, preload IndexedDB assets before/after install.
+      if (window.MRMD_SANDBOX && window._sandboxAssetCache?.preload) {
+        window._sandboxAssetCache.preload(projectRoot)
+          .then(() => {
+            // Re-append resolver to trigger a re-render after cache warmup.
+            try {
+              editor.view.dispatch({
+                effects: mrmd.codemirror.StateEffect.appendConfig.of(
+                  assetResolverFacet.of(resolver)
+                ),
+              });
+            } catch { /* ignore */ }
+          })
+          .catch(() => {});
+      }
 
       // Add the resolver extension to the editor
       editor.view.dispatch({
@@ -14555,6 +14594,12 @@ session:
               Choose existing...
             </button>
           ` : `
+            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
+              Start ${langLabel} runtime
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
+              Restart runtimes
+            </button>
             <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
               Dismiss
             </button>
@@ -14713,6 +14758,124 @@ session:
       showVenvPicker();
     }
 
+    function normalizeRuntimeLanguage(language) {
+      const raw = String(language || '').toLowerCase();
+      if (['python', 'py', 'python3'].includes(raw)) return 'python';
+      if (['bash', 'sh', 'shell'].includes(raw)) return 'bash';
+      if (['r', 'rlang'].includes(raw)) return 'r';
+      if (['julia', 'jl'].includes(raw)) return 'julia';
+      if (['javascript', 'js', 'node', 'typescript', 'ts'].includes(raw)) return 'node';
+      return raw;
+    }
+
+    /**
+     * Start the missing runtime from the inline prompt and retry the failed cell.
+     */
+    async function startRuntimeAndRetry() {
+      if (!noRuntimePrompt) return;
+
+      const { language, retryCallback } = noRuntimePrompt;
+      const normalized = normalizeRuntimeLanguage(language);
+      const actionsEl = document.getElementById('no-runtime-actions');
+
+      if (actionsEl) {
+        actionsEl.innerHTML = `
+          <div class="no-runtime-prompt-progress">
+            <div class="no-runtime-prompt-spinner"></div>
+            <span>Starting ${normalized} runtime...</span>
+          </div>
+        `;
+      }
+
+      try {
+        if (normalized === 'python') {
+          await resolveProjectSession();
+        } else if (normalized === 'bash') {
+          await registerBashWithEditor();
+        } else if (normalized === 'r') {
+          await registerRWithEditor();
+        } else if (normalized === 'julia') {
+          await registerJuliaWithEditor();
+        } else if (normalized === 'node') {
+          // JS runtime is client-side; just retry.
+        } else {
+          throw new Error(`Unsupported runtime: ${language}`);
+        }
+
+        hideNoRuntimePrompt();
+        await new Promise(r => setTimeout(r, 120));
+        if (typeof retryCallback === 'function') {
+          await retryCallback();
+        }
+      } catch (e) {
+        console.error('[noRuntime] Failed to start runtime:', e);
+        if (actionsEl) {
+          actionsEl.innerHTML = `
+            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
+              <span>Failed: ${e.message}</span>
+            </div>
+            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()" style="margin-top: 8px;">
+              Try again
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
+              Dismiss
+            </button>
+          `;
+        }
+      }
+    }
+
+    /**
+     * Restart all currently known runtimes, then retry failed execution.
+     */
+    async function restartRuntimesAndRetry() {
+      if (!noRuntimePrompt) return;
+      const { retryCallback } = noRuntimePrompt;
+      const actionsEl = document.getElementById('no-runtime-actions');
+
+      if (actionsEl) {
+        actionsEl.innerHTML = `
+          <div class="no-runtime-prompt-progress">
+            <div class="no-runtime-prompt-spinner"></div>
+            <span>Restarting runtimes...</span>
+          </div>
+        `;
+      }
+
+      try {
+        const names = [...state.sessions.keys()];
+        for (const name of names) {
+          await restartLanguageSession(name);
+        }
+
+        // Re-register language runtimes for current document
+        await Promise.allSettled([
+          resolveProjectSession(),
+          registerBashWithEditor(),
+          registerRWithEditor(),
+          registerJuliaWithEditor(),
+        ]);
+
+        hideNoRuntimePrompt();
+        await new Promise(r => setTimeout(r, 180));
+        if (typeof retryCallback === 'function') {
+          await retryCallback();
+        }
+      } catch (e) {
+        console.error('[noRuntime] Failed to restart runtimes:', e);
+        if (actionsEl) {
+          actionsEl.innerHTML = `
+            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
+              <span>Failed: ${e.message}</span>
+            </div>
+            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
+              Dismiss
+            </button>
+          `;
+        }
+      }
+    }
+
     /**
      * Hook up noRuntime event handler to editor
      */
@@ -14722,8 +14885,32 @@ session:
         return;
       }
 
-      editor.execution.on('noRuntime', (cellIndex, cell, language, retryCallback) => {
+      let autoRecovering = false;
+
+      editor.execution.on('noRuntime', async (cellIndex, cell, language, retryCallback) => {
         console.log('[noRuntime] Event received for', language);
+        const normalized = normalizeRuntimeLanguage(language);
+
+        // Fast-path UX: auto-recover non-Python runtimes once before showing a prompt.
+        // This makes stopped Bash/R/Julia runtimes feel self-healing.
+        if (!autoRecovering && ['bash', 'r', 'julia'].includes(normalized)) {
+          autoRecovering = true;
+          try {
+            if (normalized === 'bash') await registerBashWithEditor();
+            if (normalized === 'r') await registerRWithEditor();
+            if (normalized === 'julia') await registerJuliaWithEditor();
+
+            if (typeof retryCallback === 'function') {
+              await retryCallback();
+              autoRecovering = false;
+              return;
+            }
+          } catch (e) {
+            console.warn('[noRuntime] Auto-recover failed:', e?.message || e);
+          }
+          autoRecovering = false;
+        }
+
         showNoRuntimePrompt(cellIndex, cell, language, retryCallback);
       });
 
