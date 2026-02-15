@@ -4018,6 +4018,469 @@
       }
     }
 
+    /* ---- FILE PICKER (Ctrl+P): Full-screen bottom sheet on mobile ---- */
+    @media (max-width: 768px) {
+
+      /* Modal overlay: no top padding, fill screen */
+      .modal-overlay {
+        padding-top: 0;
+        align-items: stretch;
+      }
+
+      /* File picker: full screen, no border radius */
+      .file-picker {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+        border: none;
+      }
+
+      /* Search header: bigger, more padding, sticky */
+      .file-picker .picker-header {
+        padding: 12px 16px;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg-secondary);
+        min-height: 56px;
+      }
+
+      .file-picker .picker-icon {
+        width: 20px;
+        height: 20px;
+      }
+
+      .file-picker .picker-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .file-picker .picker-input {
+        font-size: 16px; /* Prevents iOS zoom-on-focus */
+        padding: 4px 0;
+      }
+
+      /* Hide the esc hint on mobile (no keyboard) */
+      .file-picker .picker-hint {
+        display: none;
+      }
+
+      /* Context bar: slightly bigger */
+      .picker-context {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+
+      .picker-context-hint {
+        display: none; /* Hide keyboard hints */
+      }
+
+      /* Body: single column, no preview pane */
+      .file-picker .picker-body {
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Hide preview pane entirely on mobile */
+      .file-picker .picker-preview {
+        display: none !important;
+      }
+
+      /* File list: full width, comfortable padding */
+      .file-picker .picker-list {
+        padding: 8px;
+      }
+
+      /* Items: much bigger touch targets */
+      .picker-item {
+        padding: 14px 12px !important;
+        min-height: 52px;
+        gap: 14px !important;
+        border-radius: 10px !important;
+      }
+
+      .picker-item-icon {
+        width: 24px !important;
+        font-size: 16px !important;
+      }
+
+      .picker-item-name {
+        font-size: 15px !important;
+      }
+
+      .picker-item-path {
+        font-size: 12px !important;
+        max-width: 50vw !important;
+      }
+
+      .picker-item-meta {
+        font-size: 12px !important;
+      }
+
+      .picker-item-badge {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+      }
+
+      /* Section titles: larger */
+      .picker-section-title {
+        font-size: 11px !important;
+        padding: 4px 12px 8px !important;
+      }
+
+      /* Footer: simplified for mobile */
+      .picker-footer {
+        padding: 12px 16px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        gap: 8px;
+      }
+
+      .picker-footer kbd {
+        display: none; /* Hide keyboard shortcuts */
+      }
+
+      .picker-hints {
+        display: none; /* Hide keyboard hint row */
+      }
+
+      .picker-status {
+        margin-left: 0;
+        font-size: 13px;
+      }
+
+      /* Create section: full width, comfortable */
+      .picker-create-section {
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+
+      .picker-item.create {
+        min-height: 52px;
+      }
+
+      /* Mode indicator: bigger */
+      .picker-mode {
+        font-size: 12px;
+        padding: 4px 10px;
+      }
+    }
+
+    /* ---- VENV PICKER: Bottom sheet on mobile ---- */
+    @media (max-width: 768px) {
+
+      .venv-picker {
+        width: 100% !important;
+        max-height: 85vh;
+        border-radius: 16px 16px 0 0;
+        border: none;
+        border-top: 1px solid var(--border);
+      }
+
+      /* Reposition overlay for bottom sheets */
+      #venv-picker-overlay.visible {
+        align-items: flex-end;
+        padding-top: 0;
+      }
+
+      .venv-picker .picker-header {
+        padding: 16px;
+        min-height: 56px;
+        position: relative;
+      }
+
+      /* Drag handle */
+      .venv-picker .picker-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: var(--text-dim);
+        border-radius: 2px;
+        opacity: 0.4;
+      }
+
+      .venv-picker .picker-input {
+        font-size: 16px; /* Prevents iOS zoom */
+      }
+
+      .venv-picker .picker-hint {
+        display: none;
+      }
+
+      .venv-picker .picker-list {
+        max-height: 50vh !important;
+      }
+
+      .venv-item {
+        padding: 14px 16px !important;
+        min-height: 52px;
+      }
+
+      .venv-item-name {
+        font-size: 15px !important;
+      }
+
+      .venv-item-path {
+        font-size: 12px !important;
+      }
+
+      .venv-picker .picker-footer {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .venv-picker .picker-footer kbd {
+        display: none;
+      }
+
+      .picker-custom-path input {
+        font-size: 16px;
+        padding: 12px;
+      }
+    }
+
+    /* ---- SIDE RAIL: Mobile bottom toolbar ---- */
+    /* Instead of hiding the rail completely, show it as a compact bottom bar
+       above the status bar. This gives quick access to tools (runtimes,
+       variables, AI, settings) like mobile app tab bars. */
+    @media (max-width: 768px) {
+
+      /* Override the previous display:none — show rail as bottom bar */
+      .side-rail {
+        display: flex !important;
+        position: fixed !important;
+        top: auto !important;
+        right: auto !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        flex-direction: row !important;
+        justify-content: space-around;
+        align-items: center;
+        padding: 4px 0 !important;
+        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+        border-left: none !important;
+        border-top: 1px solid var(--border);
+        background: var(--bg-secondary);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        transform: none !important;
+        z-index: 450 !important;
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Always show rail on mobile (override .side-rail without .open) */
+      .side-rail:not(.open) {
+        transform: none !important;
+      }
+
+      /* Rail buttons: tab bar style */
+      .rail-btn {
+        width: auto !important;
+        height: 44px !important;
+        min-width: 44px;
+        padding: 0 8px;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .rail-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* Active indicator: bottom dot instead of left bar */
+      .rail-btn.active::before {
+        left: 50% !important;
+        top: auto !important;
+        bottom: 2px;
+        transform: translateX(-50%) !important;
+        width: 16px !important;
+        height: 3px !important;
+        border-radius: 2px;
+      }
+
+      /* Hide spacer and divider in horizontal layout */
+      .rail-spacer {
+        display: none;
+      }
+
+      .rail-divider {
+        display: none;
+      }
+
+      /* Rail panels: become bottom sheets that slide up above the tab bar */
+      .rail-panel {
+        position: fixed !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 75vh !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        border-left: none !important;
+        border-top: 1px solid var(--border);
+        border-radius: 16px 16px 0 0 !important;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3) !important;
+        z-index: 600 !important;
+        transform: translateY(100%) !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+
+      .rail-panel.open {
+        transform: translateY(0) !important;
+      }
+
+      /* Pinning doesn't make sense on mobile — just overlay */
+      .rail-panel.pinned {
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3) !important;
+      }
+
+      .content.panel-pinned,
+      .content.panel-pinned-wide {
+        margin-right: 0 !important;
+      }
+
+      /* Panel header: bigger, with drag handle */
+      .rail-panel-header {
+        padding: 16px 16px 12px !important;
+        min-height: 52px;
+        position: relative;
+      }
+
+      .rail-panel-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        background: var(--text-dim);
+        border-radius: 2px;
+        opacity: 0.4;
+      }
+
+      .rail-panel-title {
+        font-size: 14px !important;
+        padding-top: 4px;
+      }
+
+      .rail-panel-close,
+      .rail-panel-pin,
+      .rail-panel-refresh {
+        width: 36px !important;
+        height: 36px !important;
+      }
+
+      /* Hide pin button on mobile — not useful */
+      .rail-panel-pin {
+        display: none !important;
+      }
+
+      .rail-panel-content {
+        padding: 8px 4px;
+      }
+
+      /* Panel items: bigger touch targets */
+      .rail-panel-item {
+        padding: 14px 16px !important;
+        min-height: 48px;
+        font-size: 14px;
+      }
+
+      .rail-panel-item-icon {
+        width: 24px;
+        font-size: 18px;
+      }
+
+      .rail-panel-item-label {
+        font-size: 14px;
+      }
+
+      .rail-panel-item-meta {
+        font-size: 12px;
+      }
+
+      /* Panel buttons: bigger */
+      .rail-panel-btn {
+        padding: 12px 16px !important;
+        font-size: 14px !important;
+        min-height: 44px;
+      }
+
+      /* Wide and artifact panels: same full-width treatment */
+      .rail-panel-wide,
+      .rail-panel-artifact {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 100% !important;
+      }
+
+      /* Artifact content needs to be scrollable */
+      .artifact-content {
+        flex: 1;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Section titles in panels */
+      .rail-panel-section-title {
+        font-size: 11px;
+        padding: 8px 16px 6px;
+      }
+
+      /* Settings panel specifics */
+      #panel-settings .rail-panel-item {
+        padding: 14px 16px !important;
+      }
+
+      /* Push the editor bottom padding up to account for bottom tab bar */
+      #editor-container {
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      /* Status bar: sits above the rail bottom bar */
+      .status-bar {
+        bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+        z-index: 400;
+      }
+
+      /* Notebook/AI settings dialogs: full width on mobile */
+      #notebook-dialog-overlay.visible,
+      #ai-settings-overlay.visible {
+        align-items: flex-end;
+        padding-top: 0;
+      }
+
+      #notebook-dialog-overlay .venv-picker,
+      #ai-settings-overlay .venv-picker {
+        width: 100% !important;
+        border-radius: 16px 16px 0 0;
+      }
+    }
+
+    /* ---- MOBILE RAIL PANEL SCRIM ---- */
+    /* JS adds .mobile-rail-scrim when a panel opens on mobile */
+    @media (max-width: 768px) {
+      .mobile-rail-scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 550;
+        animation: fadeIn 0.2s ease;
+      }
+    }
+
     /* ---- DARK THEME ADJUSTMENTS FOR MOBILE ---- */
     /* On mobile OLED screens, pure black backgrounds save battery */
     @media (max-width: 768px) and (prefers-color-scheme: dark) {
@@ -5951,6 +6414,25 @@ session:
 
     function showFilePicker() {
       document.getElementById('file-picker-overlay').classList.add('visible');
+
+      // On mobile: add a close button if not already present
+      if (isMobileLayout()) {
+        const pickerHeader = document.querySelector('.file-picker .picker-header');
+        if (pickerHeader && !pickerHeader.querySelector('.picker-close-btn')) {
+          const closeBtn = document.createElement('button');
+          closeBtn.className = 'picker-close-btn';
+          closeBtn.innerHTML = '×';
+          closeBtn.style.cssText = `
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 24px; width: 44px; height: 44px; display: flex;
+            align-items: center; justify-content: center; cursor: pointer;
+            flex-shrink: 0; border-radius: 8px; margin-left: 4px;
+          `;
+          closeBtn.addEventListener('click', hideFilePicker);
+          pickerHeader.appendChild(closeBtn);
+        }
+      }
+
       const input = document.getElementById('file-search');
       input.value = '';
       input.focus();
@@ -8576,6 +9058,54 @@ session:
           closeMobileNav();
         }
       });
+    });
+
+    // =========================================================================
+    // MOBILE RAIL PANEL SCRIM
+    // When a rail panel opens on mobile, add a backdrop scrim so the user
+    // can tap outside to close it (same pattern as mobile nav).
+    // =========================================================================
+
+    let mobileRailScrim = null;
+
+    function addMobileRailScrim(panelId) {
+      if (!isMobileLayout()) return;
+      removeMobileRailScrim();
+
+      mobileRailScrim = document.createElement('div');
+      mobileRailScrim.className = 'mobile-rail-scrim';
+      mobileRailScrim.addEventListener('click', () => {
+        closePanel(panelId);
+        removeMobileRailScrim();
+      });
+      document.body.appendChild(mobileRailScrim);
+    }
+
+    function removeMobileRailScrim() {
+      if (mobileRailScrim) {
+        mobileRailScrim.remove();
+        mobileRailScrim = null;
+      }
+    }
+
+    // Patch openPanel / closePanel to manage scrim on mobile
+    const _originalOpenPanel = openPanel;
+    openPanel = function(panelId) {
+      _originalOpenPanel(panelId);
+      addMobileRailScrim(panelId);
+    };
+
+    const _originalClosePanel = closePanel;
+    closePanel = function(panelId) {
+      _originalClosePanel(panelId);
+      removeMobileRailScrim();
+    };
+
+    // Also clean up scrim on resize out of mobile
+    window.addEventListener('resize', () => {
+      if (!isMobileLayout()) {
+        removeMobileRailScrim();
+      }
     });
 
     // =========================================================================
