@@ -1,6 +1,6 @@
 {
   "name": "mrmd-electron",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Minimal zen markdown editor with collaborative notebooks",
   "type": "module",
   "main": "main.js",

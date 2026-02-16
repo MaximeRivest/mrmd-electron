@@ -322,43 +322,66 @@ export function walkDir(dir, options = {}) {
   } = options;
 
   const ignoreDirsSet = new Set(ignoreDirs.map(d => d.toLowerCase()));
+  let cancelled = false;
 
-  function walk(currentDir, depth) {
-    if (depth > maxDepth) return;
+  // Async walk that yields to the event loop every CHUNK_SIZE entries
+  // to avoid blocking the main process during large scans
+  const CHUNK_SIZE = 200;
+
+  async function walkAsync(currentDir, depth) {
+    if (cancelled || depth > maxDepth) return;
     onDir(currentDir);
 
     let entries;
     try {
-      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
     } catch (e) {
       // Permission denied or other error, skip this directory
       return;
     }
 
+    const subdirs = [];
+    let processed = 0;
+
     for (const entry of entries) {
+      if (cancelled) return;
       const fullPath = path.join(currentDir, entry.name);
 
       if (entry.isDirectory()) {
         if (!ignoreDirsSet.has(entry.name.toLowerCase())) {
-          walk(fullPath, depth + 1);
+          subdirs.push({ path: fullPath, depth: depth + 1 });
         }
       } else if (entry.isFile()) {
         if (extensions === null || extensions.includes(path.extname(entry.name).toLowerCase())) {
           onFile(fullPath);
         }
       }
+
+      processed++;
+      // Yield to event loop periodically to keep UI responsive
+      if (processed % CHUNK_SIZE === 0) {
+        await new Promise(resolve => setImmediate(resolve));
+      }
+    }
+
+    // Process subdirectories
+    for (const subdir of subdirs) {
+      if (cancelled) return;
+      await walkAsync(subdir.path, subdir.depth);
     }
   }
 
-  // Run async to not block
-  setImmediate(() => {
-    try {
-      walk(dir, 0);
-      onDone();
-    } catch (e) {
-      onError(e);
-    }
+  // Start async walk
+  walkAsync(dir, 0).then(() => {
+    if (!cancelled) onDone();
+  }).catch((e) => {
+    if (!cancelled) onError(e);
   });
+
+  // Return cancellable handle
+  return {
+    kill: () => { cancelled = true; },
+  };
 }
 
 /**
@@ -381,18 +404,20 @@ export function findDirs(startDir, dirNames, options = {}) {
 
   const targetNames = new Set(dirNames.map(n => n.toLowerCase()));
   const ignoreDirsSet = new Set(ignoreDirs.map(d => d.toLowerCase()));
+  let cancelled = false;
 
-  function walk(currentDir, depth) {
-    if (depth > maxDepth) return;
+  async function walkAsync(currentDir, depth) {
+    if (cancelled || depth > maxDepth) return;
 
     let entries;
     try {
-      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
     } catch {
       return;
     }
 
     for (const entry of entries) {
+      if (cancelled) return;
       if (!entry.isDirectory()) continue;
 
       const nameLower = entry.name.toLowerCase();
@@ -404,17 +429,17 @@ export function findDirs(startDir, dirNames, options = {}) {
         onFound(fullPath);
       }
 
-      // Continue searching subdirectories
-      walk(fullPath, depth + 1);
+      await walkAsync(fullPath, depth + 1);
     }
   }
 
-  setImmediate(() => {
-    try {
-      walk(startDir, 0);
-      onDone();
-    } catch {
-      onDone();
-    }
+  walkAsync(startDir, 0).then(() => {
+    if (!cancelled) onDone();
+  }).catch(() => {
+    if (!cancelled) onDone();
   });
+
+  return {
+    kill: () => { cancelled = true; },
+  };
 }

@@ -1889,6 +1889,355 @@
       color: #81c784;
     }
 
+    .runtime-lang-badge.r {
+      background: rgba(39, 109, 195, 0.2);
+      color: #6ba3d6;
+    }
+
+    .runtime-lang-badge.julia {
+      background: rgba(149, 88, 178, 0.2);
+      color: #b07fd0;
+    }
+
+    .runtime-lang-badge.javascript {
+      background: rgba(241, 224, 90, 0.2);
+      color: #e8d44d;
+    }
+
+    /* Runtime language section in notebook-scoped panel */
+    .runtime-lang-section {
+      margin-bottom: 4px;
+    }
+
+    .runtime-lang-section-header {
+      padding: 8px 16px 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .runtime-item--inactive {
+      opacity: 0.7;
+    }
+
+    .runtime-item--inactive:hover {
+      opacity: 1;
+    }
+
+    /* Inline runtime configuration panel */
+    .runtime-config-panel {
+      padding: 8px 16px 12px 32px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      animation: config-slide-in 0.15s ease-out;
+    }
+
+    @keyframes config-slide-in {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 200px; }
+    }
+
+    .runtime-config-field {
+      margin-bottom: 8px;
+    }
+
+    .runtime-config-field label {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 3px;
+    }
+
+    .runtime-config-field input {
+      width: 100%;
+      padding: 5px 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: var(--font-mono, 'SF Mono', Monaco, monospace);
+      outline: none;
+    }
+
+    .runtime-config-field input:focus {
+      border-color: var(--accent);
+    }
+
+    .runtime-config-field-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .runtime-config-field-row input {
+      flex: 1;
+    }
+
+    .runtime-config-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .runtime-config-actions .runtime-item-btn {
+      padding: 4px 12px;
+      font-size: 11px;
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .runtime-config-actions .runtime-item-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* =========================================================================
+       HOME VIEW
+       ========================================================================= */
+
+    /* Home view is a full-page takeover — hides all editor chrome */
+    #home-view {
+      display: none;
+      position: fixed;
+      top: 38px; /* below titlebar */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow-y: auto;
+      padding: 60px 40px 40px;
+      background: var(--editor-background, var(--bg));
+      z-index: 500; /* above everything except modals */
+    }
+
+    #home-view.visible {
+      display: block;
+    }
+
+    .home-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .home-header {
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .home-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .home-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .home-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .home-section-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .home-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .home-section-action {
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .home-section-action:hover {
+      background: var(--hover-bg);
+    }
+
+    .home-section-content {
+      padding: 8px 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .home-file-item,
+    .home-project-item,
+    .home-runtime-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .home-file-item:hover,
+    .home-project-item:hover,
+    .home-runtime-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .home-item-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+      color: var(--text-dim);
+    }
+
+    .home-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .home-item-name {
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .home-item-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .home-item-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .home-runtime-item:hover .home-item-actions {
+      opacity: 1;
+    }
+
+    .home-item-btn {
+      padding: 3px 8px;
+      font-size: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .home-item-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .home-item-btn.danger:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .home-runtime-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .home-runtime-status.running {
+      background: var(--success);
+    }
+
+    .home-runtime-status.stopped {
+      background: var(--text-dim);
+      opacity: 0.4;
+    }
+
+    .home-empty {
+      padding: 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .home-footer {
+      margin-top: 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .home-footer-btn {
+      padding: 6px 16px;
+      background: var(--error);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .home-footer-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Home button in titlebar */
+    .titlebar-home-btn {
+      -webkit-app-region: no-drag;
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: background 0.1s, color 0.1s;
+      font-size: 14px;
+    }
+
+    .titlebar-home-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .titlebar-home-btn.active {
+      color: var(--accent);
+    }
+
     /* AI Command items */
     .ai-cmd {
       display: flex;
@@ -4846,6 +5195,14 @@
 
   <div class="app">
     <div class="titlebar">
+      <!-- Home button (top-left) -->
+      <button class="titlebar-home-btn" id="home-btn" title="Home (Ctrl+Shift+H)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 8l6-5.5L14 8"/>
+          <path d="M4 7v5.5a1 1 0 001 1h2v-3h2v3h2a1 1 0 001-1V7"/>
+        </svg>
+      </button>
+
       <!-- Mobile: nav hamburger (left) — hidden on desktop -->
       <button class="titlebar-btn titlebar-mobile-btn" id="mobile-nav-btn" title="Menu">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -5285,6 +5642,52 @@ session:
 
   </div>
 
+  <!-- Home View — full-page takeover, independent of editor chrome -->
+  <div id="home-view">
+    <div class="home-container">
+      <div class="home-header">
+        <div class="home-title" id="home-title">mrmd</div>
+        <div class="home-subtitle" id="home-subtitle">Welcome back</div>
+      </div>
+      <div class="home-grid">
+        <!-- Recent Files -->
+        <div class="home-section">
+          <div class="home-section-header">
+            <span class="home-section-title">Recent Files</span>
+          </div>
+          <div class="home-section-content" id="home-recent-files">
+            <div class="home-empty">No recent files</div>
+          </div>
+        </div>
+
+        <!-- Running Runtimes (Global) -->
+        <div class="home-section" style="grid-row: span 2;">
+          <div class="home-section-header">
+            <span class="home-section-title">Running Runtimes</span>
+            <button class="home-section-action" onclick="refreshHomeRuntimes()">Refresh</button>
+          </div>
+          <div class="home-section-content" id="home-runtimes">
+            <div class="home-empty">No runtimes running</div>
+          </div>
+          <div style="padding: 8px 16px; border-top: 1px solid var(--border);">
+            <button class="home-footer-btn" id="home-stop-all" style="display: none; width: 100%;" onclick="stopAllRuntimes()">Stop All Runtimes</button>
+          </div>
+        </div>
+
+        <!-- Recent Projects -->
+        <div class="home-section">
+          <div class="home-section-header">
+            <span class="home-section-title">Recent Projects</span>
+            <button class="home-section-action" onclick="openProjectPicker()">Open project...</button>
+          </div>
+          <div class="home-section-content" id="home-recent-projects">
+            <div class="home-empty">No recent projects</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden elements for JavaScript compatibility -->
   <div style="display: none;">
     <span id="status-file"></span>
@@ -5608,6 +6011,7 @@ session:
       pickerRowHeights: [],
       pickerTotalHeight: 0,
       pickerVirtualInit: false,
+      pickerShowAllFolders: false,
     };
 
     // DEBUG: Expose state to window for console debugging
@@ -5933,6 +6337,61 @@ session:
     const VIRTUAL_HEADER_ROW_HEIGHT = 24;
     const VIRTUAL_EMPTY_ROW_HEIGHT = 72;
     const VIRTUAL_OVERSCAN_ROWS = 8;
+    const FOLDER_SECTION_COLLAPSED_LIMIT = 4;
+    const RECENT_MAX_RECENCY_BOOST = 260;
+    const RECENT_RECENCY_HALF_LIFE_HOURS = 42;
+    const RECENT_FREQUENCY_WEIGHT = 85;
+    const RECENT_MAX_FREQUENCY_BOOST = 240;
+
+    function normalizeRecentEntry(entry) {
+      if (!entry) return null;
+
+      if (typeof entry === 'string') {
+        return { path: entry, opened: null, count: 1 };
+      }
+
+      if (typeof entry !== 'object' || typeof entry.path !== 'string') {
+        return null;
+      }
+
+      const normalized = {
+        path: entry.path,
+        opened: typeof entry.opened === 'string'
+          ? entry.opened
+          : (typeof entry.used === 'string' ? entry.used : null),
+        count: 1,
+      };
+
+      const parsedCount = Number(entry.count ?? entry.frequency ?? entry.opens ?? 1);
+      if (Number.isFinite(parsedCount) && parsedCount > 0) {
+        normalized.count = parsedCount;
+      }
+
+      return normalized;
+    }
+
+    function computeRecentBias(entry, nowMs = Date.now()) {
+      if (!entry) return 0;
+
+      const openedMs = Date.parse(entry.opened || '');
+      let recencyBoost = 0;
+      if (Number.isFinite(openedMs) && openedMs > 0) {
+        const ageHours = Math.max(0, (nowMs - openedMs) / 3600000);
+        recencyBoost = RECENT_MAX_RECENCY_BOOST * Math.exp(-ageHours / RECENT_RECENCY_HALF_LIFE_HOURS);
+      }
+
+      const count = Math.max(1, Number(entry.count) || 1);
+      const frequencyBoost = Math.min(
+        RECENT_MAX_FREQUENCY_BOOST,
+        Math.log2(count + 1) * RECENT_FREQUENCY_WEIGHT
+      );
+
+      return recencyBoost + frequencyBoost;
+    }
+
+    function isRecentEntry(entry) {
+      return !!entry;
+    }
 
     function isFilePickerVisible() {
       return document.getElementById('file-picker-overlay').classList.contains('visible');
@@ -5963,13 +6422,21 @@ session:
       if (!a.isFolder && b.isFolder) return 1;
       if (a.isRecent && !b.isRecent) return -1;
       if (!a.isRecent && b.isRecent) return 1;
+
+      const aRecentBias = Number(a.recentBias || 0);
+      const bRecentBias = Number(b.recentBias || 0);
+      if (aRecentBias !== bRecentBias) return bRecentBias - aRecentBias;
+
       const aOpened = a.opened ? new Date(a.opened).getTime() : 0;
       const bOpened = b.opened ? new Date(b.opened).getTime() : 0;
       if (aOpened !== bOpened) return bOpened - aOpened;
+
       if (a.score !== b.score) return b.score - a.score;
+
       const aDepth = a.path ? a.path.split('/').filter(Boolean).length : 0;
       const bDepth = b.path ? b.path.split('/').filter(Boolean).length : 0;
       if (aDepth !== bDepth) return aDepth - bDepth;
+
       return (a.path || '').localeCompare(b.path || '');
     }
 
@@ -6047,10 +6514,19 @@ session:
       const folders = new Set();
       const recentByPath = new Map();
 
-      for (const entry of state.recentFiles || []) {
-        const filePath = recentEntryPath(entry);
+      const recentList = Array.isArray(state.recentFiles) ? state.recentFiles : [];
+      const nowMs = Date.now();
+      for (let i = 0; i < recentList.length; i++) {
+        const entry = recentList[i];
+        const normalizedRecent = normalizeRecentEntry(entry);
+        const filePath = normalizedRecent?.path || null;
         if (!filePath) continue;
-        recentByPath.set(filePath, typeof entry === 'string' ? { path: entry } : entry);
+
+        if (!normalizedRecent.opened) {
+          normalizedRecent.opened = new Date(nowMs - i).toISOString();
+        }
+
+        recentByPath.set(filePath, normalizedRecent);
         if (!seen.has(filePath)) {
           seen.add(filePath);
           allFiles.push(filePath);
@@ -6090,7 +6566,10 @@ session:
     function serializeRecentMap() {
       const serialized = {};
       for (const [filePath, entry] of state.fileIndex.recentByPath.entries()) {
-        serialized[filePath] = entry?.opened || null;
+        const normalized = normalizeRecentEntry(entry);
+        serialized[filePath] = normalized
+          ? { opened: normalized.opened || null, count: normalized.count || 1 }
+          : null;
       }
       return serialized;
     }
@@ -6104,6 +6583,10 @@ session:
           maxResults: 2000,
           folderReserve: 20,
           directChildBoostMaxLen: 4,
+          recentMaxRecencyBoost: 260,
+          recentRecencyHalfLifeHours: 42,
+          recentFrequencyWeight: 85,
+          recentMaxFrequencyBoost: 240,
         };
 
         function fuzzyMatch(pattern, str) {
@@ -6227,18 +6710,66 @@ session:
           return filePath.slice(scopePath.length + 1);
         }
 
+        function normalizeRecentEntry(entry, filePath) {
+          if (!entry && !filePath) return null;
+
+          if (typeof entry === 'string') {
+            return { path: filePath || null, opened: entry, count: 1 };
+          }
+
+          if (!entry || typeof entry !== 'object') {
+            return filePath ? { path: filePath, opened: null, count: 1 } : null;
+          }
+
+          const parsedCount = Number(entry.count ?? entry.frequency ?? entry.opens ?? 1);
+          return {
+            path: filePath || entry.path || null,
+            opened: typeof entry.opened === 'string'
+              ? entry.opened
+              : (typeof entry.used === 'string' ? entry.used : null),
+            count: Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 1,
+          };
+        }
+
+        function computeRecentBias(entry, nowMs = Date.now()) {
+          if (!entry) return 0;
+
+          const openedMs = Date.parse(entry.opened || '');
+          let recencyBoost = 0;
+          if (Number.isFinite(openedMs) && openedMs > 0) {
+            const ageHours = Math.max(0, (nowMs - openedMs) / 3600000);
+            recencyBoost = workerState.recentMaxRecencyBoost * Math.exp(-ageHours / workerState.recentRecencyHalfLifeHours);
+          }
+
+          const count = Math.max(1, Number(entry.count) || 1);
+          const frequencyBoost = Math.min(
+            workerState.recentMaxFrequencyBoost,
+            Math.log2(count + 1) * workerState.recentFrequencyWeight
+          );
+
+          return recencyBoost + frequencyBoost;
+        }
+
         function sortPickerResults(a, b) {
           if (a.isFolder && !b.isFolder) return -1;
           if (!a.isFolder && b.isFolder) return 1;
           if (a.isRecent && !b.isRecent) return -1;
           if (!a.isRecent && b.isRecent) return 1;
+
+          const aRecentBias = Number(a.recentBias || 0);
+          const bRecentBias = Number(b.recentBias || 0);
+          if (aRecentBias !== bRecentBias) return bRecentBias - aRecentBias;
+
           const aOpened = a.opened ? Date.parse(a.opened) : 0;
           const bOpened = b.opened ? Date.parse(b.opened) : 0;
           if (aOpened !== bOpened) return bOpened - aOpened;
+
           if (a.score !== b.score) return b.score - a.score;
+
           const aDepth = a.path ? a.path.split('/').filter(Boolean).length : 0;
           const bDepth = b.path ? b.path.split('/').filter(Boolean).length : 0;
           if (aDepth !== bDepth) return aDepth - bDepth;
+
           return (a.path || '').localeCompare(b.path || '');
         }
 
@@ -6304,20 +6835,23 @@ session:
               : fuzzyMatchPath('', candidatePath);
             if (hasQuery && matchResult.score <= 0) continue;
 
-            const opened = workerState.recentByPath[filePath] || null;
-            const isRecent = !!opened;
+            const recentEntry = normalizeRecentEntry(workerState.recentByPath[filePath], filePath);
+            const isRecent = !!recentEntry;
             if (!hasQuery && !isRecent && !scopePath && localResults.length >= workerState.maxResults * 2) continue;
 
+            const recentBias = computeRecentBias(recentEntry);
             resultPaths.add(filePath);
             const row = {
               path: filePath,
               name: matchResult.name,
               dir: matchResult.dir,
-              score: matchResult.score + (isRecent ? 100 : 0),
+              score: matchResult.score + recentBias,
+              recentBias,
+              recentCount: recentEntry?.count || 0,
               nameMatches: matchResult.nameMatches,
               dirMatches: matchResult.dirMatches,
               isRecent,
-              opened,
+              opened: recentEntry?.opened || null,
               isFolder: false,
               isOutsideScope: !inScope,
             };
@@ -6529,6 +7063,8 @@ session:
 
         if (selected?.kind === 'scope-up') {
           hints.push(renderPickerHint('Enter / Tab', 'up'));
+        } else if (selected?.kind === 'folders-more') {
+          hints.push(renderPickerHint('Enter / Tab', 'show more'));
         } else if (selected?.kind === 'file') {
           if (selected.file?.isFolder) {
             hints.push(renderPickerHint('Enter', 'open folder'));
@@ -6574,20 +7110,23 @@ session:
           : fuzzyMatchPath('', candidatePath);
         if (hasQuery && matchResult.score <= 0) continue;
 
-        const recentEntry = recentByPath.get(filePath);
-        const isRecent = !!recentEntry;
+        const recentEntry = normalizeRecentEntry(recentByPath.get(filePath));
+        const isRecent = isRecentEntry(recentEntry);
         if (!hasQuery && !isRecent && !scopePath && localResults.length >= MAX_FILTER_RESULTS * 2) continue;
 
+        const recentBias = computeRecentBias(recentEntry);
         resultPaths.add(filePath);
         const row = {
           path: filePath,
           name: matchResult.name,
           dir: matchResult.dir,
-          score: matchResult.score + (isRecent ? 100 : 0),
+          score: matchResult.score + recentBias,
+          recentBias,
+          recentCount: recentEntry?.count || 0,
           nameMatches: matchResult.nameMatches,
           dirMatches: matchResult.dirMatches,
           isRecent,
-          opened: recentEntry?.opened,
+          opened: recentEntry?.opened || null,
           isFolder: false,
           isOutsideScope: !inScope,
         };
@@ -6779,6 +7318,19 @@ session:
       }
     }
 
+    /**
+     * Start a background rescan that merges new results without clearing existing data.
+     * This keeps the picker responsive while updating the index.
+     * We set a flag so the files-update handler knows to skip the reset.
+     */
+    function startBackgroundRescan(searchDir) {
+      const targetRoot = normalizeScopeForScanRoot(searchDir);
+      state.fileScanRoot = targetRoot;
+      state.fileScanStatus = 'scanning';
+      state._backgroundRescan = true; // Skip reset on next scan-files response
+      electronAPI.scanFiles(targetRoot);
+    }
+
     function showFilePicker() {
       document.getElementById('file-picker-overlay').classList.add('visible');
 
@@ -6810,6 +7362,7 @@ session:
         || state.homeDir
         || '/';
       state.folderContext = state.defaultScopeRoot;
+      state.pickerShowAllFolders = false;
       updatePickerContextUI();
       updatePickerHints();
 
@@ -6821,8 +7374,18 @@ session:
       // Load recent files first
       loadRecentFiles();
 
-      // Start scanning
-      startFileScan(state.folderContext);
+      // Only start a fresh scan if we have no cached data or scope changed
+      const needsScan = !state.fileIndex.ready
+        || !state.files || state.files.length === 0
+        || !isScopeInsideScanRoot(state.folderContext, state.fileScanRoot);
+      if (needsScan) {
+        startFileScan(state.folderContext);
+      } else {
+        // Reuse cached data - just refresh the filter
+        scheduleFilter('', { immediate: true });
+        // Start a background rescan to pick up any new files
+        startBackgroundRescan(state.folderContext);
+      }
     }
 
     function hideFilePicker() {
@@ -6831,6 +7394,8 @@ session:
       clearTimeout(state.previewDebounceTimer);
       clearTimeout(state.filesUpdateTimer);
       state.pendingFilterRequests.clear();
+      // Don't clear files/scannedDirs/fileIndex - keep them cached for next open
+      // Only reset scan status so we know we can do incremental updates
       state.fileScanStatus = 'idle';
       document.getElementById('picker-hints').innerHTML = '';
       setPickerStatus();
@@ -6952,32 +7517,43 @@ session:
         selectableIndex++;
       }
 
-      if (scopePath) {
-        if (folders.length > 0) {
-          addHeader('Folders');
-          addFileRows(folders);
+      const shouldCollapseFolders = !hasQuery && !state.pickerShowAllFolders;
+      const visibleFolders = shouldCollapseFolders
+        ? folders.slice(0, FOLDER_SECTION_COLLAPSED_LIMIT)
+        : folders;
+      const hiddenFolders = shouldCollapseFolders
+        ? folders.slice(FOLDER_SECTION_COLLAPSED_LIMIT)
+        : [];
+
+      if (visibleFolders.length > 0) {
+        addHeader('Folders');
+        addFileRows(visibleFolders);
+
+        if (hiddenFolders.length > 0) {
+          const revealPath = hiddenFolders[0]?.path || null;
+          rowBySelectable.set(selectableIndex, rows.length);
+          rows.push({
+            type: 'folders-more',
+            remaining: hiddenFolders.length,
+            revealPath,
+            selectableIndex,
+          });
+          selectable.push({
+            kind: 'folders-more',
+            path: revealPath || '__folders_more__',
+          });
+          selectableIndex++;
         }
-        if (recent.length > 0) {
-          addHeader('Recent');
-          addFileRows(recent);
-        }
-        if (files.length > 0) {
-          addHeader('Files');
-          addFileRows(files);
-        }
-      } else {
-        if (folders.length > 0) {
-          addHeader('Folders');
-          addFileRows(folders);
-        }
-        if (recent.length > 0) {
-          addHeader('Recent');
-          addFileRows(recent);
-        }
-        if (files.length > 0) {
-          addHeader('Files');
-          addFileRows(files);
-        }
+      }
+
+      if (recent.length > 0) {
+        addHeader('Recent');
+        addFileRows(recent);
+      }
+
+      if (files.length > 0) {
+        addHeader('Files');
+        addFileRows(files);
       }
       if (outsideFolders.length > 0 || outsideFiles.length > 0) {
         addHeader('Outside Scope');
@@ -7121,6 +7697,8 @@ session:
           `);
         } else if (row.type === 'scope-up') {
           html.push(renderScopeUpRow(row, row.selectableIndex, { top, height }));
+        } else if (row.type === 'folders-more') {
+          html.push(renderFoldersMoreRow(row, row.selectableIndex, { top, height }));
         } else if (row.type === 'create') {
           html.push(renderCreateRow(row, row.selectableIndex, { top, height }));
         } else if (row.type === 'file') {
@@ -7169,6 +7747,24 @@ session:
       `;
     }
 
+    function renderFoldersMoreRow(row, index, layout = null) {
+      const selected = index === state.selectedFileIndex ? 'selected' : '';
+      const rowClass = layout ? 'picker-virtual-row' : '';
+      const style = layout ? `style="top:${layout.top}px;height:${layout.height}px"` : '';
+      const countLabel = row.remaining === 1 ? 'folder' : 'folders';
+
+      return `
+        <div class="${rowClass} picker-item folder ${selected}" ${style}
+             data-index="${index}" data-action="folders-more"
+             onclick="selectFileItem(${index})" ondblclick="showMoreFolders()">
+          <span class="picker-item-icon">⋯</span>
+          <span class="picker-item-name">Show ${row.remaining} more ${countLabel}</span>
+          <span class="picker-item-path">Expand folder list</span>
+          ${selected ? '<span class="picker-item-action">[Enter]</span>' : ''}
+        </div>
+      `;
+    }
+
     function renderCreateRow(row, index, layout = null) {
       const selected = index === state.selectedFileIndex ? 'selected' : '';
       const rowClass = layout ? 'picker-virtual-row' : '';
@@ -7202,6 +7798,9 @@ session:
     function renderFileItem(file, index, layout = null) {
       const selected = index === state.selectedFileIndex ? 'selected' : '';
       const timeAgo = file.opened ? formatTimeAgo(new Date(file.opened)) : '';
+      const usageCount = Math.max(0, Number(file.recentCount || 0));
+      const usageMeta = usageCount > 1 ? `${Math.round(usageCount)}x` : '';
+      const timeMeta = [timeAgo, usageMeta].filter(Boolean).join(' • ');
       const isFolder = file.isFolder;
       const isNotebook = file.path.endsWith('.ipynb');
       const isOutsideScope = !!file.isOutsideScope;
@@ -7222,7 +7821,7 @@ session:
           ${outsideBadge}
           <span class="picker-item-path">${highlightMatches(file.dir, file.dirMatches)}</span>
           ${isFolder ? '<span class="picker-item-action">[→ or Tab]</span>' : ''}
-          ${timeAgo ? `<span class="picker-item-meta">${timeAgo}</span>` : ''}
+          ${timeMeta ? `<span class="picker-item-meta">${timeMeta}</span>` : ''}
         </div>
       `;
     }
@@ -7324,6 +7923,10 @@ session:
         exitFolderContext();
         return;
       }
+      if (selectedEntry.kind === 'folders-more') {
+        showMoreFolders();
+        return;
+      }
 
       if (selectedEntry.kind !== 'file') return;
 
@@ -7336,11 +7939,19 @@ session:
       await openFile(selectedEntry.path);
     }
 
+    function showMoreFolders() {
+      if (state.pickerShowAllFolders) return;
+      state.pickerShowAllFolders = true;
+      const query = document.getElementById('file-search').value;
+      scheduleFilter(query, { immediate: true, preserveSelection: true });
+    }
+
     /**
      * Enter a folder context (browse inside)
      */
     function enterFolder(folderPath) {
       state.folderContext = folderPath;
+      state.pickerShowAllFolders = false;
       const input = document.getElementById('file-search');
       input.value = '';
       input.focus();
@@ -7361,6 +7972,7 @@ session:
       } else {
         state.folderContext = parent;
       }
+      state.pickerShowAllFolders = false;
 
       updatePickerContextUI();
       ensureScanCoverageForScope(state.folderContext);
@@ -7376,6 +7988,10 @@ session:
       if (selectedEntry.kind === 'create-file' || selectedEntry.kind === 'create-project') return;
       if (selectedEntry.kind === 'scope-up') {
         exitFolderContext();
+        return;
+      }
+      if (selectedEntry.kind === 'folders-more') {
+        showMoreFolders();
         return;
       }
       if (selectedEntry.kind !== 'file') return;
@@ -7479,9 +8095,10 @@ session:
     function resetPickerState() {
       state.folderContext = null;
       state.defaultScopeRoot = null;
-      state.fileScanRoot = null;
+      // Keep state.fileScanRoot - it indicates what's cached
       state.pickerMode = 'fuzzy';
       state.createTarget = null;
+      state.pickerShowAllFolders = false;
       updatePickerContextUI();
     }
 
@@ -7507,7 +8124,7 @@ session:
       renderVenvList();
 
       // Load running runtimes first (instant)
-      const sessions = await electronAPI.session.list();
+      const sessions = await electronAPI.runtime.list();
       // Map session format to runtime format for compatibility
       state.runningRuntimes = sessions.filter(s => s.alive).map(s => ({
         id: s.name,
@@ -7735,7 +8352,7 @@ session:
             const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
-              { session: docName, languages: ['python', 'py', 'python3'] }
+              { languages: ['python', 'py', 'python3'] }
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
@@ -7767,7 +8384,7 @@ session:
       if (language === 'bash') {
         // Bash attach - just look up the session info
         try {
-          const sessions = await electronAPI.bash.list();
+          const sessions = await electronAPI.runtime.list('bash');
           const session = sessions.find(s => s.name === runtimeId && s.alive);
           if (session) {
             state.bashPort = session.port;
@@ -7809,7 +8426,7 @@ session:
             const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
-              { session: docName, languages: ['python', 'py', 'python3'] }
+              { languages: ['python', 'py', 'python3'] }
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered Python runtime with existing editor');
@@ -7854,7 +8471,7 @@ session:
             const docName = stripDocExtension(state.currentFile.split('/').pop());
             const pythonClient = new mrmd.MRPClient(
               `http://127.0.0.1:${result.port}/mrp/v1`,
-              { session: docName, languages: ['python', 'py', 'python3'] }
+              { languages: ['python', 'py', 'python3'] }
             );
             state.editor.registerRuntime('python', pythonClient);
             console.log('Registered new Python runtime with editor');
@@ -7881,13 +8498,8 @@ session:
     }
 
     async function killRuntimeAction(runtimeId, language = 'python') {
-      let result;
-      if (language === 'bash') {
-        result = await electronAPI.bash.stop(runtimeId);
-        result = { success: result };
-      } else {
-        result = await electronAPI.killRuntime(runtimeId);
-      }
+      // Unified: all languages go through runtime.stop
+      let result = await electronAPI.runtime.stop(runtimeId);
       if (result.success) {
         // Remove from running runtimes and re-filter
         state.runningRuntimes = state.runningRuntimes.filter(r => r.id !== runtimeId);
@@ -7912,6 +8524,20 @@ session:
           if (state.editor?.unregisterRuntime) {
             state.editor.unregisterRuntime('bash');
             console.log('[killRuntime] Unregistered Bash runtime from editor');
+          }
+        } else if (language === 'r' && state.rSession?.name === runtimeId) {
+          state.rSession = null;
+
+          if (state.editor?.unregisterRuntime) {
+            state.editor.unregisterRuntime('r');
+            console.log('[killRuntime] Unregistered R runtime from editor');
+          }
+        } else if (language === 'julia' && state.juliaSession?.name === runtimeId) {
+          state.juliaSession = null;
+
+          if (state.editor?.unregisterRuntime) {
+            state.editor.unregisterRuntime('julia');
+            console.log('[killRuntime] Unregistered Julia runtime from editor');
           }
         }
 
@@ -8149,185 +8775,327 @@ session:
     }
 
     /**
-     * Render the navigation tree
+     * Render the navigation tree (incremental patching version)
+     *
+     * Instead of tearing down and rebuilding the entire DOM on every update,
+     * this version diffs the existing DOM against the desired state and only
+     * patches what changed. This avoids layout thrashing and keeps the tree
+     * responsive even for large projects.
      */
     function renderNavTree(nodes, container, depth = 0) {
       const currentRelPath = getCurrentRelativePath();
+      const existingItems = new Map(); // path -> { item, childContainer }
+
+      // Index existing DOM children by path for O(1) lookup
+      for (let i = 0; i < container.children.length; i++) {
+        const child = container.children[i];
+        const childPath = child.dataset?.path;
+        if (childPath && child.classList.contains('nav-item')) {
+          const nextSibling = container.children[i + 1];
+          const childContainer = nextSibling?.classList?.contains('nav-children') ? nextSibling : null;
+          existingItems.set(childPath, { item: child, childContainer, index: i });
+        }
+      }
+
+      // Track which paths we've processed (for removal of stale entries)
+      const processedPaths = new Set();
+      let insertionIndex = 0;
 
       for (const node of nodes) {
+        processedPaths.add(node.path);
         const isExpanded = navState.expandedFolders.has(node.path);
         const isSelected = node.path === currentRelPath;
         const isRenaming = node.path === navState.renaming;
         const hasChildren = node.children && node.children.length > 0;
 
-        // Create item
-        const item = document.createElement('div');
-        item.className = 'nav-item' + (node.isFolder ? ' folder' : '') + (isSelected ? ' selected' : '');
-        item.dataset.path = node.path;
-        item.dataset.isFolder = node.isFolder ? 'true' : 'false';
-        item.style.paddingLeft = (8 + depth * 16) + 'px';
-        item.draggable = !isRenaming;
+        const existing = existingItems.get(node.path);
 
-        // Expand arrow (for folders with children, or spacing placeholder for files)
-        const expand = document.createElement('span');
-        const showExpand = node.isFolder && hasChildren;
-        expand.className = 'nav-expand' + (isExpanded ? ' expanded' : '') + (!showExpand ? ' hidden' : '');
-        expand.textContent = '›';
-        if (showExpand) {
-          expand.onclick = (e) => {
-            e.stopPropagation();
-            toggleFolder(node.path);
-          };
-        }
-        item.appendChild(expand);
+        if (existing) {
+          // Patch existing item in-place
+          const item = existing.item;
+          patchNavItem(item, node, { isExpanded, isSelected, isRenaming, hasChildren, depth });
 
-        // Label or rename input
-        if (isRenaming) {
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.className = 'nav-rename-input';
-          input.value = node.title;
-          input.dataset.path = node.path;
-          input.onclick = (e) => e.stopPropagation();
-          input.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-              finishRename(node.path, input.value);
-            } else if (e.key === 'Escape') {
-              cancelRename();
-            }
-          };
-          input.onblur = () => {
-            // Small delay to allow click events to fire first
-            setTimeout(() => {
-              if (navState.renaming === node.path) {
-                finishRename(node.path, input.value);
-              }
-            }, 100);
-          };
-          item.appendChild(input);
-          // Focus after render
-          setTimeout(() => {
-            input.focus();
-            input.select();
-          }, 0);
-        } else {
-          const label = document.createElement('span');
-          label.className = 'nav-item-label';
-          label.textContent = node.title;
-          item.appendChild(label);
-        }
+          // Move to correct position if needed
+          const expectedChild = container.children[insertionIndex];
+          if (expectedChild !== item) {
+            container.insertBefore(item, expectedChild || null);
+          }
+          insertionIndex++;
 
-        // Click handler
-        item.onclick = (e) => {
-          if (e.target.classList.contains('nav-expand')) return;
-          if (node.isFolder) {
-            // If folder has index.md, open it; otherwise toggle
-            if (node.hasIndex) {
-              const indexPath = state.project.root + '/' + node.path + '/index.md';
-              openFile(indexPath);
+          // Handle children container
+          if (hasChildren && isExpanded) {
+            let childContainer = existing.childContainer;
+            if (!childContainer) {
+              childContainer = document.createElement('div');
+              childContainer.className = 'nav-children';
+              childContainer.dataset.parent = node.path;
+              const nextChild = container.children[insertionIndex];
+              container.insertBefore(childContainer, nextChild || null);
             } else {
-              toggleFolder(node.path);
+              // Ensure child container is in the right position
+              const expectedPos = container.children[insertionIndex];
+              if (expectedPos !== childContainer) {
+                container.insertBefore(childContainer, expectedPos || null);
+              }
             }
-          } else {
-            const fullPath = state.project.root + '/' + node.path;
-            openFile(fullPath);
+            childContainer.classList.remove('collapsed');
+            renderNavTree(node.children, childContainer, depth + 1);
+            insertionIndex++;
+          } else if (existing.childContainer) {
+            // Folder collapsed or no children - remove child container
+            existing.childContainer.remove();
           }
-        };
+        } else {
+          // Create new item (node doesn't exist in DOM yet)
+          const item = createNavItem(node, { isExpanded, isSelected, isRenaming, hasChildren, depth });
+          const refChild = container.children[insertionIndex];
+          container.insertBefore(item, refChild || null);
+          insertionIndex++;
 
-        // Double-click to rename
-        item.ondblclick = (e) => {
-          if (e.target.classList.contains('nav-expand')) return;
-          e.preventDefault();
-          startRename(node.path);
-        };
-
-        // Right-click context menu
-        item.oncontextmenu = (e) => {
-          e.preventDefault();
-          showNavContextMenu(e.clientX, e.clientY, node.path, node.isFolder);
-        };
-
-        // Drag handlers
-        item.ondragstart = (e) => {
-          navState.dragging = node.path;
-          item.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', node.path);
-        };
-
-        item.ondragend = () => {
-          navState.dragging = null;
-          clearDropTargets();
-        };
-
-        item.ondragover = (e) => {
-          e.preventDefault();
-          if (navState.dragging === node.path) return;
-
-          clearDropTargets();
-
-          // Determine drop position based on mouse position
-          const rect = item.getBoundingClientRect();
-          const y = e.clientY - rect.top;
-          const height = rect.height;
-
-          if (node.isFolder && y > height * 0.25 && y < height * 0.75) {
-            // Drop INTO folder (middle zone)
-            item.classList.add('drop-target');
-          } else if (y < height * 0.5) {
-            // Drop ABOVE
-            item.classList.add('drop-above');
-          } else {
-            // Drop BELOW
-            item.classList.add('drop-below');
+          if (hasChildren && isExpanded) {
+            const childContainer = document.createElement('div');
+            childContainer.className = 'nav-children';
+            childContainer.dataset.parent = node.path;
+            const refChild2 = container.children[insertionIndex];
+            container.insertBefore(childContainer, refChild2 || null);
+            renderNavTree(node.children, childContainer, depth + 1);
+            insertionIndex++;
           }
-
-          e.dataTransfer.dropEffect = 'move';
-        };
-
-        item.ondragleave = () => {
-          item.classList.remove('drop-target', 'drop-above', 'drop-below');
-        };
-
-        item.ondrop = async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          const fromPath = navState.dragging;
-          if (!fromPath || fromPath === node.path) {
-            clearDropTargets();
-            return;
-          }
-
-          // Determine drop type
-          const rect = item.getBoundingClientRect();
-          const y = e.clientY - rect.top;
-          const height = rect.height;
-
-          let dropType = 'below';
-          if (node.isFolder && y > height * 0.25 && y < height * 0.75) {
-            dropType = 'into';
-          } else if (y < height * 0.5) {
-            dropType = 'above';
-          }
-
-          clearDropTargets();
-          navState.dragging = null;
-
-          await handleNavDrop(fromPath, node.path, dropType, node.isFolder);
-        };
-
-        container.appendChild(item);
-
-        // Render children if expanded
-        if (hasChildren && isExpanded) {
-          const childContainer = document.createElement('div');
-          childContainer.className = 'nav-children';
-          childContainer.dataset.parent = node.path;
-          container.appendChild(childContainer);
-          renderNavTree(node.children, childContainer, depth + 1);
         }
       }
+
+      // Remove stale items (paths no longer in the tree)
+      const toRemove = [];
+      for (const [path, { item, childContainer }] of existingItems) {
+        if (!processedPaths.has(path)) {
+          toRemove.push(item);
+          if (childContainer) toRemove.push(childContainer);
+        }
+      }
+      for (const el of toRemove) el.remove();
+    }
+
+    /**
+     * Patch an existing nav item DOM element to match new state.
+     * Only touches attributes/classes that actually changed.
+     * Also updates the stored node reference so event handlers use fresh data.
+     */
+    function patchNavItem(item, node, { isExpanded, isSelected, isRenaming, hasChildren, depth }) {
+      // Store fresh node reference for event handlers
+      item._navNode = node;
+
+      // Update classes
+      const wantFolder = node.isFolder;
+      const hasFolder = item.classList.contains('folder');
+      if (wantFolder !== hasFolder) {
+        item.classList.toggle('folder', wantFolder);
+      }
+      const hasSelected = item.classList.contains('selected');
+      if (isSelected !== hasSelected) {
+        item.classList.toggle('selected', isSelected);
+      }
+
+      // Update padding
+      const wantPadding = (8 + depth * 16) + 'px';
+      if (item.style.paddingLeft !== wantPadding) {
+        item.style.paddingLeft = wantPadding;
+      }
+
+      // Update draggable
+      item.draggable = !isRenaming;
+
+      // Update expand arrow
+      const expand = item.querySelector('.nav-expand');
+      if (expand) {
+        const showExpand = node.isFolder && hasChildren;
+        const wantClass = 'nav-expand' + (isExpanded ? ' expanded' : '') + (!showExpand ? ' hidden' : '');
+        if (expand.className !== wantClass) {
+          expand.className = wantClass;
+        }
+      }
+
+      // Handle rename input vs label
+      const existingInput = item.querySelector('.nav-rename-input');
+      const existingLabel = item.querySelector('.nav-item-label');
+
+      if (isRenaming && !existingInput) {
+        // Switch from label to input
+        if (existingLabel) existingLabel.remove();
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'nav-rename-input';
+        input.value = node.title;
+        input.dataset.path = node.path;
+        input.onclick = (e) => e.stopPropagation();
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') finishRename(node.path, input.value);
+          else if (e.key === 'Escape') cancelRename();
+        };
+        input.onblur = () => {
+          setTimeout(() => {
+            if (navState.renaming === node.path) finishRename(node.path, input.value);
+          }, 100);
+        };
+        item.appendChild(input);
+        setTimeout(() => { input.focus(); input.select(); }, 0);
+      } else if (!isRenaming && existingInput) {
+        // Switch from input to label
+        existingInput.remove();
+        const label = document.createElement('span');
+        label.className = 'nav-item-label';
+        label.textContent = node.title;
+        item.appendChild(label);
+      } else if (!isRenaming && existingLabel) {
+        // Update label text if changed
+        if (existingLabel.textContent !== node.title) {
+          existingLabel.textContent = node.title;
+        }
+      }
+    }
+
+    /**
+     * Create a new nav item DOM element from scratch.
+     * Event handlers read from item._navNode so they always use fresh data
+     * even after incremental patches.
+     */
+    function createNavItem(node, { isExpanded, isSelected, isRenaming, hasChildren, depth }) {
+      const item = document.createElement('div');
+      item._navNode = node; // Stored for event handlers
+      item.className = 'nav-item' + (node.isFolder ? ' folder' : '') + (isSelected ? ' selected' : '');
+      item.dataset.path = node.path;
+      item.dataset.isFolder = node.isFolder ? 'true' : 'false';
+      item.style.paddingLeft = (8 + depth * 16) + 'px';
+      item.draggable = !isRenaming;
+
+      // Expand arrow
+      const expand = document.createElement('span');
+      const showExpand = node.isFolder && hasChildren;
+      expand.className = 'nav-expand' + (isExpanded ? ' expanded' : '') + (!showExpand ? ' hidden' : '');
+      expand.textContent = '›';
+      if (showExpand) {
+        expand.onclick = (e) => {
+          e.stopPropagation();
+          toggleFolder(item._navNode.path);
+        };
+      }
+      item.appendChild(expand);
+
+      // Label or rename input
+      if (isRenaming) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'nav-rename-input';
+        input.value = node.title;
+        input.dataset.path = node.path;
+        input.onclick = (e) => e.stopPropagation();
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') finishRename(item._navNode.path, input.value);
+          else if (e.key === 'Escape') cancelRename();
+        };
+        input.onblur = () => {
+          setTimeout(() => {
+            if (navState.renaming === item._navNode.path) finishRename(item._navNode.path, input.value);
+          }, 100);
+        };
+        item.appendChild(input);
+        setTimeout(() => { input.focus(); input.select(); }, 0);
+      } else {
+        const label = document.createElement('span');
+        label.className = 'nav-item-label';
+        label.textContent = node.title;
+        item.appendChild(label);
+      }
+
+      // Click handler - reads from _navNode for fresh data
+      item.onclick = (e) => {
+        if (e.target.classList.contains('nav-expand')) return;
+        const n = item._navNode;
+        if (n.isFolder) {
+          if (n.hasIndex) {
+            const indexPath = state.project.root + '/' + n.path + '/index.md';
+            openFile(indexPath);
+          } else {
+            toggleFolder(n.path);
+          }
+        } else {
+          const fullPath = state.project.root + '/' + n.path;
+          openFile(fullPath);
+        }
+      };
+
+      // Double-click to rename
+      item.ondblclick = (e) => {
+        if (e.target.classList.contains('nav-expand')) return;
+        e.preventDefault();
+        startRename(item._navNode.path);
+      };
+
+      // Right-click context menu
+      item.oncontextmenu = (e) => {
+        e.preventDefault();
+        const n = item._navNode;
+        showNavContextMenu(e.clientX, e.clientY, n.path, n.isFolder);
+      };
+
+      // Drag handlers
+      item.ondragstart = (e) => {
+        navState.dragging = item._navNode.path;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item._navNode.path);
+      };
+
+      item.ondragend = () => {
+        navState.dragging = null;
+        clearDropTargets();
+      };
+
+      item.ondragover = (e) => {
+        e.preventDefault();
+        if (navState.dragging === item._navNode.path) return;
+        clearDropTargets();
+        const rect = item.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const height = rect.height;
+        const n = item._navNode;
+        if (n.isFolder && y > height * 0.25 && y < height * 0.75) {
+          item.classList.add('drop-target');
+        } else if (y < height * 0.5) {
+          item.classList.add('drop-above');
+        } else {
+          item.classList.add('drop-below');
+        }
+        e.dataTransfer.dropEffect = 'move';
+      };
+
+      item.ondragleave = () => {
+        item.classList.remove('drop-target', 'drop-above', 'drop-below');
+      };
+
+      item.ondrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const fromPath = navState.dragging;
+        const n = item._navNode;
+        if (!fromPath || fromPath === n.path) {
+          clearDropTargets();
+          return;
+        }
+        const rect = item.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const height = rect.height;
+        let dropType = 'below';
+        if (n.isFolder && y > height * 0.25 && y < height * 0.75) {
+          dropType = 'into';
+        } else if (y < height * 0.5) {
+          dropType = 'above';
+        }
+        clearDropTargets();
+        navState.dragging = null;
+        await handleNavDrop(fromPath, n.path, dropType, n.isFolder);
+      };
+
+      return item;
     }
 
     /**
@@ -8630,13 +9398,15 @@ session:
     }
 
     /**
-     * Full render of nav tree
+     * Full render of nav tree (now uses incremental patching)
+     *
+     * This no longer clears innerHTML - renderNavTree diffs the existing
+     * DOM and only patches what changed.
      */
     function renderNavTreeFull() {
       const tree = document.getElementById('nav-tree');
       if (!tree || !state.project?.navTree) return;
 
-      tree.innerHTML = '';
       renderNavTree(state.project.navTree, tree, 0);
     }
 
@@ -9024,7 +9794,7 @@ session:
           const runtimeDocName = stripDocExtension(filePath.split('/').pop());
           const pythonClient = new mrmd.MRPClient(
             `http://127.0.0.1:${state.pythonPort}/mrp/v1`,
-            { session: runtimeDocName, languages: ['python', 'py', 'python3'] }
+            { languages: ['python', 'py', 'python3'] }
           );
           editorOptions.runtimes.python = pythonClient;
         }
@@ -9665,7 +10435,7 @@ session:
             fetch(`http://127.0.0.1:${rt.port}/mrp/v1/variables`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ session: 'default', filter: { excludePrivate: true } })
+              body: JSON.stringify({ filter: { excludePrivate: true } })
             })
             .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(data => ({ language: rt.language, variables: data.variables || [] }))
@@ -10509,7 +11279,11 @@ session:
     // =========================================================================
 
     /**
-     * Render the runtimes list in the panel
+     * Render the runtimes list in the panel.
+     *
+     * Notebook-scoped: only shows runtimes for languages that appear in
+     * the current document's code blocks. Languages without a running
+     * runtime are shown as "Not started" with a Start action.
      */
     function renderRuntimesPanel() {
       const listEl = document.getElementById('runtimes-list');
@@ -10523,37 +11297,127 @@ session:
         julia: state.juliaSession?.name,
       };
 
-      if (runtimes.length === 0) {
-        listEl.innerHTML = '<div class="runtimes-empty">No running runtimes</div>';
-        return;
-      }
+      // --- Detect languages in the current document ---
+      const docLanguages = getDocumentLanguagesFromEditor();
 
-      listEl.innerHTML = runtimes.map(rt => {
-        const lang = rt.language || 'python';
-        const isAttached = rt.id === attachedIds[lang];
-        return `
-          <div class="runtime-item ${isAttached ? 'attached' : ''}"
-               data-runtime-id="${rt.id}"
-               data-language="${lang}"
-               title="pid ${rt.pid}">
-            <div class="runtime-item-status"></div>
-            <div class="runtime-item-info">
-              <div class="runtime-item-name">
-                <span class="runtime-lang-badge ${lang}">${lang}</span>
-                ${rt.id}
-              </div>
-              <div class="runtime-item-meta">port ${rt.port}</div>
-            </div>
-            <div class="runtime-item-actions">
-              ${isAttached ? '' : `<button class="runtime-item-btn" onclick="event.stopPropagation(); attachToRuntime('${rt.id}', '${lang}')">attach</button>`}
-              <button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')">stop</button>
+      // Language display config
+      const LANG_DISPLAY = {
+        python: { label: 'PYTHON', badge: 'python' },
+        bash:   { label: 'BASH',   badge: 'bash' },
+        r:      { label: 'R',      badge: 'r' },
+        julia:  { label: 'JULIA',  badge: 'julia' },
+        javascript: { label: 'JS', badge: 'javascript' },
+      };
+
+      // If no code blocks found, show helpful empty state
+      if (docLanguages.size === 0) {
+        listEl.innerHTML = `
+          <div class="runtimes-empty">
+            <div style="margin-bottom: 8px;">No code blocks in this document</div>
+            <div style="font-size: 11px; color: var(--text-dim);">
+              Add a code block (e.g. \`\`\`python) to see its runtime here.
             </div>
           </div>
         `;
-      }).join('');
+        return;
+      }
+
+      // Build per-language sections
+      let html = '';
+      for (const lang of docLanguages) {
+        const display = LANG_DISPLAY[lang] || { label: lang.toUpperCase(), badge: lang };
+        const langRuntimes = runtimes.filter(rt => (rt.language || 'python') === lang);
+        const attachedId = attachedIds[lang];
+
+        html += `<div class="runtime-lang-section" data-language="${lang}">`;
+        html += `<div class="runtime-lang-section-header">`;
+        html += `  <span class="runtime-lang-badge ${display.badge}">${display.label}</span>`;
+        html += `</div>`;
+
+        if (langRuntimes.length === 0) {
+          // No runtime running for this language
+          html += `
+            <div class="runtime-item runtime-item--inactive">
+              <div class="runtime-item-status" style="background: var(--text-dim); opacity: 0.4;"></div>
+              <div class="runtime-item-info">
+                <div class="runtime-item-name" style="color: var(--text-muted);">Not started</div>
+                <div class="runtime-item-meta">Starts on first cell execution</div>
+              </div>
+              <div class="runtime-item-actions" style="opacity: 1;">
+                <button class="runtime-item-btn" onclick="event.stopPropagation(); startRuntimeForLanguage('${lang}')">start</button>
+              </div>
+            </div>
+          `;
+        } else {
+          for (const rt of langRuntimes) {
+            const isAttached = rt.id === attachedId;
+            const venvShort = rt.venv ? rt.venv.split('/').slice(-2).join('/') : '';
+            const cwdShort = rt.cwd ? rt.cwd.split('/').slice(-2).join('/') : '';
+
+            html += `
+              <div class="runtime-item ${isAttached ? 'attached' : ''}"
+                   data-runtime-id="${rt.id}"
+                   data-language="${lang}"
+                   title="PID ${rt.pid}${rt.cwd ? ' · ' + rt.cwd : ''}">
+                <div class="runtime-item-status"></div>
+                <div class="runtime-item-info">
+                  <div class="runtime-item-name">${rt.id}</div>
+                  <div class="runtime-item-meta">
+                    ${venvShort ? venvShort + ' · ' : ''}port ${rt.port}
+                    ${cwdShort ? '<br>cwd: ' + cwdShort : ''}
+                  </div>
+                </div>
+                <div class="runtime-item-actions">
+                  ${isAttached ? '' : `<button class="runtime-item-btn" onclick="event.stopPropagation(); attachToRuntime('${rt.id}', '${lang}')">attach</button>`}
+                  <button class="runtime-item-btn" onclick="event.stopPropagation(); toggleRuntimeConfig('${rt.id}', '${lang}')">⚙</button>
+                  <button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')">stop</button>
+                </div>
+              </div>
+              <div class="runtime-config-panel" id="runtime-config-${rt.id}" style="display: none;">
+                <div class="runtime-config-field">
+                  <label>Session</label>
+                  <input type="text" value="${extractShortSessionName(rt.id, lang)}" data-field="name" data-runtime-id="${rt.id}" data-language="${lang}" />
+                </div>
+                ${lang === 'python' ? `
+                <div class="runtime-config-field">
+                  <label>Venv</label>
+                  <div class="runtime-config-field-row">
+                    <input type="text" value="${makeRelativePath(rt.venv, state.projectRoot) || '.venv'}" data-field="venv" data-runtime-id="${rt.id}" data-language="${lang}" />
+                    <button class="runtime-item-btn" onclick="browseForVenv('${rt.id}', '${lang}')" title="Browse">📂</button>
+                  </div>
+                </div>
+                ` : ''}
+                <div class="runtime-config-field">
+                  <label>CWD</label>
+                  <div class="runtime-config-field-row">
+                    <input type="text" value="${makeRelativePath(rt.cwd, state.projectRoot) || '.'}" data-field="cwd" data-runtime-id="${rt.id}" data-language="${lang}" />
+                    <button class="runtime-item-btn" onclick="browseForCwd('${rt.id}', '${lang}')" title="Browse">📂</button>
+                  </div>
+                </div>
+                <div class="runtime-config-actions">
+                  <button class="runtime-item-btn" onclick="applyRuntimeConfig('${rt.id}', '${lang}')">Apply & Restart</button>
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        html += `</div>`; // close runtime-lang-section
+      }
+
+      // Link to Home for full runtime management
+      html += `
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border); margin-top: 8px;">
+          <button class="runtime-item-btn" onclick="showHomeView()" style="width: 100%; text-align: center; padding: 6px;">
+            All runtimes →
+          </button>
+        </div>
+      `;
+
+      listEl.innerHTML = html;
 
       // Add click handler to attach on row click
-      listEl.querySelectorAll('.runtime-item').forEach(el => {
+      listEl.querySelectorAll('.runtime-item:not(.runtime-item--inactive)').forEach(el => {
         el.addEventListener('click', () => {
           const runtimeId = el.dataset.runtimeId;
           const language = el.dataset.language || 'python';
@@ -10565,50 +11429,240 @@ session:
     }
 
     /**
+     * Get the set of executable languages from the current document.
+     * Scans for fenced code blocks and returns normalized language names.
+     * @returns {Set<string>}
+     */
+    function getDocumentLanguagesFromEditor() {
+      const languages = new Set();
+
+      // Get document content from the editor — state.editor is the mrmd editor instance
+      let content = '';
+      try {
+        if (state.editor?.getContent) {
+          content = state.editor.getContent();
+        } else if (state.editor?.view?.state?.doc) {
+          content = state.editor.view.state.doc.toString();
+        }
+      } catch (e) {
+        console.warn('Failed to get editor content for language detection:', e);
+      }
+
+      if (!content) return languages;
+
+      // Language alias map
+      const ALIASES = {
+        py: 'python', python3: 'python',
+        js: 'javascript', node: 'javascript', ts: 'javascript', typescript: 'javascript',
+        jl: 'julia', sh: 'bash', shell: 'bash', zsh: 'bash', rlang: 'r',
+      };
+
+      // Non-executable languages to skip
+      const SKIP = new Set([
+        'yaml', 'json', 'toml', 'xml', 'html', 'css', 'mermaid',
+        'output', 'markdown', 'md', 'text', 'txt', 'diff', 'csv',
+        'sql', 'graphql', 'latex', 'tex', 'bibtex',
+      ]);
+
+      // Known runtime languages
+      const RUNTIME_LANGS = new Set([
+        'python', 'bash', 'javascript', 'julia', 'r', 'shell', 'node', 'typescript',
+      ]);
+
+      const fenceRegex = /^(`{3,}|~{3,})(\w+)(?:\s+(.*))?$/gm;
+      let match;
+      while ((match = fenceRegex.exec(content))) {
+        const rawLang = match[2].toLowerCase();
+        const extra = (match[3] || '').trim().toLowerCase();
+        if (extra === 'config') continue;
+        if (SKIP.has(rawLang)) continue;
+        const normalized = ALIASES[rawLang] || rawLang;
+        if (RUNTIME_LANGS.has(rawLang) || RUNTIME_LANGS.has(normalized)) {
+          languages.add(normalized);
+        }
+      }
+
+      return languages;
+    }
+
+    /**
+     * Toggle the inline configuration panel for a runtime.
+     */
+    /**
+     * Extract the short session name from a full resolved session ID.
+     * Full ID format: "{project}:{language}:{name}" → returns "{name}"
+     * E.g.: "mrmddemos:julia:default" → "default"
+     *        "mrmddemos:default" → "default" (Python legacy format)
+     */
+    function extractShortSessionName(fullId, language) {
+      if (!fullId) return 'default';
+      // Try {project}:{language}:{name} format first
+      const langPrefix = `:${language}:`;
+      const langIdx = fullId.indexOf(langPrefix);
+      if (langIdx >= 0) {
+        return fullId.slice(langIdx + langPrefix.length) || 'default';
+      }
+      // Try {project}:{name} format (Python)
+      const colonIdx = fullId.indexOf(':');
+      if (colonIdx >= 0) {
+        return fullId.slice(colonIdx + 1) || 'default';
+      }
+      return fullId;
+    }
+
+    /**
+     * Make an absolute path relative to a base directory.
+     * E.g.: makeRelativePath("/home/user/project/.venv", "/home/user/project") → ".venv"
+     */
+    function makeRelativePath(absPath, basePath) {
+      if (!absPath || !basePath) return absPath || '';
+      if (absPath.startsWith(basePath)) {
+        let rel = absPath.slice(basePath.length);
+        if (rel.startsWith('/')) rel = rel.slice(1);
+        return rel || '.';
+      }
+      return absPath;
+    }
+
+    function toggleRuntimeConfig(runtimeId, language) {
+      const panel = document.getElementById(`runtime-config-${runtimeId}`);
+      if (!panel) return;
+      const isVisible = panel.style.display !== 'none';
+      panel.style.display = isVisible ? 'none' : 'block';
+    }
+
+    /**
+     * Apply runtime configuration changes and persist to frontmatter.
+     */
+    async function applyRuntimeConfig(runtimeId, language) {
+      const panel = document.getElementById(`runtime-config-${runtimeId}`);
+      if (!panel) return;
+
+      const config = {};
+      panel.querySelectorAll('input[data-field]').forEach(input => {
+        config[input.dataset.field] = input.value;
+      });
+
+      // Persist to frontmatter via custom event
+      try {
+        const event = new CustomEvent('mrmd:update-session-config', {
+          detail: { language, config },
+        });
+        document.dispatchEvent(event);
+      } catch (e) {
+        console.warn('Failed to update frontmatter:', e);
+      }
+
+      // Kill and restart with new config
+      await killRuntimeAction(runtimeId, language);
+
+      // Start new runtime with updated config
+      try {
+        if (language === 'python') {
+          await electronAPI.runtime.start({
+            name: config.name || runtimeId,
+            venv: config.venv,
+            cwd: config.cwd,
+          });
+        }
+      } catch (e) {
+        console.error('Failed to restart runtime:', e);
+      }
+
+      await refreshRuntimes();
+    }
+
+    /**
+     * Start a runtime for a language that has code blocks but no running session.
+     */
+    async function startRuntimeForLanguage(language) {
+      try {
+        // Use forDocument to get properly resolved config (session name, cwd, etc.)
+        // This goes through mrmd-project's resolveSessionForLanguage which handles defaults.
+        const docPath = state.currentFile;
+
+        if (language === 'python') {
+          // Python uses the venv picker / session flow
+          const venv = state.pythonVenv?.path || '.venv';
+          const cwd = state.projectRoot || '.';
+          await electronAPI.runtime.start({ venv, cwd });
+        } else if (['bash', 'r', 'julia'].includes(language) && docPath) {
+          const config = await electronAPI.runtime.forDocumentLanguage(docPath, language);
+          if (!config?.alive) {
+            console.log(`[startRuntime] ${language} could not start (no project or not available)`);
+          }
+        } else if (!docPath) {
+          console.log(`[startRuntime] No document open, cannot start ${language}`);
+        }
+        await refreshRuntimes();
+      } catch (e) {
+        console.error(`Failed to start ${language} runtime:`, e);
+      }
+    }
+
+    /**
+     * Browse for a virtual environment path (updates the config panel input).
+     */
+    async function browseForVenv(runtimeId, language) {
+      try {
+        const result = await electronAPI.dialog?.showOpenDialog?.({
+          properties: ['openDirectory'],
+          title: 'Select Virtual Environment',
+          defaultPath: state.projectRoot || undefined,
+        });
+        if (result && !result.canceled && result.filePaths?.[0]) {
+          const panel = document.getElementById(`runtime-config-${runtimeId}`);
+          if (panel) {
+            const input = panel.querySelector('input[data-field="venv"]');
+            if (input) input.value = result.filePaths[0];
+          }
+        }
+      } catch (e) {
+        console.warn('Browse for venv not available:', e);
+      }
+    }
+
+    /**
+     * Browse for a working directory (updates the config panel input).
+     */
+    async function browseForCwd(runtimeId, language) {
+      try {
+        const result = await electronAPI.dialog?.showOpenDialog?.({
+          properties: ['openDirectory'],
+          title: 'Select Working Directory',
+          defaultPath: state.projectRoot || undefined,
+        });
+        if (result && !result.canceled && result.filePaths?.[0]) {
+          const panel = document.getElementById(`runtime-config-${runtimeId}`);
+          if (panel) {
+            const input = panel.querySelector('input[data-field="cwd"]');
+            if (input) input.value = result.filePaths[0];
+          }
+        }
+      } catch (e) {
+        console.warn('Browse for CWD not available:', e);
+      }
+    }
+
+    /**
      * Refresh runtimes list from backend
      */
     async function refreshRuntimes() {
       try {
-        // Fetch all runtime types in parallel
-        const [pythonResult, bashResult, rResult, juliaResult, legacyResult] = await Promise.allSettled([
-          electronAPI.session.list(),
-          electronAPI.bash.list(),
-          electronAPI.r?.list() ?? Promise.resolve([]),
-          electronAPI.julia?.list() ?? Promise.resolve([]),
-          electronAPI.listRuntimes()  // Legacy runtime registry
-        ]);
+        // Fetch all runtimes in one call
+        const allSessions = await electronAPI.runtime.list();
 
-        const pythonSessions = pythonResult.status === 'fulfilled' ? pythonResult.value : [];
-        const bashSessions = bashResult.status === 'fulfilled' ? bashResult.value : [];
-        const rSessions = rResult.status === 'fulfilled' ? rResult.value : [];
-        const juliaSessions = juliaResult.status === 'fulfilled' ? juliaResult.value : [];
-        const legacyRuntimes = legacyResult.status === 'fulfilled' ? (legacyResult.value?.runtimes || []) : [];
-
-        // Collect all session IDs to avoid duplicates
-        const sessionIds = new Set(pythonSessions.map(s => s.name));
-
-        const mapSessions = (sessions, language) =>
-          sessions.filter(s => s.alive).map(s => ({
+        state.runningRuntimes = (allSessions || [])
+          .filter(s => s.alive)
+          .map(s => ({
             id: s.name,
             pid: s.pid,
             port: s.port,
             venv: s.venv,
             cwd: s.cwd,
             alive: s.alive,
-            language,
+            language: s.language || 'python',
           }));
-
-        // Combine all sources with language field
-        state.runningRuntimes = [
-          ...mapSessions(pythonSessions, 'python'),
-          // Legacy runtimes (avoid duplicates with session service)
-          ...legacyRuntimes.filter(r => r.alive && !sessionIds.has(r.id)).map(r => ({
-            id: r.id, pid: r.pid, port: r.port, venv: r.venv, alive: r.alive, language: 'python'
-          })),
-          ...mapSessions(bashSessions, 'bash'),
-          ...mapSessions(rSessions, 'r'),
-          ...mapSessions(juliaSessions, 'julia'),
-        ];
         renderRuntimesPanel();
       } catch (e) {
         console.error('Failed to refresh runtimes:', e);
@@ -10645,6 +11699,353 @@ session:
     document.addEventListener('DOMContentLoaded', () => {
       renderJavaScriptImportHelpSnippet();
       initRuntimesPanel();
+      initHomeView();
+    });
+
+    // =========================================================================
+    // HOME VIEW
+    // =========================================================================
+
+    let homeViewActive = false;
+
+    /**
+     * Initialize the Home view: home button, keyboard shortcut.
+     */
+    function initHomeView() {
+      const homeBtn = document.getElementById('home-btn');
+      if (homeBtn) {
+        homeBtn.addEventListener('click', toggleHomeView);
+      }
+
+      // Keyboard shortcut: Ctrl+Shift+H
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'H') {
+          e.preventDefault();
+          toggleHomeView();
+        }
+      });
+    }
+
+    /**
+     * Toggle between Home view and editor view.
+     */
+    function toggleHomeView() {
+      if (homeViewActive) {
+        hideHomeView();
+      } else {
+        showHomeView();
+      }
+    }
+
+    /**
+     * Show the Home view — full-page takeover.
+     * Hides nav sidebar, side rail, TOC, editor — everything.
+     */
+    function showHomeView() {
+      const homeView = document.getElementById('home-view');
+      const homeBtn = document.getElementById('home-btn');
+
+      if (!homeView) return;
+
+      homeView.classList.add('visible');
+      homeBtn?.classList.add('active');
+      homeViewActive = true;
+
+      // Update titlebar to show we're on Home
+      const titleEl = document.getElementById('titlebar-title');
+      if (titleEl) titleEl.textContent = 'Home';
+
+      // Set home content
+      const projectName = state.projectName || state.project?.name || 'mrmd';
+      const el = document.getElementById('home-title');
+      if (el) el.textContent = projectName;
+      const sub = document.getElementById('home-subtitle');
+      if (sub) sub.textContent = state.projectRoot ? shortenPath(state.projectRoot, 60) : 'Welcome back';
+
+      // Render all sections
+      renderHomeRecentFiles();
+      renderHomeRecentProjects();
+      renderHomeRuntimes();
+    }
+
+    /**
+     * Hide the Home view — restore editor chrome.
+     */
+    function hideHomeView() {
+      const homeView = document.getElementById('home-view');
+      const homeBtn = document.getElementById('home-btn');
+
+      if (!homeView) return;
+
+      homeView.classList.remove('visible');
+      homeBtn?.classList.remove('active');
+      homeViewActive = false;
+
+      // Restore titlebar to current file
+      const titleEl = document.getElementById('titlebar-title');
+      if (titleEl) {
+        const fileName = state.currentFile || 'mrmd';
+        titleEl.textContent = fileName;
+      }
+    }
+
+    /**
+     * Render the recent files section in Home view.
+     */
+    async function renderHomeRecentFiles() {
+      const container = document.getElementById('home-recent-files');
+      if (!container) return;
+
+      let recentFiles = [];
+      try {
+        recentFiles = await electronAPI.getRecentFiles?.() || [];
+      } catch (e) {
+        console.warn('Failed to get recent files:', e);
+      }
+
+      if (recentFiles.length === 0) {
+        container.innerHTML = '<div class="home-empty">No recent files</div>';
+        return;
+      }
+
+      container.innerHTML = recentFiles.slice(0, 15).map(file => {
+        const name = file.name || file.path?.split('/').pop() || 'untitled';
+        const displayName = name.replace(/\.md$/, '');
+        const relativePath = file.path || '';
+        const timeAgo = file.lastOpened ? formatTimeAgo(file.lastOpened) : '';
+
+        return `
+          <div class="home-file-item" onclick="openFileFromHome('${escapeAttr(file.path)}')" title="${escapeAttr(file.path)}">
+            <span class="home-item-icon">📄</span>
+            <div class="home-item-info">
+              <div class="home-item-name">${escapeHtml(displayName)}</div>
+              <div class="home-item-meta">${escapeHtml(timeAgo)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Render the recent projects section in Home view.
+     */
+    async function renderHomeRecentProjects() {
+      const container = document.getElementById('home-recent-projects');
+      if (!container) return;
+
+      let recentProjects = [];
+      try {
+        recentProjects = await electronAPI.getRecentProjects?.() || [];
+      } catch (e) {
+        console.warn('Failed to get recent projects:', e);
+      }
+
+      if (recentProjects.length === 0) {
+        container.innerHTML = '<div class="home-empty">No recent projects</div>';
+        return;
+      }
+
+      container.innerHTML = recentProjects.slice(0, 10).map(project => {
+        const name = project.name || project.path?.split('/').pop() || 'Unknown';
+        const displayPath = project.path ? shortenPath(project.path, 40) : '';
+
+        return `
+          <div class="home-project-item" onclick="openProjectFromHome('${escapeAttr(project.path)}')" title="${escapeAttr(project.path)}">
+            <span class="home-item-icon">📁</span>
+            <div class="home-item-info">
+              <div class="home-item-name">${escapeHtml(name)}</div>
+              <div class="home-item-meta">${escapeHtml(displayPath)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Render the global runtimes section in Home view (fetches fresh data).
+     */
+    async function renderHomeRuntimes() {
+      await refreshRuntimes();
+      renderHomeRuntimesList();
+    }
+
+    /**
+     * Render the runtimes list in Home view (uses cached state.runningRuntimes).
+     */
+    function renderHomeRuntimesList() {
+      const container = document.getElementById('home-runtimes');
+      const stopAllBtn = document.getElementById('home-stop-all');
+      if (!container) return;
+
+      const runtimes = state.runningRuntimes || [];
+
+      if (runtimes.length === 0) {
+        container.innerHTML = '<div class="home-empty">No runtimes running</div>';
+        if (stopAllBtn) stopAllBtn.style.display = 'none';
+        return;
+      }
+
+      if (stopAllBtn) stopAllBtn.style.display = 'block';
+
+      // Group by language
+      const byLang = {};
+      for (const rt of runtimes) {
+        const lang = rt.language || 'python';
+        if (!byLang[lang]) byLang[lang] = [];
+        byLang[lang].push(rt);
+      }
+
+      let html = '';
+      for (const [lang, langRuntimes] of Object.entries(byLang)) {
+        for (const rt of langRuntimes) {
+          const venvShort = rt.venv ? rt.venv.split('/').slice(-2).join('/') : '';
+          const cwdShort = rt.cwd ? shortenPath(rt.cwd, 30) : '';
+
+          html += `
+            <div class="home-runtime-item" title="PID ${rt.pid}${rt.cwd ? ' · ' + rt.cwd : ''}">
+              <span class="home-runtime-status running"></span>
+              <span class="runtime-lang-badge ${lang}">${lang}</span>
+              <div class="home-item-info">
+                <div class="home-item-name">${escapeHtml(rt.id)}</div>
+                <div class="home-item-meta">
+                  ${venvShort ? escapeHtml(venvShort) + ' · ' : ''}port ${rt.port} · PID ${rt.pid}
+                  ${cwdShort ? '<br>cwd: ' + escapeHtml(cwdShort) : ''}
+                </div>
+              </div>
+              <div class="home-item-actions">
+                <button class="home-item-btn danger" onclick="event.stopPropagation(); killAndRefreshHomeRuntime('${escapeAttr(rt.id)}', '${lang}')">Stop</button>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // Memory summary
+      const totalRuntimes = runtimes.length;
+      html += `
+        <div style="padding: 8px 16px; color: var(--text-dim); font-size: 11px; text-align: center;">
+          ${totalRuntimes} runtime${totalRuntimes > 1 ? 's' : ''} running
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    /**
+     * Kill a runtime and refresh the Home view.
+     */
+    async function killAndRefreshHomeRuntime(runtimeId, language) {
+      await killRuntimeAction(runtimeId, language);
+      await refreshRuntimes();
+      renderHomeRuntimesList();
+    }
+
+    /**
+     * Stop all runtimes.
+     */
+    async function stopAllRuntimes() {
+      // Snapshot the list first (it mutates as we kill)
+      const runtimes = [...(state.runningRuntimes || [])];
+      for (const rt of runtimes) {
+        try {
+          await killRuntimeAction(rt.id, rt.language || 'python');
+        } catch (e) {
+          console.error('Failed to kill runtime:', rt.id, e);
+        }
+      }
+      // Single refresh at the end
+      await refreshRuntimes();
+      renderHomeRuntimesList();
+    }
+
+    /**
+     * Refresh the Home view runtimes section.
+     */
+    async function refreshHomeRuntimes() {
+      await renderHomeRuntimes();
+    }
+
+    /**
+     * Open a file from the Home view.
+     */
+    function openFileFromHome(filePath) {
+      hideHomeView();
+      if (typeof openFile === 'function') {
+        openFile(filePath);
+      }
+    }
+
+    /**
+     * Open a project from the Home view.
+     */
+    function openProjectFromHome(projectPath) {
+      hideHomeView();
+      if (typeof openProject === 'function') {
+        openProject(projectPath);
+      }
+    }
+
+    /**
+     * Open the project picker dialog.
+     */
+    function openProjectPicker() {
+      hideHomeView();
+      if (typeof showFolderPickerDialog === 'function') {
+        showFolderPickerDialog();
+      }
+    }
+
+    // ---- Home view helpers ----
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(str) {
+      if (!str) return '';
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function shortenPath(path, maxLen = 25) {
+      if (!path) return '';
+      if (path.length <= maxLen) return path;
+      return '...' + path.slice(-(maxLen - 3));
+    }
+
+    function formatTimeAgo(timestamp) {
+      if (!timestamp) return '';
+      const now = Date.now();
+      const ts = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
+      const diff = now - ts;
+      const minutes = Math.floor(diff / 60000);
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) return `${minutes} min ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+      const weeks = Math.floor(days / 7);
+      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    }
+
+    // Listen for session config updates from the runtimes panel
+    document.addEventListener('mrmd:update-session-config', (e) => {
+      const { language, config } = e.detail;
+      // Use the state.editor instance to update frontmatter
+      if (state.editor?.updateFrontmatterSession) {
+        state.editor.updateFrontmatterSession(language, config);
+      } else if (state.editor?.view) {
+        // Fallback: use the mrmd-editor frontmatter-updater directly if available
+        try {
+          const mrmd = window.mrmd || window.MrmdEditor;
+          if (mrmd?.updateFrontmatterSession) {
+            mrmd.updateFrontmatterSession(state.editor.view, language, config);
+          }
+        } catch (err) {
+          console.warn('Could not update frontmatter:', err);
+        }
+      }
     });
 
     // =========================================================================
@@ -12952,14 +14353,8 @@ session:
      * @returns {{ start, stop, restart, list, forDocument } | null}
      */
     function getApiForLanguage(language) {
-      switch (language) {
-        case 'python': return electronAPI.session;
-        case 'bash': case 'sh': case 'shell': return electronAPI.bash;
-        case 'r': case 'rlang': return electronAPI.r;
-        case 'julia': case 'jl': return electronAPI.julia;
-        case 'node': case 'javascript': case 'js': return electronAPI.session; // Node uses session API for now
-        default: return null;
-      }
+      // All languages use the unified runtime API
+      return electronAPI.runtime;
     }
 
     /**
@@ -13136,10 +14531,13 @@ session:
         // Bash uses auto-restarting wrapper
         const bashClient = createAutoRestartingBashClient(port, docName);
         state.editor.registerRuntime(mapping.key, bashClient);
+      } else if (language === 'python') {
+        const pythonClient = createAutoRestartingPythonClient(port, docName);
+        state.editor.registerRuntime(mapping.key, pythonClient);
       } else {
         const client = new mrmd.MRPClient(
           `http://127.0.0.1:${port}/mrp/v1`,
-          { session: docName, languages: mapping.langs }
+          { languages: mapping.langs }
         );
         state.editor.registerRuntime(mapping.key, client);
       }
@@ -13929,7 +15327,7 @@ session:
 
       try {
         // Pass config directly - preload wraps it in { config }
-        const result = await electronAPI.session.start(config);
+        const result = await electronAPI.runtime.start(config);
 
         if (result.success || result.pid) {
           state.session.info = result;
@@ -13964,7 +15362,7 @@ session:
       updateSessionStatus('starting', sessionName);
 
       try {
-        const result = await electronAPI.session.restart(sessionName);
+        const result = await electronAPI.runtime.restart(sessionName);
 
         if (result.success || result.pid) {
           state.session.info = result;
@@ -13998,7 +15396,7 @@ session:
       const sessionName = state.session.name;
 
       try {
-        const result = await electronAPI.session.stop(sessionName);
+        const result = await electronAPI.runtime.stop(sessionName);
 
         if (result.success) {
           state.session.info = null;
@@ -14014,16 +15412,111 @@ session:
     }
 
     /**
+     * Create an auto-recovering Python MRP client wrapper.
+     * If execution fails due to lost runtime (502/connection), request runtime recovery,
+     * refresh session mapping, and retry once.
+     */
+    function createAutoRestartingPythonClient(initialPort, sessionName) {
+      let currentPort = initialPort;
+      let isRecovering = false;
+      const supportedLanguages = ['python', 'py', 'python3'];
+
+      let realClient = new mrmd.MRPClient(
+        `http://127.0.0.1:${currentPort}/mrp/v1`,
+        { languages: supportedLanguages }
+      );
+
+      function updateClient(newPort) {
+        currentPort = newPort;
+        realClient = new mrmd.MRPClient(
+          `http://127.0.0.1:${currentPort}/mrp/v1`,
+          { languages: supportedLanguages }
+        );
+      }
+
+      return new Proxy(realClient, {
+        get(target, prop, receiver) {
+          const value = realClient[prop];
+
+          if (prop === 'supports') {
+            return (language) => supportedLanguages.includes(String(language || '').toLowerCase());
+          }
+
+          if (prop === 'executeStreaming') {
+            return async function(code, language, onChunk, onStdinRequest, options = {}) {
+              try {
+                return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+              } catch (error) {
+                const msg = String(error?.message || '');
+                const lower = msg.toLowerCase();
+                const runtimeDown = lower.includes('execution failed: 502')
+                  || lower.includes('failed to fetch')
+                  || lower.includes('fetch failed')
+                  || lower.includes('err_connection')
+                  || lower.includes('econnrefused');
+
+                if (!runtimeDown) throw error;
+
+                if (isRecovering) {
+                  onChunk?.('Python runtime is recovering...', 'Python runtime is recovering...', true);
+                  throw new Error('Python runtime is recovering, please retry in a moment');
+                }
+
+                isRecovering = true;
+                try {
+                  const recoverRes = await fetch('/api/runtime/recover', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                  });
+
+                  if (!recoverRes.ok) {
+                    throw new Error(`Recovery failed (${recoverRes.status})`);
+                  }
+
+                  const recovered = await recoverRes.json();
+                  if (!recovered?.ok) {
+                    throw new Error(recovered?.error || 'Runtime recovery failed');
+                  }
+
+                  await new Promise(r => setTimeout(r, 150));
+                  const fresh = await electronAPI.runtime.forDocument(state.currentFile);
+                  if (!fresh?.alive || !fresh?.port) {
+                    throw new Error('Runtime recovered but session is not ready yet');
+                  }
+
+                  updateClient(fresh.port);
+                  state.pythonPort = fresh.port;
+                  state.session.info = fresh;
+                  console.log('[python] Runtime recovered on port', fresh.port);
+
+                  isRecovering = false;
+                  return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+                } catch (recoverError) {
+                  isRecovering = false;
+                  console.error('[python] Recovery failed:', recoverError);
+                  throw recoverError;
+                }
+              }
+            };
+          }
+
+          if (typeof value === 'function') {
+            return value.bind(realClient);
+          }
+          return value;
+        }
+      });
+    }
+
+    /**
      * Register session with editor for code execution
      */
     function registerSessionWithEditor(port) {
       if (!state.editor || !port) return;
 
       const docName = stripDocExtension(state.currentFile.split('/').pop());
-      const pythonClient = new mrmd.MRPClient(
-        `http://127.0.0.1:${port}/mrp/v1`,
-        { session: docName, languages: ['python', 'py', 'python3'] }
-      );
+      const pythonClient = createAutoRestartingPythonClient(port, docName);
       state.editor.registerRuntime('python', pythonClient);
       console.log('Registered Python runtime with editor');
     }
@@ -14040,7 +15533,7 @@ session:
       // Create the underlying MRPClient
       let realClient = new mrmd.MRPClient(
         `http://127.0.0.1:${currentPort}/mrp/v1`,
-        { session: 'default', languages: supportedLanguages }
+        { languages: supportedLanguages }
       );
 
       // Helper to recreate client with new port
@@ -14048,7 +15541,7 @@ session:
         currentPort = newPort;
         realClient = new mrmd.MRPClient(
           `http://127.0.0.1:${currentPort}/mrp/v1`,
-          { session: 'default', languages: supportedLanguages }
+          { languages: supportedLanguages }
         );
       }
 
@@ -14080,7 +15573,7 @@ session:
 
                   isRestarting = true;
                   try {
-                    const newConfig = await electronAPI.bash.forDocument(state.currentFile);
+                    const newConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "bash");
                     if (newConfig?.alive && newConfig?.port) {
                       updateClient(newConfig.port);
                       state.bashPort = newConfig.port;
@@ -14125,15 +15618,15 @@ session:
       }
 
       // Check if electronAPI.bash exists (requires app restart after preload changes)
-      if (!electronAPI.bash) {
-        console.error('[bash] electronAPI.bash not available - restart the app!');
+      if (!electronAPI.runtime) {
+        console.error('[bash] electronAPI.runtime not available - restart the app!');
         return;
       }
 
       try {
         console.log('[bash] Calling bash.forDocument for:', state.currentFile);
         // Get or create bash session for this document
-        const bashConfig = await electronAPI.bash.forDocument(state.currentFile);
+        const bashConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "bash");
         console.log('[bash] Got config:', bashConfig);
 
         if (!bashConfig) {
@@ -14185,15 +15678,15 @@ session:
       }
 
       // Check if electronAPI.r exists (requires app restart after preload changes)
-      if (!electronAPI.r) {
-        console.log('[r] electronAPI.r not available - R runtime not supported');
+      if (!electronAPI.runtime) {
+        console.log('[r] electronAPI.runtime not available - R runtime not supported');
         return;
       }
 
       try {
         console.log('[r] Calling r.forDocument for:', state.currentFile);
         // Get or create R session for this document
-        const rConfig = await electronAPI.r.forDocument(state.currentFile);
+        const rConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "r");
         console.log('[r] Got config:', rConfig);
 
         if (!rConfig) {
@@ -14223,7 +15716,7 @@ session:
           // Create MRP client for R
           const rClient = new mrmd.MRPClient(
             `http://127.0.0.1:${rConfig.port}/mrp/v1`,
-            { session: 'default', languages: ['r', 'R', 'rlang'] }
+            { languages: ['r', 'R', 'rlang'] }
           );
           state.editor.registerRuntime('r', rClient);
           console.log('[r] Registered R runtime with editor on port', rConfig.port, 'cwd:', rConfig.cwd);
@@ -14248,15 +15741,15 @@ session:
       }
 
       // Check if electronAPI.julia exists
-      if (!electronAPI.julia) {
-        console.log('[julia] electronAPI.julia not available - Julia runtime not supported');
+      if (!electronAPI.runtime) {
+        console.log('[julia] electronAPI.runtime not available - Julia runtime not supported');
         return;
       }
 
       try {
         console.log('[julia] Calling julia.forDocument for:', state.currentFile);
         // Get or create Julia session for this document
-        const juliaConfig = await electronAPI.julia.forDocument(state.currentFile);
+        const juliaConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "julia");
         console.log('[julia] Got config:', juliaConfig);
 
         if (!juliaConfig) {
@@ -14286,7 +15779,7 @@ session:
           // Create MRP client for Julia
           const juliaClient = new mrmd.MRPClient(
             `http://127.0.0.1:${juliaConfig.port}/mrp/v1`,
-            { session: 'default', languages: ['julia', 'jl'] }
+            { languages: ['julia', 'jl'] }
           );
           state.editor.registerRuntime('julia', juliaClient);
           console.log('[julia] Registered Julia runtime with editor on port', juliaConfig.port, 'cwd:', juliaConfig.cwd);
@@ -14311,8 +15804,8 @@ session:
       }
 
       // Check if electronAPI.pty exists
-      if (!electronAPI.pty) {
-        console.error('[pty] electronAPI.pty not available - restart the app!');
+      if (!electronAPI.runtime) {
+        console.error('[pty] electronAPI.runtime not available - restart the app!');
         return;
       }
 
@@ -14325,7 +15818,7 @@ session:
       try {
         console.log('[pty] Calling pty.forDocument for:', state.currentFile);
         // Get or create PTY session for this document
-        const ptyConfig = await electronAPI.pty.forDocument(state.currentFile);
+        const ptyConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "pty");
         console.log('[pty] Got config:', ptyConfig);
 
         if (!ptyConfig) {
@@ -14481,7 +15974,7 @@ session:
 
       try {
         // Get session config from project
-        const sessionConfig = await electronAPI.session.forDocument(state.currentFile);
+        const sessionConfig = await electronAPI.runtime.forDocument(state.currentFile);
 
         if (sessionConfig) {
           state.session.config = sessionConfig;
@@ -14587,11 +16080,20 @@ session:
         </div>
         <div class="no-runtime-prompt-actions" id="no-runtime-actions">
           ${isPython ? `
-            <button class="no-runtime-prompt-btn primary" onclick="createVenvAndRetry()">
+            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
+              Start Python runtime
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
+              Restart runtimes
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
               Create .venv
             </button>
             <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
               Choose existing...
+            </button>
+            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
+              Dismiss
             </button>
           ` : `
             <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
@@ -14703,10 +16205,7 @@ session:
         // Register with editor
         if (state.editor && state.currentFile) {
           const docName = stripDocExtension(state.currentFile.split('/').pop());
-          const pythonClient = new mrmd.MRPClient(
-            `http://127.0.0.1:${startResult.port}/mrp/v1`,
-            { session: docName, languages: ['python', 'py', 'python3'] }
-          );
+          const pythonClient = createAutoRestartingPythonClient(startResult.port, docName);
           state.editor.registerRuntime('python', pythonClient);
           state.pythonPort = startResult.port;
           state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
@@ -14790,6 +16289,9 @@ session:
       try {
         if (normalized === 'python') {
           await resolveProjectSession();
+          if (!(state.session?.info?.alive && state.session?.info?.port) && !state.pythonPort) {
+            throw new Error('Python runtime is still unavailable. Try Create .venv or Choose existing.');
+          }
         } else if (normalized === 'bash') {
           await registerBashWithEditor();
         } else if (normalized === 'r') {
@@ -14901,10 +16403,20 @@ session:
             if (normalized === 'r') await registerRWithEditor();
             if (normalized === 'julia') await registerJuliaWithEditor();
 
-            if (typeof retryCallback === 'function') {
+            // Only retry if the runtime was actually registered successfully.
+            // Otherwise fall through to show the prompt (avoids infinite retry loop
+            // when there's no project or the runtime can't start).
+            const runtimeRegistered =
+              (normalized === 'python' && state.pythonPort) ||
+              (normalized === 'bash' && state.bashSession?.alive) ||
+              (normalized === 'r' && state.rSession?.alive) ||
+              (normalized === 'julia' && state.juliaSession?.alive);
+            if (runtimeRegistered && typeof retryCallback === 'function') {
               await retryCallback();
               autoRecovering = false;
               return;
+            } else {
+              console.log('[noRuntime] Auto-recover did not register runtime for', normalized, '- showing prompt');
             }
           } catch (e) {
             console.warn('[noRuntime] Auto-recover failed:', e?.message || e);
@@ -15924,9 +17436,14 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       const hasChunkDirs = Array.isArray(payload.dirsChunk);
 
       if (payload.reset) {
-        state.files = [];
-        state.scannedDirs = [];
-        state.fileIndex.ready = false;
+        if (state._backgroundRescan) {
+          // Background rescan: don't clear existing data, just accept the new token
+          state._backgroundRescan = false;
+        } else {
+          state.files = [];
+          state.scannedDirs = [];
+          state.fileIndex.ready = false;
+        }
       }
 
       if (payload.scanToken != null) {
@@ -15937,10 +17454,8 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
         }
       }
 
-      if (!isFilePickerVisible()) return;
-
+      // Always accumulate data even if picker is hidden (for cache)
       if (hasLegacyFiles) {
-        // Backward compatibility for older main-process payloads
         state.files = payload.files;
       } else if (hasChunkFiles && payload.filesChunk.length > 0) {
         state.files.push(...payload.filesChunk);
@@ -15951,6 +17466,13 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       const isDone = payload.done === true || (hasLegacyFiles && payload.done == null);
       state.fileScanStatus = isDone ? 'ready' : 'scanning';
+
+      if (!isFilePickerVisible()) {
+        // Still rebuild the index so it's ready when picker opens
+        if (isDone) rebuildFileIndex();
+        return;
+      }
+
       setPickerStatus(state.fileIndex.ready ? state.filteredFiles.length : state.files.length);
       scheduleFileIndexRefresh({ immediate: Boolean(isDone) });
     });

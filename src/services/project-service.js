@@ -138,11 +138,21 @@ class ProjectService {
       depth: 10,
     });
 
+    // Debounce file change events to batch rapid changes (e.g., git checkout,
+    // bulk rename) into a single cache invalidation + callback.
+    let debounceTimer = null;
+    const DEBOUNCE_MS = 150;
+
     const handleChange = (filePath) => {
       // Only care about markdown-like doc files and directories
       if (isDocPath(filePath) || !path.extname(filePath)) {
-        this.invalidate(projectRoot);
-        onChange();
+        // Batch rapid changes
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          this.invalidate(projectRoot);
+          onChange();
+        }, DEBOUNCE_MS);
       }
     };
 
@@ -156,6 +166,7 @@ class ProjectService {
 
     return {
       close: () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
         watcher.close();
         this.watchers.delete(projectRoot);
       },

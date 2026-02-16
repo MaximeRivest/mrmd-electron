@@ -208,7 +208,7 @@ class FileService {
    * @returns {Promise<RefactorResult>}
    */
   async reorder(projectRoot, sourcePath, targetPath, position) {
-    // 1. Scan all files to get siblings for shift calculation (include hidden for complete refactoring)
+    // 1. Scan all files ONCE for both reorder computation and link refactoring
     const allFiles = await this.scan(projectRoot, { includeHidden: true });
 
     // 2. Use FSML.computeReorder with siblings for proper shift computation
@@ -225,10 +225,10 @@ class FileService {
 
     const updatedFiles = [];
 
-    // 4. Execute renames in order (already sorted by computeReorder to avoid collisions)
+    // 4. Execute renames in order, passing pre-scanned files to avoid redundant scans
     for (const rename of renames) {
       try {
-        const result = await this.move(projectRoot, rename.from, rename.to);
+        const result = await this.move(projectRoot, rename.from, rename.to, { _cachedFiles: allFiles });
         updatedFiles.push(...result.updatedFiles);
       } catch (e) {
         console.error(`[FileService.reorder] Failed to rename ${rename.from} -> ${rename.to}:`, e.message);
@@ -236,7 +236,7 @@ class FileService {
       }
     }
 
-    // 5. Invalidate project cache
+    // 5. Invalidate project cache once at the end (not per-move)
     if (this.projectService) {
       this.projectService.invalidate(projectRoot);
     }
@@ -252,7 +252,17 @@ class FileService {
    * @param {string} toPath - Destination relative path
    * @returns {Promise<RefactorResult>}
    */
-  async move(projectRoot, fromPath, toPath) {
+  /**
+   * Move/rename a file or folder with automatic refactoring
+   *
+   * @param {string} projectRoot - Project root path
+   * @param {string} fromPath - Source relative path
+   * @param {string} toPath - Destination relative path
+   * @param {object} [options] - Internal options
+   * @param {string[]} [options._cachedFiles] - Pre-scanned file list (avoids redundant scans in batch ops)
+   * @returns {Promise<RefactorResult>}
+   */
+  async move(projectRoot, fromPath, toPath, options = {}) {
     const fullFromPath = path.join(projectRoot, fromPath);
     const fullToPath = path.join(projectRoot, toPath);
 
@@ -270,17 +280,17 @@ class FileService {
     const isDirectory = stat.isDirectory();
 
     if (isDirectory) {
-      return this.moveDirectory(projectRoot, fromPath, toPath);
+      return this.moveDirectory(projectRoot, fromPath, toPath, options);
     }
 
     const updatedFiles = [];
 
     const shouldRefactorLinks = needsGlobalLinkRefactor(fromPath, toPath);
     if (shouldRefactorLinks) {
-      // 1. Read all markdown-like doc files in project (include hidden folders for complete refactoring)
-      const files = await this.scan(projectRoot, { includeHidden: true });
+      // Use pre-scanned files if available, otherwise scan
+      const files = options._cachedFiles || await this.scan(projectRoot, { includeHidden: true });
 
-      // 2. For each file, check if it references the moved file
+      // For each file, check if it references the moved file
       for (const file of files) {
         if (file === fromPath) continue;
 
@@ -305,7 +315,7 @@ class FileService {
       }
     }
 
-    // 3. Read the file being moved
+    // Read the file being moved
     let movingContent;
     try {
       movingContent = await fsPromises.readFile(fullFromPath, 'utf8');
@@ -313,7 +323,7 @@ class FileService {
       throw new Error(`Cannot read source file: ${e.message}`);
     }
 
-    // 4. Update asset paths IN the moved file using mrmd-project
+    // Update asset paths IN the moved file using mrmd-project
     const updatedMovingContent = Assets.refactorPaths(
       movingContent,
       fromPath,
@@ -321,16 +331,16 @@ class FileService {
       ASSETS_DIR_NAME
     );
 
-    // 5. Actually move the file
+    // Actually move the file
     await fsPromises.mkdir(path.dirname(fullToPath), { recursive: true });
     await fsPromises.writeFile(fullToPath, updatedMovingContent);
     await fsPromises.unlink(fullFromPath);
 
-    // 6. Clean up empty directories
+    // Clean up empty directories
     await this.removeEmptyDirs(path.dirname(fullFromPath), projectRoot);
 
-    // 7. Invalidate project cache
-    if (this.projectService) {
+    // Invalidate project cache (skip if called from batch operation like reorder)
+    if (!options._cachedFiles && this.projectService) {
       this.projectService.invalidate(projectRoot);
     }
 
@@ -345,13 +355,23 @@ class FileService {
    * @param {string} toPath - Destination relative path (folder)
    * @returns {Promise<RefactorResult>}
    */
-  async moveDirectory(projectRoot, fromPath, toPath) {
+  /**
+   * Move/rename a directory with automatic refactoring
+   *
+   * @param {string} projectRoot - Project root path
+   * @param {string} fromPath - Source relative path (folder)
+   * @param {string} toPath - Destination relative path (folder)
+   * @param {object} [options] - Internal options
+   * @param {string[]} [options._cachedFiles] - Pre-scanned file list
+   * @returns {Promise<RefactorResult>}
+   */
+  async moveDirectory(projectRoot, fromPath, toPath, options = {}) {
     const fullFromPath = path.join(projectRoot, fromPath);
     const fullToPath = path.join(projectRoot, toPath);
     const updatedFiles = [];
 
-    // 1. Get all files in the project (include hidden for complete refactoring)
-    const allFiles = await this.scan(projectRoot, { includeHidden: true });
+    // Use pre-scanned files if available, otherwise scan
+    const allFiles = options._cachedFiles || await this.scan(projectRoot, { includeHidden: true });
 
     // 2. Build list of files being moved and their new paths
     const movedFiles = [];
@@ -422,8 +442,8 @@ class FileService {
     // 6. Clean up empty directories
     await this.removeEmptyDirs(path.dirname(fullFromPath), projectRoot);
 
-    // 7. Invalidate project cache
-    if (this.projectService) {
+    // 7. Invalidate project cache (skip if called from batch operation)
+    if (!options._cachedFiles && this.projectService) {
       this.projectService.invalidate(projectRoot);
     }
 

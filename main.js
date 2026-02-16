@@ -18,7 +18,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 
 // Services
-import { ProjectService, SessionService, BashSessionService, RSessionService, JuliaSessionService, PtySessionService, FileService, AssetService, SettingsService } from './src/services/index.js';
+import { ProjectService, RuntimeService, FileService, AssetService, SettingsService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
@@ -28,7 +28,6 @@ import { walkDir, findDirs, getVenvPython, getVenvExecutable, isProcessAlive, ki
 import {
   CONFIG_DIR,
   RECENT_FILE,
-  RUNTIMES_DIR,
   DEFAULT_HOST,
   SYNC_SERVER_MEMORY_MB,
   FILE_SCAN_MAX_DEPTH,
@@ -148,11 +147,7 @@ if (!fs.existsSync(CONFIG_DIR)) {
 // ============================================================================
 
 const projectService = new ProjectService();
-const sessionService = new SessionService();
-const bashSessionService = new BashSessionService();
-const rSessionService = new RSessionService();
-const juliaSessionService = new JuliaSessionService();
-const ptySessionService = new PtySessionService();
+const runtimeService = new RuntimeService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
 const settingsService = new SettingsService();
@@ -199,56 +194,8 @@ function addRecentVenv(venvPath) {
 }
 
 // ============================================================================
-// RUNTIME MANAGEMENT
+// RUNTIME MANAGEMENT (handled by RuntimeService)
 // ============================================================================
-
-function listRuntimes() {
-  const runtimes = [];
-  if (!fs.existsSync(RUNTIMES_DIR)) return runtimes;
-
-  try {
-    const files = fs.readdirSync(RUNTIMES_DIR).filter(f => f.endsWith('.json'));
-    for (const file of files) {
-      try {
-        const info = JSON.parse(fs.readFileSync(path.join(RUNTIMES_DIR, file), 'utf8'));
-        // Check if process is alive
-        if (info.pid) {
-          info.alive = isProcessAlive(info.pid);
-        }
-        runtimes.push(info);
-      } catch (e) {
-        // Skip invalid files
-      }
-    }
-  } catch (e) {
-    console.error('[runtimes] Error listing:', e.message);
-  }
-  return runtimes;
-}
-
-async function killRuntime(runtimeId) {
-  const runtimeFile = path.join(RUNTIMES_DIR, `${runtimeId}.json`);
-  if (!fs.existsSync(runtimeFile)) return false;
-
-  try {
-    const info = JSON.parse(fs.readFileSync(runtimeFile, 'utf8'));
-    if (info.pid) {
-      try {
-        await killProcessTree(info.pid, 'SIGTERM');
-        // Remove the file
-        fs.unlinkSync(runtimeFile);
-        return true;
-      } catch (e) {
-        // Process might already be dead, still clean up file
-        fs.unlinkSync(runtimeFile);
-        return true;
-      }
-    }
-  } catch (e) {
-    console.error('[runtimes] Error killing:', e.message);
-  }
-  return false;
-}
 
 // ============================================================================
 // GIT ROOT DETECTION
@@ -282,7 +229,7 @@ function computeDirHash(dir) {
 function scanFiles(searchDir, callback) {
   // Cross-platform file discovery using walkDir
   // Find both markdown-like docs and .ipynb files, excluding system folders
-  walkDir(searchDir, {
+  const handle = walkDir(searchDir, {
     maxDepth: FILE_SCAN_MAX_DEPTH,
     extensions: ['.md', '.qmd', '.ipynb'],
     ignoreDirs: ['node_modules', '.git', '.mrmd'],
@@ -301,13 +248,8 @@ function scanFiles(searchDir, callback) {
     },
   });
 
-  // Return an object with a kill method for compatibility
-  return {
-    kill: () => {
-      // walkDir is synchronous-ish (uses setImmediate), can't really cancel
-      // but this maintains API compatibility
-    },
-  };
+  // walkDir now returns a cancellable handle
+  return handle || { kill: () => {} };
 }
 
 // ============================================================================
@@ -552,69 +494,7 @@ function releaseSyncServer(projectDir) {
   }
 }
 
-// ============================================================================
-// PYTHON RUNTIME
-// ============================================================================
-
-async function startPythonRuntime(venvPath, windowId, forceNew = false) {
-  const port = await findFreePort();
-
-  // Generate runtime ID from venv path (e.g., "notemrmd-venv" or "adaptersv2-venv")
-  // Strip leading dots, sanitize, collapse dashes, strip leading/trailing dashes
-  const venvName = path.basename(venvPath).replace(/^\.+/, '') || 'venv';
-  const projectName = path.basename(path.dirname(venvPath)).replace(/^\.+/, '') || 'project';
-  let runtimeId = `${projectName}-${venvName}`
-    .replace(/[^a-zA-Z0-9-]/g, '-')  // Replace invalid chars with dash
-    .replace(/-+/g, '-')              // Collapse multiple dashes
-    .replace(/^-|-$/g, '');           // Strip leading/trailing dashes
-
-  // Ensure we have a valid ID
-  if (!runtimeId) runtimeId = 'python-runtime';
-
-  const mrmdPythonPath = getVenvExecutable(venvPath, 'mrmd-python');
-
-  if (!fs.existsSync(mrmdPythonPath)) {
-    throw new Error('mrmd-python not installed in this venv');
-  }
-
-  // Check if this runtime is already running (and we're not forcing new)
-  const existingRuntimes = listRuntimes();
-  if (!forceNew) {
-    const existing = existingRuntimes.find(r => r.id === runtimeId && r.alive);
-    if (existing) {
-      console.log(`[python:${windowId}] Attaching to existing runtime "${runtimeId}" on port ${existing.port}`);
-      addRecentVenv(venvPath);
-      return { proc: null, port: existing.port, runtimeId, reused: true };
-    }
-  } else {
-    // Force new: add suffix to make unique
-    const suffix = Date.now().toString(36).slice(-4);
-    runtimeId = `${runtimeId}-${suffix}`;
-  }
-
-  console.log(`[python:${windowId}] Starting runtime "${runtimeId}" on port ${port}...`);
-
-  const proc = spawn(mrmdPythonPath, [
-    '--id', runtimeId,
-    '--port', port.toString(),
-    '--foreground'
-  ], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, VIRTUAL_ENV: venvPath },
-  });
-
-  proc.stdout.on('data', (d) => console.log(`[python:${windowId}]`, d.toString().trim()));
-  proc.stderr.on('data', (d) => console.error(`[python:${windowId}]`, d.toString().trim()));
-
-  await waitForPort(port);
-
-  // Track as recent
-  addRecentVenv(venvPath);
-
-  return { proc, port, runtimeId };
-}
-
-// Note: installMrmdPython is now imported from src/utils/python.js
+// Python runtime spawning is now handled by RuntimeService.
 
 // ============================================================================
 // MONITOR
@@ -798,26 +678,21 @@ ipcMain.handle('get-recent', () => {
   return loadRecent();
 });
 
-// List running runtimes (LEGACY - use session:list for projects)
+// Legacy runtime handlers — thin wrappers around RuntimeService for backwards compat.
+// These will be removed once the renderer UI is fully migrated.
 ipcMain.handle('list-runtimes', () => {
-  logDeprecation('list-runtimes', 'session:list');
-  return { runtimes: listRuntimes() };
+  return { runtimes: runtimeService.list() };
 });
 
-// Kill a runtime (LEGACY - use session:stop for projects)
 ipcMain.handle('kill-runtime', async (event, { runtimeId }) => {
-  logDeprecation('kill-runtime', 'session:stop');
-  const success = await killRuntime(runtimeId);
+  const success = await runtimeService.stop(runtimeId);
   return { success };
 });
 
-// Attach to existing runtime (LEGACY - use session:forDocument for projects)
 ipcMain.handle('attach-runtime', (event, { runtimeId }) => {
-  logDeprecation('attach-runtime', 'session:forDocument');
-  const runtimes = listRuntimes();
-  const runtime = runtimes.find(r => r.id === runtimeId && r.alive);
-  if (runtime) {
-    return { success: true, port: runtime.port, url: runtime.url, venv: runtime.venv };
+  const result = runtimeService.attach(runtimeId);
+  if (result) {
+    return { success: true, port: result.port, url: result.url, venv: result.venv };
   }
   return { success: false, error: 'Runtime not found or not alive' };
 });
@@ -958,9 +833,8 @@ ipcMain.handle('create-venv', async (event, { venvPath }) => {
   }
 });
 
-// Install mrmd-python (LEGACY - session:start auto-installs for projects)
+// Legacy Python handlers — thin wrappers for backwards compat with venv picker UI.
 ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
-  logDeprecation('install-mrmd-python', 'session:start (auto-installs)');
   try {
     await installMrmdPython(venvPath);
     return { success: true };
@@ -969,46 +843,43 @@ ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
   }
 });
 
-// Start Python runtime (LEGACY - use session:start for projects)
 ipcMain.handle('start-python', async (event, { venvPath, forceNew }) => {
-  logDeprecation('start-python', 'session:start');
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
-
   try {
-    const python = await startPythonRuntime(venvPath, windowId, forceNew);
+    // Derive a session name from the venv
+    const venvName = path.basename(venvPath).replace(/^\.+/, '') || 'venv';
+    const projectName = path.basename(path.dirname(venvPath)).replace(/^\.+/, '') || 'project';
+    let name = `${projectName}:${venvName}`.replace(/[^a-zA-Z0-9-:]/g, '-');
+    if (forceNew) name += '-' + Date.now().toString(36).slice(-4);
+
+    const result = await runtimeService.start({
+      name,
+      language: 'python',
+      cwd: path.dirname(venvPath),
+      venv: venvPath,
+    });
 
     let state = windowStates.get(windowId);
     if (!state) {
       state = { python: null, monitors: new Map(), projectDir: null };
       windowStates.set(windowId, state);
     }
+    state.python = { port: result.port, runtimeId: name };
+    addRecentVenv(venvPath);
 
-    state.python = python;
-
-    return {
-      success: true,
-      port: python.port,
-      runtimeId: python.runtimeId,
-      reused: python.reused || false
-    };
+    return { success: true, port: result.port, runtimeId: name };
   } catch (e) {
     return { success: false, error: e.message };
   }
 });
 
-// Open file (LEGACY - use project:get + session:forDocument for projects)
+// Legacy open-file handler
 ipcMain.handle('open-file', async (event, { filePath }) => {
-  logDeprecation('open-file', 'project:get + session:forDocument');
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
-
   const projectDir = path.dirname(filePath);
   const fileName = path.basename(filePath);
   const ext = path.extname(fileName).toLowerCase();
   const docName = ext === '.md' ? fileName.replace(/\.md$/i, '') : fileName;
-
-  console.log(`[open] File: ${filePath}`);
-  console.log(`[open] Project: ${projectDir}`);
-  console.log(`[open] Doc: ${docName}`);
 
   try {
     const sync = await getSyncServer(projectDir);
@@ -1029,13 +900,12 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
       state.monitors.set(docName, monitor);
     }
 
-    // Track as recent
     addRecentFile(filePath);
 
     return {
       success: true,
       syncPort: sync.port,
-      docName: docName,
+      docName,
       pythonPort: state.python?.port || null,
       projectDir,
     };
@@ -1161,266 +1031,8 @@ ipcMain.handle('notebook:stopSync', async (event, { ipynbPath }) => {
   return { success: true };
 });
 
-// ============================================================================
-// BASH SESSION SERVICE IPC HANDLERS
-// ============================================================================
-
-// List all bash sessions
-ipcMain.handle('bash:list', () => {
-  return bashSessionService.list();
-});
-
-// Start bash session
-ipcMain.handle('bash:start', async (event, { config }) => {
-  try {
-    return await bashSessionService.start(config);
-  } catch (e) {
-    console.error('[bash:start] Error:', e.message);
-    throw e;
-  }
-});
-
-// Stop bash session
-ipcMain.handle('bash:stop', async (event, { sessionName }) => {
-  return bashSessionService.stop(sessionName);
-});
-
-// Restart bash session
-ipcMain.handle('bash:restart', async (event, { sessionName }) => {
-  try {
-    return await bashSessionService.restart(sessionName);
-  } catch (e) {
-    console.error('[bash:restart] Error:', e.message);
-    throw e;
-  }
-});
-
-// Get or create bash session for document
-ipcMain.handle('bash:forDocument', async (event, { documentPath }) => {
-  console.log('[bash:forDocument] Called with:', documentPath);
-  try {
-    const project = await projectService.getProject(documentPath);
-    console.log('[bash:forDocument] Project:', project?.root);
-    if (!project) {
-      console.log('[bash:forDocument] No project found');
-      return null;
-    }
-
-    // Parse frontmatter from document
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
-
-    console.log('[bash:forDocument] Calling bashSessionService.getForDocument');
-    const result = await bashSessionService.getForDocument(
-      documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
-    console.log('[bash:forDocument] Result:', result);
-    return result;
-  } catch (e) {
-    console.error('[bash:forDocument] Error:', e.message, e.stack);
-    return null;
-  }
-});
-
-// ============================================================================
-// R SESSION SERVICE IPC HANDLERS
-// ============================================================================
-
-// List all R sessions
-ipcMain.handle('r:list', () => {
-  return rSessionService.list();
-});
-
-// Start R session
-ipcMain.handle('r:start', async (event, { config }) => {
-  try {
-    return await rSessionService.start(config);
-  } catch (e) {
-    console.error('[r:start] Error:', e.message);
-    throw e;
-  }
-});
-
-// Stop R session
-ipcMain.handle('r:stop', async (event, { sessionName }) => {
-  return rSessionService.stop(sessionName);
-});
-
-// Restart R session
-ipcMain.handle('r:restart', async (event, { sessionName }) => {
-  try {
-    return await rSessionService.restart(sessionName);
-  } catch (e) {
-    console.error('[r:restart] Error:', e.message);
-    throw e;
-  }
-});
-
-// Get or create R session for document
-ipcMain.handle('r:forDocument', async (event, { documentPath }) => {
-  console.log('[r:forDocument] Called with:', documentPath);
-  try {
-    const project = await projectService.getProject(documentPath);
-    console.log('[r:forDocument] Project:', project?.root);
-    if (!project) {
-      console.log('[r:forDocument] No project found');
-      return null;
-    }
-
-    // Parse frontmatter from document
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
-
-    console.log('[r:forDocument] Calling rSessionService.getForDocument');
-    const result = await rSessionService.getForDocument(
-      documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
-    console.log('[r:forDocument] Result:', result);
-    return result;
-  } catch (e) {
-    console.error('[r:forDocument] Error:', e.message, e.stack);
-    return null;
-  }
-});
-
-// ============================================================================
-// JULIA SESSION SERVICE IPC HANDLERS
-// ============================================================================
-
-// List all Julia sessions
-ipcMain.handle('julia:list', () => {
-  return juliaSessionService.list();
-});
-
-// Start Julia session
-ipcMain.handle('julia:start', async (event, { config }) => {
-  try {
-    return await juliaSessionService.start(config);
-  } catch (e) {
-    console.error('[julia:start] Error:', e.message);
-    throw e;
-  }
-});
-
-// Stop Julia session
-ipcMain.handle('julia:stop', async (event, { sessionName }) => {
-  return juliaSessionService.stop(sessionName);
-});
-
-// Restart Julia session
-ipcMain.handle('julia:restart', async (event, { sessionName }) => {
-  try {
-    return await juliaSessionService.restart(sessionName);
-  } catch (e) {
-    console.error('[julia:restart] Error:', e.message);
-    throw e;
-  }
-});
-
-// Get or create Julia session for document
-ipcMain.handle('julia:forDocument', async (event, { documentPath }) => {
-  console.log('[julia:forDocument] Called with:', documentPath);
-  try {
-    const project = await projectService.getProject(documentPath);
-    console.log('[julia:forDocument] Project:', project?.root);
-    if (!project) {
-      console.log('[julia:forDocument] No project found');
-      return null;
-    }
-
-    // Parse frontmatter from document
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
-
-    console.log('[julia:forDocument] Calling juliaSessionService.getForDocument');
-    const result = await juliaSessionService.getForDocument(
-      documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
-    console.log('[julia:forDocument] Result:', result);
-    return result;
-  } catch (e) {
-    console.error('[julia:forDocument] Error:', e.message, e.stack);
-    return null;
-  }
-});
-
-// Check if Julia is available
-ipcMain.handle('julia:isAvailable', () => {
-  return juliaSessionService.isAvailable();
-});
-
-// ============================================================================
-// PTY SESSION SERVICE IPC HANDLERS (for ```term blocks)
-// ============================================================================
-
-// List all pty sessions
-ipcMain.handle('pty:list', () => {
-  return ptySessionService.list();
-});
-
-// Start pty session
-ipcMain.handle('pty:start', async (event, { config }) => {
-  try {
-    return await ptySessionService.start(config);
-  } catch (e) {
-    console.error('[pty:start] Error:', e.message);
-    return { error: e.message };
-  }
-});
-
-// Stop pty session
-ipcMain.handle('pty:stop', async (event, { sessionName }) => {
-  return ptySessionService.stop(sessionName);
-});
-
-// Restart pty session
-ipcMain.handle('pty:restart', async (event, { sessionName }) => {
-  try {
-    return await ptySessionService.restart(sessionName);
-  } catch (e) {
-    console.error('[pty:restart] Error:', e.message);
-    return { error: e.message };
-  }
-});
-
-// Get or create pty session for document
-ipcMain.handle('pty:forDocument', async (event, { documentPath }) => {
-  console.log('[pty:forDocument] Called with:', documentPath);
-  try {
-    const project = await projectService.getProject(documentPath);
-    console.log('[pty:forDocument] Project:', project?.root);
-    if (!project) {
-      console.log('[pty:forDocument] No project found');
-      return null;
-    }
-
-    // Parse frontmatter from document
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
-
-    console.log('[pty:forDocument] Calling ptySessionService.getForDocument');
-    const result = await ptySessionService.getForDocument(
-      documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
-    console.log('[pty:forDocument] Result:', result);
-    return result;
-  } catch (e) {
-    console.error('[pty:forDocument] Error:', e.message, e.stack);
-    return null;
-  }
-});
+// Per-language session IPC handlers removed.
+// All runtime lifecycle is handled through the unified runtime:* API below.
 
 // ============================================================================
 // PROJECT SERVICE IPC HANDLERS
@@ -1500,59 +1112,95 @@ ipcMain.handle('project:unwatch', (event) => {
 });
 
 // ============================================================================
-// SESSION SERVICE IPC HANDLERS
+// UNIFIED RUNTIME SERVICE IPC HANDLERS
+// ============================================================================
+// Single set of handlers for ALL languages (python, bash, r, julia, pty).
+// The renderer calls runtime:forDocument ONCE and gets back every runtime
+// the document needs.
 // ============================================================================
 
-// List all sessions
-ipcMain.handle('session:list', () => {
-  return sessionService.list();
+// List all running runtimes (optionally filtered by language)
+ipcMain.handle('runtime:list', (event, args) => {
+  return runtimeService.list(args?.language);
 });
 
-// Start session
-ipcMain.handle('session:start', async (event, { config }) => {
+// Start a runtime
+ipcMain.handle('runtime:start', async (event, { config }) => {
   try {
-    return await sessionService.start(config);
+    return await runtimeService.start(config);
   } catch (e) {
-    console.error('[session:start] Error:', e.message);
+    console.error('[runtime:start] Error:', e.message);
     throw e;
   }
 });
 
-// Stop session
-ipcMain.handle('session:stop', async (event, { sessionName }) => {
-  return sessionService.stop(sessionName);
+// Stop a runtime
+ipcMain.handle('runtime:stop', async (event, { sessionName }) => {
+  const success = await runtimeService.stop(sessionName);
+  return { success };
 });
 
-// Restart session
-ipcMain.handle('session:restart', async (event, { sessionName }) => {
+// Restart a runtime
+ipcMain.handle('runtime:restart', async (event, { sessionName }) => {
   try {
-    return await sessionService.restart(sessionName);
+    return await runtimeService.restart(sessionName);
   } catch (e) {
-    console.error('[session:restart] Error:', e.message);
+    console.error('[runtime:restart] Error:', e.message);
     throw e;
   }
 });
 
-// Get or create session for document
-ipcMain.handle('session:forDocument', async (event, { documentPath }) => {
+// Get or create ALL runtimes for a document (single call replaces 5 per-language calls)
+ipcMain.handle('runtime:forDocument', async (event, { documentPath }) => {
   try {
     const project = await projectService.getProject(documentPath);
     if (!project) return null;
 
-    // Parse frontmatter from document
     const content = fs.readFileSync(documentPath, 'utf8');
     const frontmatter = Project.parseFrontmatter(content);
 
-    return await sessionService.getForDocument(
+    return await runtimeService.getForDocument(
       documentPath,
       project.config,
       frontmatter,
       project.root
     );
   } catch (e) {
-    console.error('[session:forDocument] Error:', e.message);
+    console.error('[runtime:forDocument] Error:', e.message);
     return null;
   }
+});
+
+// Get or create runtime for a document for a SPECIFIC language
+ipcMain.handle('runtime:forDocumentLanguage', async (event, { documentPath, language }) => {
+  try {
+    const project = await projectService.getProject(documentPath);
+    if (!project) return null;
+
+    const content = fs.readFileSync(documentPath, 'utf8');
+    const frontmatter = Project.parseFrontmatter(content);
+
+    return await runtimeService.getForDocumentLanguage(
+      language,
+      documentPath,
+      project.config,
+      frontmatter,
+      project.root
+    );
+  } catch (e) {
+    console.error('[runtime:forDocumentLanguage] Error:', e.message);
+    return null;
+  }
+});
+
+// Check if a language is available
+ipcMain.handle('runtime:isAvailable', (event, { language }) => {
+  return runtimeService.isAvailable(language);
+});
+
+// List supported languages
+ipcMain.handle('runtime:languages', () => {
+  return runtimeService.supportedLanguages();
 });
 
 // ============================================================================
@@ -2003,21 +1651,12 @@ app.on('window-all-closed', () => {
     cleanupWindow(windowId);
   }
 
-  // Shutdown new session service
-  sessionService.shutdown();
+  // Shutdown all runtime sessions (python, bash, r, julia, pty)
+  runtimeService.shutdown();
 
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');
   }
-
-  // Shutdown bash sessions
-  bashSessionService.shutdown();
-
-  // Shutdown R sessions
-  rSessionService.shutdown();
-
-  // Shutdown Julia sessions
-  juliaSessionService.shutdown();
 
   // Shutdown Jupyter bridges
   for (const [ipynbPath, entry] of jupyterBridges) {
