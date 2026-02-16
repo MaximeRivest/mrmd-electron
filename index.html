@@ -15480,7 +15480,8 @@ session:
                   }
 
                   await new Promise(r => setTimeout(r, 150));
-                  const fresh = await electronAPI.runtime.forDocument(state.currentFile);
+                  const runtimeResponse = await electronAPI.runtime.forDocument(state.currentFile);
+                  const fresh = getPythonSessionFromRuntimeResponse(runtimeResponse);
                   if (!fresh?.alive || !fresh?.port) {
                     throw new Error('Runtime recovered but session is not ready yet');
                   }
@@ -15962,6 +15963,19 @@ session:
     }
 
     /**
+     * Normalize runtime.forDocument() response shape.
+     * New unified API returns { python, bash, r, julia, pty }.
+     * Legacy paths may return just the Python session object.
+     */
+    function getPythonSessionFromRuntimeResponse(runtimeResponse) {
+      if (!runtimeResponse || typeof runtimeResponse !== 'object') return null;
+      if (runtimeResponse.python && typeof runtimeResponse.python === 'object') {
+        return runtimeResponse.python;
+      }
+      return runtimeResponse;
+    }
+
+    /**
      * Resolve and optionally auto-start session for current project
      * If no project exists, auto-detect common venv locations
      */
@@ -15974,7 +15988,8 @@ session:
 
       try {
         // Get session config from project
-        const sessionConfig = await electronAPI.runtime.forDocument(state.currentFile);
+        const runtimeResponse = await electronAPI.runtime.forDocument(state.currentFile);
+        const sessionConfig = getPythonSessionFromRuntimeResponse(runtimeResponse);
 
         if (sessionConfig) {
           state.session.config = sessionConfig;
@@ -16068,6 +16083,7 @@ session:
         : language.charAt(0).toUpperCase() + language.slice(1);
 
       const isPython = ['python', 'py', 'python3'].includes(language.toLowerCase());
+      const isCloudRuntimeUX = Boolean(window.MRMD_SERVER_URL || (window.location?.pathname || '').includes('/u/'));
 
       prompt.innerHTML = `
         <button class="no-runtime-prompt-dismiss" onclick="hideNoRuntimePrompt()">×</button>
@@ -16076,31 +16092,45 @@ session:
             <path d="M8 1v8M8 12v2"/>
             <circle cx="8" cy="8" r="7"/>
           </svg>
-          <span>No ${langLabel} environment found</span>
+          <span>No ${langLabel} runtime ready</span>
         </div>
         <div class="no-runtime-prompt-actions" id="no-runtime-actions">
           ${isPython ? `
             <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
               Start Python runtime
             </button>
-            <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
-              Restart runtimes
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
-              Create .venv
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
-              Choose existing...
-            </button>
+            ${isCloudRuntimeUX ? `
+              <button class="no-runtime-prompt-btn" onclick="toggleNoRuntimeAdvanced()">
+                More options...
+              </button>
+              <div id="no-runtime-advanced" style="display:none; width: 100%; margin-top: 8px;">
+                <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
+                  Restart runtimes
+                </button>
+                <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
+                  Create .venv
+                </button>
+                <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
+                  Choose existing...
+                </button>
+              </div>
+            ` : `
+              <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
+                Restart runtimes
+              </button>
+              <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
+                Create .venv
+              </button>
+              <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
+                Choose existing...
+              </button>
+            `}
             <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
               Dismiss
             </button>
           ` : `
             <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
               Start ${langLabel} runtime
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
-              Restart runtimes
             </button>
             <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
               Dismiss
@@ -16132,6 +16162,15 @@ session:
         existing.remove();
       }
       noRuntimePrompt = null;
+    }
+
+    /**
+     * Toggle advanced no-runtime actions (cloud UI keeps this collapsed by default)
+     */
+    function toggleNoRuntimeAdvanced() {
+      const panel = document.getElementById('no-runtime-advanced');
+      if (!panel) return;
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     }
 
     /**
