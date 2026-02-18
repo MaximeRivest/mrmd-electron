@@ -242,10 +242,48 @@
       position: relative;
     }
 
+    .titlebar-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 55%;
+      min-width: 0;
+    }
+
     .titlebar-title {
       font-size: 13px;
       color: var(--text-dim);
       font-weight: 400;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cloud-status-pill {
+      -webkit-app-region: no-drag;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-dim);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      line-height: 1.2;
+      white-space: nowrap;
+      user-select: none;
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cloud-status-pill.online {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      color: var(--text);
+    }
+
+    .cloud-status-pill.error {
+      border-color: color-mix(in srgb, #d44 55%, var(--border));
+      color: #d44;
     }
 
     .titlebar-btn {
@@ -1303,6 +1341,159 @@
       background: var(--hover-bg);
     }
 
+    .cloud-account-summary {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+
+    .cloud-account-summary.connected {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+    }
+
+    .cloud-account-user,
+    .cloud-sync-summary {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .cloud-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .cloud-btn {
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+
+    .cloud-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .cloud-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .cloud-btn-primary {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
+      color: var(--text);
+    }
+
+    .cloud-error {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #d44;
+      line-height: 1.4;
+    }
+
+    .cloud-status-pill {
+      cursor: pointer;
+    }
+
+    .home-cloud-card {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .home-cloud-card:last-child {
+      border-bottom: 0;
+    }
+
+    .home-cloud-title {
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .home-cloud-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .cloud-diagnostics-modal {
+      width: min(900px, calc(100vw - 48px));
+      max-height: 80vh;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .cloud-diagnostics-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .cloud-diagnostics-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .cloud-diagnostics-close {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    .cloud-diagnostics-close:hover {
+      color: var(--text);
+    }
+
+    .cloud-diagnostics-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cloud-diagnostics-json {
+      margin: 0;
+      padding: 14px 16px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg-primary);
+      flex: 1;
+      white-space: pre;
+    }
+
     .help-snippet-block {
       margin: 8px 0 0;
       border: 1px solid var(--border);
@@ -2081,6 +2272,12 @@
 
     .home-section-action:hover {
       background: var(--hover-bg);
+    }
+
+    .home-section-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .home-section-content {
@@ -4029,6 +4226,12 @@
         -webkit-backdrop-filter: blur(12px);
       }
 
+      .titlebar-center {
+        flex: 1;
+        justify-content: center;
+        max-width: none;
+      }
+
       .titlebar-title {
         font-size: 14px;
         font-weight: 500;
@@ -4039,6 +4242,10 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         padding: 0 4px;
+      }
+
+      .cloud-status-pill {
+        display: none;
       }
 
       /* Hide desktop rail toggle on mobile */
@@ -5212,7 +5419,10 @@
         </svg>
       </button>
 
-      <span class="titlebar-title" id="titlebar-title">mrmd</span>
+      <div class="titlebar-center">
+        <span class="titlebar-title" id="titlebar-title">mrmd</span>
+        <span class="cloud-status-pill" id="cloud-status-pill" title="Cloud sync status">Cloud: offline</span>
+      </div>
 
       <!-- Mobile: search + AI (right) — hidden on desktop -->
       <div class="titlebar-mobile-actions">
@@ -5514,6 +5724,20 @@ session:
             <span class="rail-panel-item-meta" id="settings-theme">github</span>
           </div>
         </div>
+
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Cloud Sync</div>
+          <div class="cloud-account-summary" id="cloud-account-summary">Checking cloud status...</div>
+          <div class="cloud-account-user" id="cloud-account-user" style="display: none;"></div>
+          <div class="cloud-sync-summary" id="cloud-sync-summary" style="display: none;"></div>
+          <div class="cloud-actions">
+            <button class="cloud-btn cloud-btn-primary" id="cloud-signin-btn">Sign in to markco.dev</button>
+            <button class="cloud-btn cloud-btn-secondary" id="cloud-signout-btn" style="display: none;">Sign out</button>
+            <button class="cloud-btn cloud-btn-secondary" id="cloud-refresh-btn">Refresh</button>
+            <button class="cloud-btn cloud-btn-secondary" id="cloud-diagnostics-open">Diagnostics</button>
+          </div>
+          <div class="cloud-error" id="cloud-error" style="display: none;"></div>
+        </div>
       </div>
     </div>
 
@@ -5682,6 +5906,20 @@ session:
           </div>
           <div class="home-section-content" id="home-recent-projects">
             <div class="home-empty">No recent projects</div>
+          </div>
+        </div>
+
+        <!-- Cloud Sync -->
+        <div class="home-section">
+          <div class="home-section-header">
+            <span class="home-section-title">Cloud Sync</span>
+            <div class="home-section-actions">
+              <button class="home-section-action" onclick="refreshHomeCloudStatus()">Refresh</button>
+              <button class="home-section-action" onclick="openCloudDiagnostics()">Diagnostics</button>
+            </div>
+          </div>
+          <div class="home-section-content" id="home-cloud-status">
+            <div class="home-empty">Checking cloud status...</div>
           </div>
         </div>
       </div>
@@ -5868,6 +6106,22 @@ session:
         <button class="settings-btn settings-btn-secondary" id="ai-settings-reset">Reset to Defaults</button>
         <button class="settings-btn settings-btn-primary" id="ai-settings-done">Done</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Cloud Diagnostics Modal -->
+  <div class="modal-overlay" id="cloud-diagnostics-overlay">
+    <div class="cloud-diagnostics-modal">
+      <div class="cloud-diagnostics-header">
+        <span class="cloud-diagnostics-title">Cloud Diagnostics</span>
+        <button class="cloud-diagnostics-close" id="cloud-diagnostics-close" title="Close">&times;</button>
+      </div>
+      <div class="cloud-diagnostics-toolbar">
+        <button class="cloud-btn cloud-btn-secondary" id="cloud-diagnostics-refresh">Refresh</button>
+        <button class="cloud-btn cloud-btn-secondary" id="cloud-diagnostics-copy">Copy JSON</button>
+        <button class="cloud-btn cloud-btn-primary" id="cloud-diagnostics-signin">Sign in</button>
+      </div>
+      <pre class="cloud-diagnostics-json" id="cloud-diagnostics-json">Loading diagnostics...</pre>
     </div>
   </div>
 
@@ -9804,6 +10058,15 @@ session:
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
 
+        // Ensure this document is added to the cloud bridge (if signed in).
+        if (window.electronAPI?.cloud?.bridgeDoc) {
+          try {
+            await window.electronAPI.cloud.bridgeDoc(projectDir, docName);
+          } catch (err) {
+            console.warn('[cloud] Failed to bridge doc:', err.message);
+          }
+        }
+
         // Bidirectional title<->filename sync (frontmatter title only)
         if (typeof state.editor.onFrontmatterTitleCommit === 'function') {
           state.editor.onFrontmatterTitleCommit((title) => {
@@ -10041,6 +10304,7 @@ session:
         if (themeEl && statusTheme) {
           themeEl.textContent = statusTheme.textContent;
         }
+        refreshCloudStatus({ silent: true });
       }
     }
 
@@ -11766,6 +12030,7 @@ session:
       renderHomeRecentFiles();
       renderHomeRecentProjects();
       renderHomeRuntimes();
+      refreshHomeCloudStatus();
     }
 
     /**
@@ -13441,6 +13706,8 @@ session:
     document.addEventListener('DOMContentLoaded', () => {
       initAiPanel();
       initAiSettingsModal();
+      initCloudUi();
+      initCloudDiagnosticsModal();
     });
 
     // =========================================================================
@@ -16965,6 +17232,383 @@ python: .venv
       }
       themeMenuOpen = false;
       document.removeEventListener('click', closeThemePickerOnOutsideClick);
+    }
+
+    // =========================================================================
+    // CLOUD ACCOUNT + SYNC UI
+    // =========================================================================
+
+    let cloudUiInitialized = false;
+    let cloudDiagnosticsInitialized = false;
+    let cloudStatusRefreshTimer = null;
+    let lastCloudStatus = null;
+
+    function hasCloudApi() {
+      return Boolean(window.electronAPI?.cloud?.status);
+    }
+
+    function setCloudError(message) {
+      const errEl = document.getElementById('cloud-error');
+      if (!errEl) return;
+      if (!message) {
+        errEl.style.display = 'none';
+        errEl.textContent = '';
+        return;
+      }
+      errEl.style.display = 'block';
+      errEl.textContent = message;
+    }
+
+    function setCloudButtonState({ signingIn = false, signingOut = false } = {}) {
+      const signInBtn = document.getElementById('cloud-signin-btn');
+      const signOutBtn = document.getElementById('cloud-signout-btn');
+      const refreshBtn = document.getElementById('cloud-refresh-btn');
+      const diagnosticsBtn = document.getElementById('cloud-diagnostics-open');
+      if (!signInBtn || !signOutBtn || !refreshBtn) return;
+
+      signInBtn.disabled = signingIn || signingOut;
+      signOutBtn.disabled = signingIn || signingOut;
+      refreshBtn.disabled = signingIn || signingOut;
+      if (diagnosticsBtn) diagnosticsBtn.disabled = signingIn || signingOut;
+
+      if (signingIn) signInBtn.textContent = 'Signing in...';
+      else signInBtn.textContent = 'Sign in to markco.dev';
+
+      if (signingOut) signOutBtn.textContent = 'Signing out...';
+      else signOutBtn.textContent = 'Sign out';
+    }
+
+    function renderCloudBadge({ signedIn = false, totals = null, error = null } = {}) {
+      const pill = document.getElementById('cloud-status-pill');
+      if (!pill) return;
+
+      pill.classList.remove('online', 'error');
+
+      if (error) {
+        pill.classList.add('error');
+        pill.textContent = 'Cloud: error';
+        pill.title = `Cloud status error: ${error}`;
+        return;
+      }
+
+      if (!signedIn) {
+        pill.textContent = 'Cloud: offline';
+        pill.title = 'Not signed in to markco.dev';
+        return;
+      }
+
+      const docs = typeof totals?.documents === 'number' ? totals.documents : 0;
+      const connected = typeof totals?.connectedDocuments === 'number' ? totals.connectedDocuments : null;
+
+      pill.classList.add('online');
+      pill.textContent = connected == null
+        ? `Cloud: ${docs} docs`
+        : `Cloud: ${connected}/${docs} docs`;
+      pill.title = 'Signed in to markco.dev';
+    }
+
+    function renderCloudStatus(status) {
+      const summaryEl = document.getElementById('cloud-account-summary');
+      const userEl = document.getElementById('cloud-account-user');
+      const syncEl = document.getElementById('cloud-sync-summary');
+      const signInBtn = document.getElementById('cloud-signin-btn');
+      const signOutBtn = document.getElementById('cloud-signout-btn');
+
+      if (!summaryEl || !userEl || !syncEl || !signInBtn || !signOutBtn) return;
+
+      const signedIn = Boolean(status?.signedIn);
+      const user = status?.user || null;
+      const sync = status?.syncStatus || null;
+      const totals = sync?.totals || null;
+
+      renderCloudBadge({ signedIn, totals });
+      summaryEl.classList.toggle('connected', signedIn);
+
+      if (!signedIn) {
+        summaryEl.textContent = 'Not signed in. Local editing works, but cloud sync is disabled.';
+        userEl.style.display = 'none';
+        syncEl.style.display = 'none';
+        signInBtn.style.display = '';
+        signOutBtn.style.display = 'none';
+        return;
+      }
+
+      summaryEl.textContent = 'Connected to markco.dev';
+      userEl.style.display = '';
+      userEl.textContent = `${user?.name || user?.email || 'Unknown user'}${user?.email ? ` (${user.email})` : ''}`;
+
+      const projects = Array.isArray(sync?.projects) ? sync.projects : [];
+      const docs = typeof totals?.documents === 'number'
+        ? totals.documents
+        : projects.reduce((acc, p) => acc + (Array.isArray(p.documents) ? p.documents.length : 0), 0);
+      const connected = typeof totals?.connectedDocuments === 'number' ? totals.connectedDocuments : null;
+
+      syncEl.style.display = '';
+      syncEl.textContent = connected == null
+        ? `Background sync: ${projects.length} project${projects.length === 1 ? '' : 's'}, ${docs} document${docs === 1 ? '' : 's'} bridged.`
+        : `Background sync: ${connected}/${docs} document bridges connected across ${projects.length} project${projects.length === 1 ? '' : 's'}.`;
+
+      signInBtn.style.display = 'none';
+      signOutBtn.style.display = '';
+    }
+
+    function renderHomeCloudStatusFromStatus(status) {
+      const container = document.getElementById('home-cloud-status');
+      if (!container) return;
+
+      const signedIn = Boolean(status?.signedIn);
+      const user = status?.user || null;
+      const sync = status?.syncStatus || null;
+      const totals = sync?.totals || {};
+
+      if (!signedIn) {
+        container.innerHTML = `
+          <div class="home-cloud-card">
+            <div class="home-cloud-title">Not signed in</div>
+            <div class="home-cloud-meta">Cloud sync is disabled. Sign in to sync documents between desktop and markco.dev.</div>
+          </div>
+          <div class="home-cloud-card">
+            <button class="cloud-btn cloud-btn-primary" onclick="openSettingsCloud()">Open Cloud Settings</button>
+          </div>
+        `;
+        return;
+      }
+
+      const docs = typeof totals.documents === 'number' ? totals.documents : 0;
+      const connectedDocs = typeof totals.connectedDocuments === 'number' ? totals.connectedDocuments : docs;
+      const projects = typeof totals.projects === 'number' ? totals.projects : (Array.isArray(sync?.projects) ? sync.projects.length : 0);
+
+      container.innerHTML = `
+        <div class="home-cloud-card">
+          <div class="home-cloud-title">Connected as ${escapeHtml(user?.name || user?.email || 'unknown')}</div>
+          <div class="home-cloud-meta">${escapeHtml(user?.email || '')}</div>
+        </div>
+        <div class="home-cloud-card">
+          <div class="home-cloud-title">Bridge Health</div>
+          <div class="home-cloud-meta">${connectedDocs}/${docs} documents connected across ${projects} project${projects === 1 ? '' : 's'}.</div>
+        </div>
+        <div class="home-cloud-card">
+          <button class="cloud-btn cloud-btn-secondary" onclick="openCloudDiagnostics()">Open Diagnostics</button>
+        </div>
+      `;
+    }
+
+    async function refreshHomeCloudStatus() {
+      if (!hasCloudApi()) {
+        const container = document.getElementById('home-cloud-status');
+        if (container) container.innerHTML = '<div class="home-empty">Cloud API unavailable</div>';
+        return;
+      }
+
+      try {
+        const status = lastCloudStatus || await window.electronAPI.cloud.status();
+        renderHomeCloudStatusFromStatus(status);
+      } catch (err) {
+        const container = document.getElementById('home-cloud-status');
+        if (container) {
+          container.innerHTML = `<div class="home-empty">Cloud status error: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+    }
+
+    function openSettingsCloud() {
+      closeCloudDiagnostics();
+      if (homeViewActive) hideHomeView();
+      openRail();
+      openPanel('settings');
+      refreshCloudStatus({ silent: true });
+    }
+
+    async function refreshCloudStatus({ silent = false } = {}) {
+      if (!hasCloudApi()) {
+        renderCloudBadge({ error: 'Cloud API unavailable' });
+        if (!silent) setCloudError('Cloud API not available in this build.');
+        return;
+      }
+
+      try {
+        const status = await window.electronAPI.cloud.status();
+        lastCloudStatus = status;
+        renderCloudStatus(status);
+        if (homeViewActive) renderHomeCloudStatusFromStatus(status);
+        if (!silent) setCloudError('');
+      } catch (err) {
+        console.warn('[cloud-ui] Failed to load cloud status:', err.message);
+        lastCloudStatus = null;
+        renderCloudBadge({ error: err.message });
+        if (homeViewActive) {
+          const container = document.getElementById('home-cloud-status');
+          if (container) container.innerHTML = `<div class="home-empty">Cloud status error: ${escapeHtml(err.message)}</div>`;
+        }
+        if (!silent) setCloudError(`Could not load cloud status: ${err.message}`);
+      }
+    }
+
+    function initCloudUi() {
+      if (cloudUiInitialized) return;
+      cloudUiInitialized = true;
+
+      const summaryEl = document.getElementById('cloud-account-summary');
+      const signInBtn = document.getElementById('cloud-signin-btn');
+      const signOutBtn = document.getElementById('cloud-signout-btn');
+      const refreshBtn = document.getElementById('cloud-refresh-btn');
+      const diagnosticsBtn = document.getElementById('cloud-diagnostics-open');
+      const statusPill = document.getElementById('cloud-status-pill');
+
+      if (!summaryEl || !signInBtn || !signOutBtn || !refreshBtn) return;
+
+      if (!hasCloudApi()) {
+        summaryEl.textContent = 'Cloud features are unavailable in this runtime.';
+        renderCloudBadge({ error: 'Cloud API unavailable' });
+        signInBtn.disabled = true;
+        signOutBtn.disabled = true;
+        refreshBtn.disabled = true;
+        if (diagnosticsBtn) diagnosticsBtn.disabled = true;
+        return;
+      }
+
+      signInBtn.addEventListener('click', async () => {
+        setCloudError('');
+        setCloudButtonState({ signingIn: true });
+        try {
+          await window.electronAPI.cloud.signIn();
+          await refreshCloudStatus();
+        } catch (err) {
+          if (!String(err?.message || '').includes('window was closed')) {
+            setCloudError(`Sign-in failed: ${err.message}`);
+          }
+        } finally {
+          setCloudButtonState();
+        }
+      });
+
+      signOutBtn.addEventListener('click', async () => {
+        setCloudError('');
+        setCloudButtonState({ signingOut: true });
+        try {
+          await window.electronAPI.cloud.signOut();
+          await refreshCloudStatus();
+        } catch (err) {
+          setCloudError(`Sign-out failed: ${err.message}`);
+        } finally {
+          setCloudButtonState();
+        }
+      });
+
+      refreshBtn.addEventListener('click', async () => {
+        setCloudError('');
+        await refreshCloudStatus();
+      });
+
+      diagnosticsBtn?.addEventListener('click', () => {
+        openCloudDiagnostics();
+      });
+
+      statusPill?.addEventListener('click', () => {
+        openCloudDiagnostics();
+      });
+
+      // Initial load + periodic refresh so titlebar/home status stays current.
+      refreshCloudStatus({ silent: true });
+      if (!cloudStatusRefreshTimer) {
+        cloudStatusRefreshTimer = setInterval(() => {
+          refreshCloudStatus({ silent: true });
+        }, 10000);
+      }
+    }
+
+    async function refreshCloudDiagnostics() {
+      const jsonEl = document.getElementById('cloud-diagnostics-json');
+      const signInBtn = document.getElementById('cloud-diagnostics-signin');
+      if (!jsonEl) return;
+
+      if (!hasCloudApi()) {
+        jsonEl.textContent = JSON.stringify({ error: 'Cloud API unavailable' }, null, 2);
+        if (signInBtn) signInBtn.style.display = 'none';
+        return;
+      }
+
+      try {
+        const status = await window.electronAPI.cloud.status();
+        const validate = await window.electronAPI.cloud.validate();
+        const diagnostics = {
+          timestamp: new Date().toISOString(),
+          currentFile: state.currentFile || null,
+          projectRoot: state.project?.root || null,
+          homeViewActive,
+          status,
+          validate,
+        };
+        jsonEl.textContent = JSON.stringify(diagnostics, null, 2);
+        if (signInBtn) signInBtn.style.display = status?.signedIn ? 'none' : '';
+      } catch (err) {
+        jsonEl.textContent = JSON.stringify({ error: err.message }, null, 2);
+        if (signInBtn) signInBtn.style.display = '';
+      }
+    }
+
+    function closeCloudDiagnostics() {
+      const overlay = document.getElementById('cloud-diagnostics-overlay');
+      overlay?.classList.remove('visible');
+    }
+
+    async function openCloudDiagnostics() {
+      initCloudDiagnosticsModal();
+      const overlay = document.getElementById('cloud-diagnostics-overlay');
+      overlay?.classList.add('visible');
+      await refreshCloudDiagnostics();
+    }
+
+    function initCloudDiagnosticsModal() {
+      if (cloudDiagnosticsInitialized) return;
+      cloudDiagnosticsInitialized = true;
+
+      const overlay = document.getElementById('cloud-diagnostics-overlay');
+      const closeBtn = document.getElementById('cloud-diagnostics-close');
+      const refreshBtn = document.getElementById('cloud-diagnostics-refresh');
+      const copyBtn = document.getElementById('cloud-diagnostics-copy');
+      const signInBtn = document.getElementById('cloud-diagnostics-signin');
+      const jsonEl = document.getElementById('cloud-diagnostics-json');
+
+      closeBtn?.addEventListener('click', closeCloudDiagnostics);
+      overlay?.addEventListener('click', (e) => {
+        if (e.target === overlay) closeCloudDiagnostics();
+      });
+
+      refreshBtn?.addEventListener('click', () => {
+        refreshCloudDiagnostics();
+      });
+
+      copyBtn?.addEventListener('click', async () => {
+        if (!jsonEl) return;
+        try {
+          await navigator.clipboard.writeText(jsonEl.textContent || '');
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => { copyBtn.textContent = 'Copy JSON'; }, 1200);
+        } catch {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(() => { copyBtn.textContent = 'Copy JSON'; }, 1200);
+        }
+      });
+
+      signInBtn?.addEventListener('click', async () => {
+        try {
+          await window.electronAPI.cloud.signIn();
+          await refreshCloudStatus();
+          await refreshCloudDiagnostics();
+        } catch (err) {
+          const jsonEl = document.getElementById('cloud-diagnostics-json');
+          if (jsonEl) {
+            jsonEl.textContent = JSON.stringify({ error: `Sign-in failed: ${err.message}` }, null, 2);
+          }
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay?.classList.contains('visible')) {
+          closeCloudDiagnostics();
+        }
+      });
     }
 
     function importThemeFile() {

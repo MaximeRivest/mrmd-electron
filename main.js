@@ -153,6 +153,88 @@ const assetService = new AssetService(fileService);
 const settingsService = new SettingsService();
 
 // ============================================================================
+// CLOUD AUTH + SYNC
+// ============================================================================
+
+import { CloudAuth } from './src/cloud-auth.js';
+import { CloudSync } from './src/cloud-sync.js';
+
+const cloudAuth = new CloudAuth(settingsService);
+let cloudSync = null; // Initialized after sign-in
+
+/**
+ * Start background cloud sync if signed in.
+ * Called on app startup and after sign-in.
+ */
+async function startCloudSyncIfReady() {
+  if (cloudSync) return; // Already running
+
+  const token = cloudAuth.getToken();
+  const user = cloudAuth.getUser();
+  if (!token || !user) return;
+
+  // Validate token is still good
+  const validated = await cloudAuth.validate();
+  if (!validated) return;
+
+  cloudSync = new CloudSync({
+    cloudUrl: cloudAuth.cloudUrl,
+    token,
+    userId: user.id,
+    runtimeService, // Expose local runtimes to the web editor via tunnel
+  });
+
+  console.log(`[cloud] Background sync ready for ${user.name || user.email}`);
+
+  // Bridge any already-running sync servers
+  for (const [, server] of syncServers) {
+    if (server.port && server.dir) {
+      const projectName = path.basename(server.dir);
+      // Discover doc names from the directory
+      const docs = discoverDocNames(server.dir);
+      cloudSync.bridgeProject(server.port, server.dir, projectName, docs);
+    }
+  }
+}
+
+/**
+ * Convert an absolute file path into an mrmd doc name.
+ * Example: /project/docs/intro.qmd -> docs/intro
+ */
+function docNameFromPath(filePath, projectDir) {
+  const rel = path.relative(projectDir, filePath).replace(/\\/g, '/');
+  const normalized = rel.replace(/^\.\//, '');
+
+  if (normalized.endsWith('.qmd')) return normalized.slice(0, -4);
+  if (normalized.endsWith('.md')) return normalized.slice(0, -3);
+  return normalized;
+}
+
+/**
+ * Discover .md/.qmd document names in a project directory.
+ */
+function discoverDocNames(projectDir) {
+  const docs = [];
+  try {
+    const walk = (dir) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.name.startsWith('.') || entry.name === 'node_modules' ||
+            entry.name === '.venv' || entry.name === '__pycache__') continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (entry.name.endsWith('.md') || entry.name.endsWith('.qmd')) {
+          docs.push(docNameFromPath(full, projectDir));
+        }
+      }
+    };
+    walk(projectDir);
+  } catch { /* ignore scan errors */ }
+  return docs;
+}
+
+// ============================================================================
 // RECENT FILES/VENVS PERSISTENCE
 // ============================================================================
 
@@ -477,6 +559,14 @@ async function getSyncServer(projectDir) {
 
   const server = { proc, port, dir: projectDir, refCount: 1, owned: true };
   syncServers.set(dirHash, server);
+
+  // Auto-bridge to cloud sync if signed in
+  if (cloudSync && port) {
+    const projectName = path.basename(projectDir);
+    const docs = discoverDocNames(projectDir);
+    cloudSync.bridgeProject(port, projectDir, projectName, docs);
+  }
+
   return server;
 }
 
@@ -486,11 +576,22 @@ function releaseSyncServer(projectDir) {
   if (!server) return;
 
   server.refCount--;
-  if (server.refCount <= 0 && server.owned && server.proc) {
-    console.log(`[sync] Stopping server for ${projectDir}`);
-    server.proc.expectedExit = true;
-    server.proc.kill('SIGTERM');
-    syncServers.delete(dirHash);
+  if (server.refCount <= 0) {
+    // Stop cloud bridges for this project once no windows reference it.
+    if (cloudSync) {
+      cloudSync.stopProject(projectDir).catch((err) => {
+        console.warn(`[cloud] Failed to stop project bridge ${projectDir}:`, err.message);
+      });
+    }
+
+    if (server.owned && server.proc) {
+      console.log(`[sync] Stopping server for ${projectDir}`);
+      server.proc.expectedExit = true;
+      server.proc.kill('SIGTERM');
+      syncServers.delete(dirHash);
+    } else {
+      syncServers.delete(dirHash);
+    }
   }
 }
 
@@ -877,9 +978,7 @@ ipcMain.handle('start-python', async (event, { venvPath, forceNew }) => {
 ipcMain.handle('open-file', async (event, { filePath }) => {
   const windowId = BrowserWindow.fromWebContents(event.sender).id;
   const projectDir = path.dirname(filePath);
-  const fileName = path.basename(filePath);
-  const ext = path.extname(fileName).toLowerCase();
-  const docName = ext === '.md' ? fileName.replace(/\.md$/i, '') : fileName;
+  const docName = docNameFromPath(filePath, projectDir);
 
   try {
     const sync = await getSyncServer(projectDir);
@@ -898,6 +997,11 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
     if (!state.monitors.has(docName)) {
       const monitor = startMonitor(docName, sync.port);
       state.monitors.set(docName, monitor);
+    }
+
+    // Ensure this document is bridged if cloud sync is active.
+    if (cloudSync) {
+      cloudSync.bridgeDoc(projectDir, docName);
     }
 
     addRecentFile(filePath);
@@ -1646,6 +1750,57 @@ app.whenReady().then(async () => {
   });
 });
 
+// ============================================================================
+// CLOUD AUTH IPC HANDLERS
+// ============================================================================
+
+ipcMain.handle('cloud:status', async () => {
+  const user = cloudAuth.getUser();
+  return {
+    signedIn: cloudAuth.isSignedIn(),
+    user,
+    syncStatus: cloudSync?.getStatus() || null,
+  };
+});
+
+ipcMain.handle('cloud:signIn', async () => {
+  const result = await cloudAuth.signIn();
+  await startCloudSyncIfReady();
+  return result;
+});
+
+ipcMain.handle('cloud:signOut', async () => {
+  if (cloudSync) {
+    await cloudSync.stopAll();
+    cloudSync = null;
+  }
+  await cloudAuth.signOut();
+  return { ok: true };
+});
+
+ipcMain.handle('cloud:validate', async () => {
+  const user = await cloudAuth.validate();
+  return { valid: Boolean(user), user };
+});
+
+ipcMain.handle('cloud:bridgeDoc', async (_event, { projectDir, docName }) => {
+  if (!cloudSync) return { ok: false, reason: 'not-signed-in' };
+  if (!projectDir || !docName) return { ok: false, reason: 'invalid-params' };
+  try {
+    cloudSync.bridgeDoc(projectDir, docName);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+// Start cloud sync on app ready (if already signed in)
+app.whenReady().then(() => {
+  startCloudSyncIfReady().catch(err => {
+    console.warn('[cloud] Background sync init failed:', err.message);
+  });
+});
+
 app.on('window-all-closed', () => {
   for (const [windowId] of windowStates) {
     cleanupWindow(windowId);
@@ -1653,6 +1808,13 @@ app.on('window-all-closed', () => {
 
   // Shutdown all runtime sessions (python, bash, r, julia, pty)
   runtimeService.shutdown();
+
+  if (cloudSync) {
+    cloudSync.stopAll().catch((err) => {
+      console.warn('[cloud] Failed to stop all bridges during shutdown:', err.message);
+    });
+    cloudSync = null;
+  }
 
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');

@@ -1,0 +1,308 @@
+/**
+ * Runtime Tunnel Provider — exposes local MRP servers to the cloud relay
+ *
+ * When connected to markco.dev via CloudSync, this module opens a persistent
+ * WebSocket to the relay as a "provider". The web editor (phone/tablet) sends
+ * MRP traffic through the tunnel to this machine's local runtimes (mrmd-python,
+ * mrmd-bash, mrmd-pty, mrmd-monitor, mrmd-sync, etc.) instead of the server's.
+ *
+ * The tunnel is transparent: HTTP request/response pairs and WebSocket sessions
+ * are multiplexed over a single WebSocket connection. The web editor's proxy
+ * layer just routes to the tunnel instead of 127.0.0.1.
+ *
+ * Protocol (JSON text messages, multiplexed):
+ *
+ * ── Runtime discovery ──
+ *   → {t:"start-runtime", id, language, documentPath, projectRoot, projectConfig, frontmatter}
+ *   ← {t:"runtime-started", id, runtimes: {python:{port,...}, bash:{port,...}, ...}}
+ *   ← {t:"runtime-error", id, error}
+ *   ← {t:"provider-info", capabilities:[...]}
+ *
+ * ── HTTP proxy (for /proxy/:port/*) ──
+ *   → {t:"http-req", id, port, method, path, headers, body}
+ *   ← {t:"http-res", id, status, headers}
+ *   ← {t:"http-chunk", id, data}        — streamed body chunk (SSE, etc.)
+ *   ← {t:"http-end", id}                — response complete
+ *   ← {t:"http-error", id, error}
+ *
+ * ── WebSocket proxy (for /sync/:port/*) ──
+ *   → {t:"ws-open", id, port, path}
+ *   ← {t:"ws-opened", id}
+ *   ↔ {t:"ws-msg", id, data, bin}       — binary flag; data is base64 if bin=true
+ *   → {t:"ws-close", id}
+ *   ← {t:"ws-close", id, code, reason}
+ *   ← {t:"ws-error", id, error}
+ */
+
+import { WebSocket } from 'ws';
+
+export class RuntimeTunnel {
+  /**
+   * @param {object} opts
+   * @param {string} opts.relayUrl - WebSocket URL (e.g. 'wss://markco.dev')
+   * @param {string} opts.userId - User UUID
+   * @param {string} opts.token - Session token for authentication
+   * @param {object} opts.runtimeService - RuntimeService instance (for starting runtimes)
+   */
+  constructor(opts) {
+    this.relayUrl = opts.relayUrl;
+    this.userId = opts.userId;
+    this.token = opts.token;
+    this.runtimeService = opts.runtimeService;
+    this.ws = null;
+    this._destroyed = false;
+    this._reconnectTimer = null;
+    this._connected = false;
+
+    /** @type {Map<string, WebSocket>} id → local WebSocket */
+    this._wsSessions = new Map();
+
+    /** @type {Map<string, AbortController>} id → HTTP abort controller */
+    this._httpSessions = new Map();
+  }
+
+  start() {
+    this._connect();
+  }
+
+  _connect() {
+    if (this._destroyed) return;
+
+    const url = `${this.relayUrl}/tunnel/${encodeURIComponent(this.userId)}?role=provider&token=${encodeURIComponent(this.token)}`;
+    try {
+      this.ws = new WebSocket(url, {
+        headers: {
+          'X-User-Id': this.userId,
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+    } catch {
+      this._scheduleReconnect();
+      return;
+    }
+
+    this.ws.on('open', () => {
+      this._connected = true;
+      console.log('[runtime-tunnel] Connected to relay as provider');
+
+      // Advertise capabilities
+      const languages = this.runtimeService.supportedLanguages?.() || [];
+      this._send({
+        t: 'provider-info',
+        capabilities: languages,
+      });
+    });
+
+    this.ws.on('message', (data) => {
+      try {
+        const msg = JSON.parse(typeof data === 'string' ? data : data.toString());
+        this._handleMessage(msg);
+      } catch (err) {
+        console.error('[runtime-tunnel] Bad message:', err.message);
+      }
+    });
+
+    this.ws.on('close', () => {
+      this._connected = false;
+      this._cleanupAll();
+      if (!this._destroyed) this._scheduleReconnect();
+    });
+
+    this.ws.on('error', () => { /* handled by close */ });
+  }
+
+  _scheduleReconnect() {
+    if (this._destroyed || this._reconnectTimer) return;
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      this._connect();
+    }, 5000);
+  }
+
+  _send(obj) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      try { this.ws.send(JSON.stringify(obj)); } catch { /* ignore */ }
+    }
+  }
+
+  _handleMessage(msg) {
+    switch (msg.t) {
+      case 'start-runtime':   return this._handleStartRuntime(msg);
+      case 'http-req':        return this._handleHttpReq(msg);
+      case 'ws-open':         return this._handleWsOpen(msg);
+      case 'ws-msg':          return this._handleWsMsg(msg);
+      case 'ws-close':        return this._handleWsClose(msg);
+      case 'provider-status': return; // ignore, for consumers
+      default: return; // unknown
+    }
+  }
+
+  // ── Runtime discovery ─────────────────────────────────────────────────
+
+  async _handleStartRuntime(msg) {
+    const { id, language, documentPath, projectRoot, projectConfig, frontmatter } = msg;
+    try {
+      let result;
+      if (language) {
+        // Single language
+        result = await this.runtimeService.getForDocumentLanguage(
+          language, documentPath, projectConfig, frontmatter, projectRoot
+        );
+        this._send({ t: 'runtime-started', id, runtimes: { [language]: result } });
+      } else {
+        // All languages
+        result = await this.runtimeService.getForDocument(
+          documentPath, projectConfig, frontmatter, projectRoot
+        );
+        this._send({ t: 'runtime-started', id, runtimes: result });
+      }
+    } catch (err) {
+      this._send({ t: 'runtime-error', id, error: err.message });
+    }
+  }
+
+  // ── HTTP proxy ────────────────────────────────────────────────────────
+
+  async _handleHttpReq(msg) {
+    const { id, port, method, path, headers, body } = msg;
+    const ac = new AbortController();
+    this._httpSessions.set(id, ac);
+
+    try {
+      const url = `http://127.0.0.1:${port}${path}`;
+      const fetchOpts = {
+        method: method || 'GET',
+        headers: headers || {},
+        signal: ac.signal,
+      };
+      if (body !== undefined && body !== null && !['GET', 'HEAD'].includes(method)) {
+        fetchOpts.body = typeof body === 'string' ? body : JSON.stringify(body);
+      }
+
+      const res = await fetch(url, fetchOpts);
+
+      // Send response headers
+      const resHeaders = {};
+      res.headers.forEach((v, k) => { resHeaders[k] = v; });
+      this._send({ t: 'http-res', id, status: res.status, headers: resHeaders });
+
+      // Stream response body
+      if (res.body) {
+        const reader = res.body.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // Send chunk as base64
+            const b64 = Buffer.from(value).toString('base64');
+            this._send({ t: 'http-chunk', id, data: b64 });
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            this._send({ t: 'http-error', id, error: err.message });
+          }
+        }
+      }
+
+      this._send({ t: 'http-end', id });
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        this._send({ t: 'http-error', id, error: err.message });
+      }
+    } finally {
+      this._httpSessions.delete(id);
+    }
+  }
+
+  // ── WebSocket proxy ───────────────────────────────────────────────────
+
+  _handleWsOpen(msg) {
+    const { id, port, path } = msg;
+
+    if (this._wsSessions.has(id)) {
+      this._send({ t: 'ws-error', id, error: 'Session ID already in use' });
+      return;
+    }
+
+    const url = `ws://127.0.0.1:${port}/${path}`;
+    let localWs;
+    try {
+      localWs = new WebSocket(url);
+    } catch (err) {
+      this._send({ t: 'ws-error', id, error: err.message });
+      return;
+    }
+
+    localWs.binaryType = 'arraybuffer';
+    this._wsSessions.set(id, localWs);
+
+    localWs.on('open', () => {
+      this._send({ t: 'ws-opened', id });
+    });
+
+    localWs.on('message', (data, isBinary) => {
+      if (isBinary || data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+        this._send({ t: 'ws-msg', id, data: Buffer.from(data).toString('base64'), bin: true });
+      } else {
+        this._send({ t: 'ws-msg', id, data: data.toString(), bin: false });
+      }
+    });
+
+    localWs.on('close', (code, reason) => {
+      this._wsSessions.delete(id);
+      this._send({ t: 'ws-close', id, code, reason: reason?.toString() });
+    });
+
+    localWs.on('error', (err) => {
+      this._send({ t: 'ws-error', id, error: err.message });
+    });
+  }
+
+  _handleWsMsg(msg) {
+    const localWs = this._wsSessions.get(msg.id);
+    if (!localWs || localWs.readyState !== WebSocket.OPEN) return;
+
+    try {
+      if (msg.bin) {
+        localWs.send(Buffer.from(msg.data, 'base64'));
+      } else {
+        localWs.send(msg.data);
+      }
+    } catch { /* ignore */ }
+  }
+
+  _handleWsClose(msg) {
+    const localWs = this._wsSessions.get(msg.id);
+    if (!localWs) return;
+    try { localWs.close(); } catch { /* ignore */ }
+    this._wsSessions.delete(msg.id);
+  }
+
+  // ── Cleanup ───────────────────────────────────────────────────────────
+
+  _cleanupAll() {
+    for (const [id, ws] of this._wsSessions) {
+      try { ws.close(); } catch { /* ignore */ }
+    }
+    this._wsSessions.clear();
+
+    for (const [id, ac] of this._httpSessions) {
+      try { ac.abort(); } catch { /* ignore */ }
+    }
+    this._httpSessions.clear();
+  }
+
+  stop() {
+    this._destroyed = true;
+    clearTimeout(this._reconnectTimer);
+    this._cleanupAll();
+    try { this.ws?.close(); } catch { /* ignore */ }
+    console.log('[runtime-tunnel] Stopped');
+  }
+
+  get connected() {
+    return this._connected;
+  }
+}
+
+export default RuntimeTunnel;

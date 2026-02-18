@@ -227,6 +227,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // CLOUD AUTH + SYNC API
+  // ==========================================================================
+
+  cloud: {
+    status: () => ipcRenderer.invoke('cloud:status'),
+    signIn: () => ipcRenderer.invoke('cloud:signIn'),
+    signOut: () => ipcRenderer.invoke('cloud:signOut'),
+    validate: () => ipcRenderer.invoke('cloud:validate'),
+    bridgeDoc: (projectDir, docName) => ipcRenderer.invoke('cloud:bridgeDoc', { projectDir, docName }),
+  },
+
+  // ==========================================================================
   // DATA LOSS PREVENTION
   // ==========================================================================
 
