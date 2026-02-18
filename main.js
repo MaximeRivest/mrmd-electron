@@ -162,12 +162,30 @@ import { CloudSync } from './src/cloud-sync.js';
 const cloudAuth = new CloudAuth(settingsService);
 let cloudSync = null; // Initialized after sign-in
 
+// Machine Hub mode: keep background sync/runtime available even when no UI
+// window is open. This turns the desktop into a headless collaboration host.
+const MACHINE_HUB_MODE = !['0', 'false', 'off'].includes(
+  String(process.env.MRMD_MACHINE_HUB || '').toLowerCase()
+);
+const MACHINE_HUB_ROOTS = (process.env.MRMD_MACHINE_HUB_ROOTS || path.join(os.homedir(), 'Projects'))
+  .split(path.delimiter)
+  .map((p) => p.trim())
+  .filter(Boolean);
+const MACHINE_HUB_SCAN_INTERVAL_MS = 30000;
+
+// Projects held by the machine hub (each adds one sync server ref)
+const machineHubProjects = new Set();
+let machineHubScanTimer = null;
+
 /**
  * Start background cloud sync if signed in.
  * Called on app startup and after sign-in.
  */
 async function startCloudSyncIfReady() {
-  if (cloudSync) return; // Already running
+  if (cloudSync) {
+    await startMachineHubIfReady();
+    return; // Already running
+  }
 
   const token = cloudAuth.getToken();
   const user = cloudAuth.getUser();
@@ -195,6 +213,10 @@ async function startCloudSyncIfReady() {
       cloudSync.bridgeProject(server.port, server.dir, projectName, docs);
     }
   }
+
+  // In Machine Hub mode, host all discovered projects even if they are not
+  // currently open in the UI.
+  await startMachineHubIfReady();
 }
 
 /**
@@ -232,6 +254,93 @@ function discoverDocNames(projectDir) {
     walk(projectDir);
   } catch { /* ignore scan errors */ }
   return docs;
+}
+
+/** Discover projects for Machine Hub mode. */
+function discoverMachineHubProjects() {
+  const projects = new Set();
+
+  for (const root of MACHINE_HUB_ROOTS) {
+    let entries = [];
+    try {
+      if (!fs.existsSync(root)) continue;
+      entries = fs.readdirSync(root, { withFileTypes: true });
+
+      // Root itself may be a project
+      if (fs.existsSync(path.join(root, 'mrmd.md'))) {
+        projects.add(path.resolve(root));
+      }
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const dir = path.join(root, entry.name);
+      try {
+        if (fs.existsSync(path.join(dir, 'mrmd.md'))) {
+          projects.add(path.resolve(dir));
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  return [...projects];
+}
+
+/** Ensure all discovered Machine Hub projects have active sync + cloud bridges. */
+async function ensureMachineHubProjectsRunning() {
+  if (!MACHINE_HUB_MODE || !cloudSync) return;
+
+  const projectDirs = discoverMachineHubProjects();
+  for (const projectDir of projectDirs) {
+    try {
+      // Acquire one persistent ref for hub mode
+      if (!machineHubProjects.has(projectDir)) {
+        const server = await getSyncServer(projectDir);
+        machineHubProjects.add(projectDir);
+        console.log(`[hub] Hosting project: ${projectDir} (sync:${server.port})`);
+      }
+
+      // Refresh bridged docs (adds new docs without duplicating existing)
+      const server = await getSyncServer(projectDir);
+      const docs = discoverDocNames(projectDir);
+      cloudSync.bridgeProject(server.port, projectDir, path.basename(projectDir), docs);
+      releaseSyncServer(projectDir); // Balance the refresh acquire above
+    } catch (err) {
+      console.warn(`[hub] Failed to host ${projectDir}:`, err.message);
+    }
+  }
+}
+
+async function startMachineHubIfReady() {
+  if (!MACHINE_HUB_MODE || !cloudSync) return;
+
+  await ensureMachineHubProjectsRunning();
+
+  if (!machineHubScanTimer) {
+    machineHubScanTimer = setInterval(() => {
+      ensureMachineHubProjectsRunning().catch((err) => {
+        console.warn('[hub] Scan failed:', err.message);
+      });
+    }, MACHINE_HUB_SCAN_INTERVAL_MS);
+  }
+
+  console.log(`[hub] Machine Hub active (${MACHINE_HUB_ROOTS.join(', ')})`);
+}
+
+async function stopMachineHub() {
+  if (machineHubScanTimer) {
+    clearInterval(machineHubScanTimer);
+    machineHubScanTimer = null;
+  }
+
+  for (const projectDir of [...machineHubProjects]) {
+    try {
+      releaseSyncServer(projectDir);
+    } catch { /* ignore */ }
+  }
+  machineHubProjects.clear();
 }
 
 // ============================================================================
@@ -1760,6 +1869,11 @@ ipcMain.handle('cloud:status', async () => {
     signedIn: cloudAuth.isSignedIn(),
     user,
     syncStatus: cloudSync?.getStatus() || null,
+    machineHub: {
+      enabled: MACHINE_HUB_MODE,
+      roots: MACHINE_HUB_ROOTS,
+      hostedProjects: [...machineHubProjects],
+    },
   };
 });
 
@@ -1770,6 +1884,7 @@ ipcMain.handle('cloud:signIn', async () => {
 });
 
 ipcMain.handle('cloud:signOut', async () => {
+  await stopMachineHub();
   if (cloudSync) {
     await cloudSync.stopAll();
     cloudSync = null;
@@ -1806,8 +1921,17 @@ app.on('window-all-closed', () => {
     cleanupWindow(windowId);
   }
 
+  // Machine Hub mode: keep app running headless so this machine remains
+  // available to phone/browser collaborators even with no local windows open.
+  if (MACHINE_HUB_MODE && cloudSync) {
+    console.log('[hub] No windows open — staying alive in Machine Hub mode');
+    return;
+  }
+
   // Shutdown all runtime sessions (python, bash, r, julia, pty)
   runtimeService.shutdown();
+
+  stopMachineHub().catch(() => {});
 
   if (cloudSync) {
     cloudSync.stopAll().catch((err) => {

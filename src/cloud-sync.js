@@ -220,7 +220,16 @@ export class CloudSync {
    * @param {string[]} docNames - Document names to bridge
    */
   bridgeProject(localSyncPort, projectDir, projectName, docNames = []) {
-    if (this._projects.has(projectDir)) return;
+    if (this._projects.has(projectDir)) {
+      // Already bridged — add any new docs
+      const existing = this._projects.get(projectDir);
+      for (const docName of docNames) {
+        if (!existing.bridges.has(docName)) {
+          this._bridgeDoc(projectDir, existing.port, existing.projectName, docName);
+        }
+      }
+      return;
+    }
 
     this.log(`[cloud-sync] Bridging ${projectName} (port ${localSyncPort}, ${docNames.length} docs)`);
 
