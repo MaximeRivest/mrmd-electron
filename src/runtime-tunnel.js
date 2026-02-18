@@ -34,6 +34,7 @@
  *   ← {t:"ws-error", id, error}
  */
 
+import os from 'os';
 import { WebSocket } from 'ws';
 
 export class RuntimeTunnel {
@@ -49,6 +50,9 @@ export class RuntimeTunnel {
     this.userId = opts.userId;
     this.token = opts.token;
     this.runtimeService = opts.runtimeService;
+    this.machineId = opts.machineId || process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInfo().username}`;
+    this.machineName = opts.machineName || process.env.MRMD_MACHINE_NAME || os.hostname();
+    this.hostname = os.hostname();
     this.ws = null;
     this._destroyed = false;
     this._reconnectTimer = null;
@@ -68,7 +72,7 @@ export class RuntimeTunnel {
   _connect() {
     if (this._destroyed) return;
 
-    const url = `${this.relayUrl}/tunnel/${encodeURIComponent(this.userId)}?role=provider&token=${encodeURIComponent(this.token)}`;
+    const url = `${this.relayUrl}/tunnel/${encodeURIComponent(this.userId)}?role=provider&token=${encodeURIComponent(this.token)}&machine_id=${encodeURIComponent(this.machineId)}&machine_name=${encodeURIComponent(this.machineName)}&hostname=${encodeURIComponent(this.hostname)}`;
     try {
       this.ws = new WebSocket(url, {
         headers: {
@@ -89,6 +93,9 @@ export class RuntimeTunnel {
       const languages = this.runtimeService.supportedLanguages?.() || [];
       this._send({
         t: 'provider-info',
+        machineId: this.machineId,
+        machineName: this.machineName,
+        hostname: this.hostname,
         capabilities: languages,
       });
     });
