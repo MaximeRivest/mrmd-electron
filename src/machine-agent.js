@@ -47,6 +47,8 @@ const runtimeService = new RuntimeService();
 const syncServers = new Map();
 
 let cloudSync = null;
+let cloudToken = null;
+let cloudUserId = null;
 let scanTimer = null;
 let stopping = false;
 
@@ -172,12 +174,49 @@ async function bridgeProject(server) {
   cloudSync.bridgeProject(server.port, server.dir, projectName, docs);
 }
 
+/** Pull cloud-created docs into local filesystem (missing files only). */
+async function pullProjectFromCloud(projectDir) {
+  if (!cloudToken || !cloudUserId) return;
+
+  const projectName = path.basename(projectDir);
+  const url = `${CLOUD_URL}/api/sync/documents?project=${encodeURIComponent(projectName)}&content=1`;
+
+  let data;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${cloudToken}`,
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return;
+    data = await res.json();
+  } catch {
+    return;
+  }
+
+  const docs = data?.documents || [];
+  for (const doc of docs) {
+    const filePath = path.join(projectDir, `${doc.docPath}.md`);
+    if (fs.existsSync(filePath)) continue; // only materialize missing docs
+
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, doc.content || '', 'utf8');
+      log(`pulled cloud doc -> local: ${filePath}`);
+    } catch (err) {
+      log(`failed writing pulled doc ${filePath}: ${err.message}`);
+    }
+  }
+}
+
 async function syncScan() {
   if (stopping) return;
 
   const projectDirs = discoverProjects();
   for (const dir of projectDirs) {
     try {
+      await pullProjectFromCloud(dir);
       const server = await ensureSyncServer(dir);
       await bridgeProject(server);
     } catch (err) {
@@ -203,6 +242,9 @@ async function start() {
   if (!token || !user?.id) {
     throw new Error('Not signed in. Open mrmd-electron once and sign in to markco.dev first.');
   }
+
+  cloudToken = token;
+  cloudUserId = user.id;
 
   cloudSync = new CloudSync({
     cloudUrl: CLOUD_URL,
@@ -232,6 +274,8 @@ async function stop() {
 
   try { await cloudSync?.stopAll(); } catch {}
   cloudSync = null;
+  cloudToken = null;
+  cloudUserId = null;
 
   runtimeService.shutdown();
 
