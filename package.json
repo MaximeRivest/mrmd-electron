@@ -15,6 +15,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --enable-logging",
+    "machine-agent": "node src/machine-agent.js",
     "bundle": "node scripts/bundle-siblings.js",
     "prebuild": "npm run bundle",
     "build": "electron-builder --config electron-builder.config.cjs",
