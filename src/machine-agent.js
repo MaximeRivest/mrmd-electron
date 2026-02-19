@@ -145,6 +145,9 @@ async function ensureSyncServer(projectDir) {
     `--max-old-space-size=${SYNC_SERVER_MEMORY_MB}`,
     syncCliPath,
     '--port', String(port),
+    // Headless host mode can bridge hundreds of docs concurrently.
+    '--max-connections', '1200',
+    '--max-per-doc', '100',
     '--i-know-what-i-am-doing',
     projectDir,
   ];

@@ -637,6 +637,10 @@ async function getSyncServer(projectDir) {
     `--max-old-space-size=${SYNC_SERVER_MEMORY_MB}`,
     syncCliPath,
     '--port', port.toString(),
+    // Machine-hosted projects can have hundreds of bridged docs.
+    // Raise connection caps to avoid rejecting CloudSync bridges.
+    '--max-connections', '1200',
+    '--max-per-doc', '100',
     '--i-know-what-i-am-doing',
     projectDir,
   ];
