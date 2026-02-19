@@ -255,6 +255,9 @@ export class CloudSync {
     // Staggered bridge startup queue
     this._bridgeQueue = new BridgeQueue();
 
+    // Idle bridge teardown: close bridges with no Yjs traffic for 5+ minutes
+    this._idleCheckInterval = setInterval(() => this._teardownIdleBridges(), 60000);
+
     // Runtime tunnel: expose local MRP servers to the web editor via relay
     this._runtimeTunnel = null;
     if (opts.runtimeService) {
@@ -263,6 +266,9 @@ export class CloudSync {
         userId: this.userId,
         token: this.token,
         runtimeService: opts.runtimeService,
+        onBridgeRequest: ({ project, docPath }) => {
+          this._handleBridgeRequest(project, docPath);
+        },
       });
       this._runtimeTunnel.start();
       this.log('[cloud-sync] Runtime tunnel started');
@@ -337,6 +343,49 @@ export class CloudSync {
   }
 
   /**
+   * Handle a bridge-request from the relay (via runtime tunnel).
+   * The relay tells us "someone opened project/docPath, please bridge it."
+   */
+  _handleBridgeRequest(project, docPath) {
+    // Find the project by name
+    for (const [dir, info] of this._projects) {
+      if (info.projectName === project) {
+        if (info.bridges.has(docPath)) {
+          // Already bridged — nothing to do
+          return;
+        }
+        this.log(`[cloud-sync] On-demand bridge: ${project}/${docPath}`);
+        this._bridgeDoc(dir, info.port, info.projectName, docPath);
+        return;
+      }
+    }
+    this.log(`[cloud-sync] Bridge request for unknown project: ${project}`);
+  }
+
+  /**
+   * Tear down bridges that have been idle (no Yjs messages) for 5+ minutes.
+   * The Yjs snapshot stays in the relay's Postgres for fast re-open.
+   */
+  _teardownIdleBridges() {
+    const IDLE_MS = 5 * 60 * 1000; // 5 minutes
+    const now = Date.now();
+
+    for (const [, info] of this._projects) {
+      for (const [docName, bridge] of info.bridges) {
+        // Only tear down bridges that are fully connected and idle
+        if (!bridge._localReady || !bridge._remoteReady) continue;
+
+        const lastActivity = bridge._lastMessageAt || bridge._startedAt;
+        if (now - lastActivity > IDLE_MS) {
+          this.log(`[cloud-sync] Idle teardown: ${info.projectName}/${docName}`);
+          bridge.stop();
+          info.bridges.delete(docName);
+        }
+      }
+    }
+  }
+
+  /**
    * Stop syncing a specific project.
    */
   async stopProject(projectDir) {
@@ -357,6 +406,7 @@ export class CloudSync {
   async stopAll() {
     // Cancel any pending bridge starts first
     this._bridgeQueue.clear();
+    clearInterval(this._idleCheckInterval);
     for (const projectDir of [...this._projects.keys()]) {
       await this.stopProject(projectDir);
     }

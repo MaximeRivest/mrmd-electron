@@ -53,6 +53,8 @@ export class RuntimeTunnel {
     this.machineId = opts.machineId || process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInfo().username}`;
     this.machineName = opts.machineName || process.env.MRMD_MACHINE_NAME || os.hostname();
     this.hostname = os.hostname();
+    /** @type {((req: {project: string, docPath: string}) => void) | null} */
+    this.onBridgeRequest = opts.onBridgeRequest || null;
     this.ws = null;
     this._destroyed = false;
     this._reconnectTimer = null;
@@ -139,8 +141,20 @@ export class RuntimeTunnel {
       case 'ws-open':         return this._handleWsOpen(msg);
       case 'ws-msg':          return this._handleWsMsg(msg);
       case 'ws-close':        return this._handleWsClose(msg);
+      case 'bridge-request':  return this._handleBridgeRequest(msg);
       case 'provider-status': return; // ignore, for consumers
       default: return; // unknown
+    }
+  }
+
+  _handleBridgeRequest(msg) {
+    const { project, docPath } = msg;
+    if (!project || !docPath) return;
+    console.log(`[runtime-tunnel] Bridge request: ${project}/${docPath}`);
+    if (this.onBridgeRequest) {
+      try { this.onBridgeRequest({ project, docPath }); } catch (err) {
+        console.error('[runtime-tunnel] Bridge request handler error:', err.message);
+      }
     }
   }
 
@@ -240,15 +254,34 @@ export class RuntimeTunnel {
       return;
     }
 
-    localWs.binaryType = 'arraybuffer';
-    this._wsSessions.set(id, localWs);
+    // Track connection state and queue messages until local WS is open.
+    // Messages from the consumer can arrive before the local WS connects;
+    // without queuing they would be silently dropped (e.g. initial resize).
+    const session = { localWs, ready: false, queue: [] };
+    this._wsSessions.set(id, session);
 
     localWs.on('open', () => {
+      session.ready = true;
       this._send({ t: 'ws-opened', id });
+      // Flush any messages that arrived before the local WS was ready
+      for (const queued of session.queue) {
+        try {
+          if (queued.bin) {
+            localWs.send(Buffer.from(queued.data, 'base64'));
+          } else {
+            localWs.send(queued.data);
+          }
+        } catch { /* ignore */ }
+      }
+      session.queue.length = 0;
     });
 
     localWs.on('message', (data, isBinary) => {
-      if (isBinary || data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+      // IMPORTANT: In Node.js ws, `data` is always a Buffer regardless of
+      // frame type. Only `isBinary` correctly distinguishes text vs binary
+      // frames. Using Buffer.isBuffer() would incorrectly treat ALL messages
+      // as binary, breaking text-based protocols (PTY, MRP).
+      if (isBinary) {
         this._send({ t: 'ws-msg', id, data: Buffer.from(data).toString('base64'), bin: true });
       } else {
         this._send({ t: 'ws-msg', id, data: data.toString(), bin: false });
@@ -266,7 +299,16 @@ export class RuntimeTunnel {
   }
 
   _handleWsMsg(msg) {
-    const localWs = this._wsSessions.get(msg.id);
+    const session = this._wsSessions.get(msg.id);
+    if (!session) return;
+
+    // Queue messages until the local WebSocket is connected
+    if (!session.ready) {
+      session.queue.push({ data: msg.data, bin: msg.bin });
+      return;
+    }
+
+    const localWs = session.localWs;
     if (!localWs || localWs.readyState !== WebSocket.OPEN) return;
 
     try {
@@ -279,17 +321,17 @@ export class RuntimeTunnel {
   }
 
   _handleWsClose(msg) {
-    const localWs = this._wsSessions.get(msg.id);
-    if (!localWs) return;
-    try { localWs.close(); } catch { /* ignore */ }
+    const session = this._wsSessions.get(msg.id);
+    if (!session) return;
+    try { session.localWs?.close(); } catch { /* ignore */ }
     this._wsSessions.delete(msg.id);
   }
 
   // ── Cleanup ───────────────────────────────────────────────────────────
 
   _cleanupAll() {
-    for (const [id, ws] of this._wsSessions) {
-      try { ws.close(); } catch { /* ignore */ }
+    for (const [id, session] of this._wsSessions) {
+      try { session.localWs?.close(); } catch { /* ignore */ }
     }
     this._wsSessions.clear();
 

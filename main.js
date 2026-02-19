@@ -208,13 +208,11 @@ async function startCloudSyncIfReady() {
 
   console.log(`[cloud] Background sync ready for ${user.name || user.email}`);
 
-  // Bridge any already-running sync servers
+  // Register any already-running sync servers (no eager doc bridging — on-demand)
   for (const [, server] of syncServers) {
     if (server.port && server.dir) {
       const projectName = path.basename(server.dir);
-      // Discover doc names from the directory
-      const docs = discoverDocNames(server.dir);
-      cloudSync.bridgeProject(server.port, server.dir, projectName, docs);
+      cloudSync.bridgeProject(server.port, server.dir, projectName, []);
     }
   }
 
@@ -308,14 +306,14 @@ async function ensureMachineHubProjectsRunning() {
         console.log(`[hub] Hosting project: ${projectDir} (sync:${server.port})`);
       }
 
-      // Refresh bridged docs (adds new docs without duplicating existing)
+      // Register project with CloudSync (no eager doc bridging — on-demand only)
       const server = await getSyncServer(projectDir);
+      const projectName = path.basename(projectDir);
       const docs = discoverDocNames(projectDir);
-      cloudSync.bridgeProject(server.port, projectDir, path.basename(projectDir), docs);
+      cloudSync.bridgeProject(server.port, projectDir, projectName, []);
       releaseSyncServer(projectDir); // Balance the refresh acquire above
 
       // Collect catalog entries for this project
-      const projectName = path.basename(projectDir);
       for (const docName of docs) {
         catalogEntries.push({ project: projectName, docPath: docName });
       }
@@ -695,11 +693,10 @@ async function getSyncServer(projectDir) {
   const server = { proc, port, dir: projectDir, refCount: 1, owned: true };
   syncServers.set(dirHash, server);
 
-  // Auto-bridge to cloud sync if signed in
+  // Register project with cloud sync (no eager doc bridging — on-demand)
   if (cloudSync && port) {
     const projectName = path.basename(projectDir);
-    const docs = discoverDocNames(projectDir);
-    cloudSync.bridgeProject(port, projectDir, projectName, docs);
+    cloudSync.bridgeProject(port, projectDir, projectName, []);
   }
 
   return server;

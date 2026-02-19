@@ -172,11 +172,12 @@ async function ensureSyncServer(projectDir) {
   return server;
 }
 
-async function bridgeProject(server) {
+async function registerProject(server) {
   if (!cloudSync) return;
   const projectName = path.basename(server.dir);
-  const docs = discoverDocNames(server.dir);
-  cloudSync.bridgeProject(server.port, server.dir, projectName, docs);
+  // Register project without eager doc bridging — bridges happen on-demand
+  // when the relay sends bridge-request (someone opened a doc on web/phone)
+  cloudSync.bridgeProject(server.port, server.dir, projectName, []);
 }
 
 /** Pull cloud-created docs into local filesystem (missing files only). */
@@ -223,17 +224,17 @@ async function syncScan() {
     try {
       await pullProjectFromCloud(dir);
       const server = await ensureSyncServer(dir);
-      await bridgeProject(server);
+      await registerProject(server);
     } catch (err) {
       log(`failed hosting ${dir}: ${err.message}`);
     }
   }
 
-  // Refresh doc bridges for already-running projects (captures new local docs)
+  // Register projects and collect catalog entries
   const catalogEntries = [];
   for (const server of syncServers.values()) {
     try {
-      await bridgeProject(server);
+      await registerProject(server);
       // Collect catalog entries
       const projectName = path.basename(server.dir);
       const docs = discoverDocNames(server.dir);
@@ -241,7 +242,7 @@ async function syncScan() {
         catalogEntries.push({ project: projectName, docPath: docName });
       }
     } catch (err) {
-      log(`failed refreshing bridge for ${server.dir}: ${err.message}`);
+      log(`failed registering ${server.dir}: ${err.message}`);
     }
   }
 
