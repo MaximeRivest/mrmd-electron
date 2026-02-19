@@ -45,6 +45,9 @@ class DocBridge {
     this._lastError = null;
     this._lastMessageAt = null;
     this._startedAt = Date.now();
+    // Reconnect attempt counters for exponential backoff
+    this._localAttempts = 0;
+    this._remoteAttempts = 0;
     // Buffer messages when the other side isn't ready yet.
     // Critical: without this, Yjs sync step 1/2 messages are dropped during
     // the race between local and remote WS connections opening, causing
@@ -71,6 +74,7 @@ class DocBridge {
 
     this.localWs.on('open', () => {
       this._localReady = true;
+      this._localAttempts = 0; // reset backoff on success
       // Flush buffered messages from remote that arrived before local was ready
       for (const msg of this._localBuffer) {
         try { this.localWs.send(msg.data, { binary: msg.isBinary }); } catch { /* ignore */ }
@@ -112,6 +116,7 @@ class DocBridge {
 
     this.remoteWs.on('open', () => {
       this._remoteReady = true;
+      this._remoteAttempts = 0; // reset backoff on success
       // Flush buffered messages from local that arrived before remote was ready
       for (const msg of this._remoteBuffer) {
         try { this.remoteWs.send(msg.data, { binary: msg.isBinary }); } catch { /* ignore */ }
@@ -144,11 +149,21 @@ class DocBridge {
     if (this._destroyed) return;
     const key = which === 'local' ? '_reconnectLocal' : '_reconnectRemote';
     if (this[key]) return;
+
+    const attemptsKey = which === 'local' ? '_localAttempts' : '_remoteAttempts';
+    this[attemptsKey] = (this[attemptsKey] || 0) + 1;
+    const attempts = this[attemptsKey];
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, ... capped at 60s, plus jitter
+    const baseDelay = Math.min(1000 * Math.pow(2, attempts - 1), 60000);
+    const jitter = Math.random() * Math.min(2000, baseDelay);
+    const delay = baseDelay + jitter;
+
     this[key] = setTimeout(() => {
       this[key] = null;
       if (which === 'local') this._connectLocal();
       else this._connectRemote();
-    }, 3000);
+    }, delay);
   }
 
   getStatus() {
@@ -170,6 +185,46 @@ class DocBridge {
     clearTimeout(this._reconnectRemote);
     try { this.localWs?.close(); } catch { /* ignore */ }
     try { this.remoteWs?.close(); } catch { /* ignore */ }
+  }
+}
+
+// ─── Staggered connection queue ──────────────────────────────────────────────
+// Instead of opening hundreds of WebSocket bridges simultaneously (which causes
+// a thundering herd that overwhelms the relay), we queue bridge starts and
+// drain them in small batches with delays between each batch.
+const BRIDGE_BATCH_SIZE = 8;       // connections to start per tick
+const BRIDGE_BATCH_DELAY_MS = 250; // pause between batches
+
+class BridgeQueue {
+  constructor() {
+    /** @type {Array<() => void>} */
+    this._queue = [];
+    this._draining = false;
+  }
+
+  /** Enqueue a bridge start function. */
+  push(fn) {
+    this._queue.push(fn);
+    if (!this._draining) this._drain();
+  }
+
+  async _drain() {
+    this._draining = true;
+    while (this._queue.length > 0) {
+      const batch = this._queue.splice(0, BRIDGE_BATCH_SIZE);
+      for (const fn of batch) {
+        try { fn(); } catch { /* ignore */ }
+      }
+      if (this._queue.length > 0) {
+        await new Promise(r => setTimeout(r, BRIDGE_BATCH_DELAY_MS));
+      }
+    }
+    this._draining = false;
+  }
+
+  /** Cancel all pending bridges (does not stop already-started ones). */
+  clear() {
+    this._queue.length = 0;
   }
 }
 
@@ -196,6 +251,9 @@ export class CloudSync {
 
     /** @type {Map<string, { bridges: Map<string, DocBridge>, port: number, projectName: string }>} */
     this._projects = new Map();
+
+    // Staggered bridge startup queue
+    this._bridgeQueue = new BridgeQueue();
 
     // Runtime tunnel: expose local MRP servers to the web editor via relay
     this._runtimeTunnel = null;
@@ -269,10 +327,13 @@ export class CloudSync {
       docName,
     });
 
-    bridge.start();
+    // Register immediately so we don't double-bridge on next scan
     project.bridges.set(docName, bridge);
 
-    this.log(`[cloud-sync] Bridged doc: ${docName}`);
+    // Start through the staggered queue to avoid thundering herd
+    this._bridgeQueue.push(() => {
+      if (!bridge._destroyed) bridge.start();
+    });
   }
 
   /**
@@ -294,6 +355,8 @@ export class CloudSync {
    * Stop all project bridges.
    */
   async stopAll() {
+    // Cancel any pending bridge starts first
+    this._bridgeQueue.clear();
     for (const projectDir of [...this._projects.keys()]) {
       await this.stopProject(projectDir);
     }
