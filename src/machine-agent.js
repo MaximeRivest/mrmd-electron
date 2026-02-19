@@ -39,6 +39,8 @@ const ROOTS = (process.env.MRMD_MACHINE_HUB_ROOTS || path.join(os.homedir(), 'Pr
   .map((p) => p.trim())
   .filter(Boolean);
 const RESCAN_MS = parseInt(process.env.MRMD_MACHINE_RESCAN_MS || '30000', 10);
+const MACHINE_ID = process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInfo().username}`;
+const MACHINE_NAME = process.env.MRMD_MACHINE_NAME || os.hostname();
 
 const settings = new SettingsService();
 const runtimeService = new RuntimeService();
@@ -228,12 +230,29 @@ async function syncScan() {
   }
 
   // Refresh doc bridges for already-running projects (captures new local docs)
+  const catalogEntries = [];
   for (const server of syncServers.values()) {
     try {
       await bridgeProject(server);
+      // Collect catalog entries
+      const projectName = path.basename(server.dir);
+      const docs = discoverDocNames(server.dir);
+      for (const docName of docs) {
+        catalogEntries.push({ project: projectName, docPath: docName });
+      }
     } catch (err) {
       log(`failed refreshing bridge for ${server.dir}: ${err.message}`);
     }
+  }
+
+  // Push lightweight file catalog to relay
+  if (cloudSync && catalogEntries.length > 0) {
+    cloudSync.pushCatalog(MACHINE_ID, {
+      machineName: MACHINE_NAME,
+      hostname: os.hostname(),
+      capabilities: runtimeService.supportedLanguages?.() || [],
+      entries: catalogEntries,
+    }).catch(err => log('catalog push failed:', err.message));
   }
 }
 

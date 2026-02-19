@@ -368,6 +368,55 @@ export class CloudSync {
   }
 
   /**
+   * Push a file catalog to the relay for this machine.
+   * This is a lightweight manifest (no file content) so the web editor
+   * can browse projects across all connected machines.
+   *
+   * @param {string} machineId - Unique machine identifier
+   * @param {object} opts
+   * @param {string} [opts.machineName] - Human-readable machine name
+   * @param {string} [opts.hostname] - OS hostname
+   * @param {string[]} [opts.capabilities] - Runtime capabilities
+   * @param {Array<{project: string, docPath: string, contentHash?: string, byteSize?: number}>} opts.entries
+   */
+  async pushCatalog(machineId, opts = {}) {
+    const { machineName, hostname, capabilities, entries } = opts;
+    const relayHttpUrl = this.cloudUrl; // already http(s)
+
+    const url = `${relayHttpUrl}/api/catalog/${encodeURIComponent(this.userId)}/${encodeURIComponent(machineId)}`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({
+          machineName: machineName || null,
+          hostname: hostname || null,
+          capabilities: capabilities || [],
+          entries: entries || [],
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        this.log(`[cloud-sync] Catalog push failed: HTTP ${res.status} ${text.slice(0, 200)}`);
+        return false;
+      }
+
+      const data = await res.json();
+      this.log(`[cloud-sync] Catalog pushed: ${data.entries} entries for ${machineId}`);
+      return true;
+    } catch (err) {
+      this.log(`[cloud-sync] Catalog push error: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
    * Get sync status.
    */
   getStatus() {

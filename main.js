@@ -173,6 +173,10 @@ const MACHINE_HUB_ROOTS = (process.env.MRMD_MACHINE_HUB_ROOTS || path.join(os.ho
   .filter(Boolean);
 const MACHINE_HUB_SCAN_INTERVAL_MS = 30000;
 
+// Machine identity for catalog + tunnel metadata
+const MACHINE_ID = process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInfo().username}`;
+const MACHINE_NAME = process.env.MRMD_MACHINE_NAME || os.hostname();
+
 // Projects held by the machine hub (each adds one sync server ref)
 const machineHubProjects = new Set();
 let machineHubScanTimer = null;
@@ -293,6 +297,8 @@ async function ensureMachineHubProjectsRunning() {
   if (!MACHINE_HUB_MODE || !cloudSync) return;
 
   const projectDirs = discoverMachineHubProjects();
+  const catalogEntries = [];
+
   for (const projectDir of projectDirs) {
     try {
       // Acquire one persistent ref for hub mode
@@ -307,9 +313,25 @@ async function ensureMachineHubProjectsRunning() {
       const docs = discoverDocNames(projectDir);
       cloudSync.bridgeProject(server.port, projectDir, path.basename(projectDir), docs);
       releaseSyncServer(projectDir); // Balance the refresh acquire above
+
+      // Collect catalog entries for this project
+      const projectName = path.basename(projectDir);
+      for (const docName of docs) {
+        catalogEntries.push({ project: projectName, docPath: docName });
+      }
     } catch (err) {
       console.warn(`[hub] Failed to host ${projectDir}:`, err.message);
     }
+  }
+
+  // Push lightweight catalog to relay (no file content, just manifest)
+  if (catalogEntries.length > 0) {
+    cloudSync.pushCatalog(MACHINE_ID, {
+      machineName: MACHINE_NAME,
+      hostname: os.hostname(),
+      capabilities: runtimeService.supportedLanguages?.() || [],
+      entries: catalogEntries,
+    }).catch(err => console.warn('[hub] Catalog push failed:', err.message));
   }
 }
 
