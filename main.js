@@ -16,13 +16,14 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { fileURLToPath } from 'url';
+import { WebSocket } from 'ws';
 
 // Services
 import { ProjectService, RuntimeService, FileService, AssetService, SettingsService } from './src/services/index.js';
 import { Project } from 'mrmd-project';
 
 // Shared utilities and configuration
-import { findFreePort, waitForPort } from './src/utils/index.js';
+import { findFreePort, waitForPort, isPortInUse } from './src/utils/index.js';
 import { getEnvInfo, installMrmdPython, createVenv, ensureUv, getUvVersion } from './src/utils/index.js';
 import { walkDir, findDirs, getVenvPython, getVenvExecutable, isProcessAlive, killProcessTree } from './src/utils/index.js';
 import {
@@ -47,6 +48,18 @@ import {
 // ESM __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Suppress EPIPE errors on stdout/stderr.
+// When launched from a desktop entry or systemd, the stdout pipe may close
+// before the process exits, causing console.log to throw EPIPE.
+for (const stream of [process.stdout, process.stderr]) {
+  if (stream && typeof stream.on === 'function') {
+    stream.on('error', (err) => {
+      if (err.code === 'EPIPE') return; // Silently ignore
+      throw err; // Re-throw non-EPIPE errors
+    });
+  }
+}
 
 // Create require for resolving package paths
 const require = createRequire(import.meta.url);
@@ -636,10 +649,17 @@ async function getSyncServer(projectDir) {
     if (fs.existsSync(syncStatePath)) {
       const pidData = JSON.parse(fs.readFileSync(syncStatePath, 'utf8'));
       if (isProcessAlive(pidData.pid)) {
-        console.log(`[sync] Found existing server on port ${pidData.port}`);
-        const server = { proc: null, port: pidData.port, dir: projectDir, refCount: 1, owned: false };
-        syncServers.set(dirHash, server);
-        return server;
+        // Verify the port is actually reachable (process could be zombie/different)
+        const portAlive = await isPortInUse(pidData.port);
+        if (portAlive) {
+          console.log(`[sync] Found existing server on port ${pidData.port}`);
+          const server = { proc: null, port: pidData.port, dir: projectDir, refCount: 1, owned: false };
+          syncServers.set(dirHash, server);
+          return server;
+        } else {
+          console.log(`[sync] PID ${pidData.pid} alive but port ${pidData.port} not listening, removing stale pid`);
+          try { fs.unlinkSync(syncStatePath); } catch (e) {}
+        }
       } else {
         fs.unlinkSync(syncStatePath);
       }
@@ -1581,6 +1601,202 @@ ipcMain.handle('asset:delete', async (event, { projectRoot, assetPath }) => {
 });
 
 // ============================================================================
+// VOICE TRANSCRIPTION HELPERS + IPC
+// ============================================================================
+
+function detectAudioExtension(mimeType = '') {
+  const mt = String(mimeType || '').toLowerCase();
+  if (mt.includes('ogg')) return 'ogg';
+  if (mt.includes('mp4') || mt.includes('m4a')) return 'm4a';
+  if (mt.includes('wav')) return 'wav';
+  return 'webm';
+}
+
+function runFfmpegToPcm(inputPath, outputPath) {
+  return new Promise((resolve, reject) => {
+    const ffmpeg = spawn('ffmpeg', [
+      '-y',
+      '-i', inputPath,
+      '-ac', '1',
+      '-ar', '16000',
+      '-f', 's16le',
+      outputPath,
+    ], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+    let stderr = '';
+    ffmpeg.stderr?.on('data', (d) => { stderr += d.toString(); });
+
+    ffmpeg.on('error', (err) => {
+      reject(new Error(`ffmpeg spawn failed: ${err.message}`));
+    });
+
+    ffmpeg.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`ffmpeg failed (code ${code}): ${stderr.slice(-500)}`));
+      }
+    });
+  });
+}
+
+async function transcribeParakeetPcm(url, pcmBuffer, timeoutMs = 90000) {
+  return new Promise((resolve, reject) => {
+    let ws;
+    let resolved = false;
+    const segments = [];
+
+    const done = (err, result) => {
+      if (resolved) return;
+      resolved = true;
+      try { ws?.close(); } catch { /* ignore */ }
+      if (err) reject(err); else resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      done(new Error('Parakeet transcription timeout'));
+    }, timeoutMs);
+
+    try {
+      ws = new WebSocket(url);
+    } catch (err) {
+      clearTimeout(timer);
+      done(new Error(`Failed to connect to Parakeet: ${err.message}`));
+      return;
+    }
+
+    ws.on('message', (data) => {
+      let msg;
+      try {
+        msg = JSON.parse(typeof data === 'string' ? data : data.toString());
+      } catch {
+        return;
+      }
+
+      if (msg.type === 'ready') {
+        ws.send(pcmBuffer);
+        ws.send(JSON.stringify({ type: 'flush' }));
+        return;
+      }
+
+      if (msg.type === 'segment') {
+        segments.push({
+          text: msg.text || '',
+          confidence: msg.confidence || 0,
+          duration: msg.duration || 0,
+        });
+        return;
+      }
+
+      if (msg.type === 'flushed') {
+        clearTimeout(timer);
+        done(null, {
+          text: segments.map(s => s.text).join(' ').trim(),
+          segments,
+          duration: segments.reduce((n, s) => n + (s.duration || 0), 0),
+        });
+        return;
+      }
+
+      if (msg.type === 'error') {
+        clearTimeout(timer);
+        done(new Error(msg.message || 'Parakeet error'));
+      }
+    });
+
+    ws.on('error', (err) => {
+      clearTimeout(timer);
+      done(new Error(`Parakeet WebSocket error: ${err.message}`));
+    });
+
+    ws.on('close', () => {
+      if (!resolved) {
+        clearTimeout(timer);
+        done(new Error('Parakeet connection closed unexpectedly'));
+      }
+    });
+  });
+}
+
+ipcMain.handle('voice:checkParakeet', async (event, { url }) => {
+  if (!url) return { available: false, error: 'Missing URL' };
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve({ available: false, error: 'Timeout' });
+      try { ws.close(); } catch { /* ignore */ }
+    }, 5000);
+
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch (err) {
+      clearTimeout(timer);
+      resolve({ available: false, error: err.message });
+      return;
+    }
+
+    ws.on('message', (data) => {
+      if (settled) return;
+      try {
+        const msg = JSON.parse(typeof data === 'string' ? data : data.toString());
+        if (msg.type === 'ready') {
+          settled = true;
+          clearTimeout(timer);
+          resolve({ available: true });
+          try { ws.close(); } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+    });
+
+    ws.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ available: false, error: err.message });
+    });
+
+    ws.on('close', () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ available: false, error: 'Closed before ready' });
+    });
+  });
+});
+
+ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType, url }) => {
+  if (!url) throw new Error('Missing Parakeet URL');
+  if (!audioBytes || !audioBytes.length) throw new Error('Missing audio bytes');
+
+  // Ensure ffmpeg is available
+  try {
+    execSync('ffmpeg -version', { stdio: 'ignore' });
+  } catch {
+    throw new Error('ffmpeg is required for Parakeet transcription in Electron main process');
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mrmd-voice-'));
+  const ext = detectAudioExtension(mimeType);
+  const inputPath = path.join(tempDir, `input.${ext}`);
+  const outputPath = path.join(tempDir, 'output.pcm');
+
+  try {
+    fs.writeFileSync(inputPath, Buffer.from(audioBytes));
+    await runFfmpegToPcm(inputPath, outputPath);
+    const pcm = fs.readFileSync(outputPath);
+    return await transcribeParakeetPcm(url, pcm);
+  } finally {
+    try { fs.unlinkSync(inputPath); } catch { /* ignore */ }
+    try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
+    try { fs.rmdirSync(tempDir); } catch { /* ignore */ }
+  }
+});
+
+// ============================================================================
 // SETTINGS SERVICE IPC HANDLERS
 // ============================================================================
 
@@ -1928,6 +2144,60 @@ ipcMain.handle('cloud:bridgeDoc', async (_event, { projectDir, docName }) => {
     cloudSync.bridgeDoc(projectDir, docName);
     return { ok: true };
   } catch (err) {
+    return { ok: false, reason: err.message };
+  }
+});
+
+ipcMain.handle('cloud:fetchAsset', async (_event, { localProjectRoot, relativePath }) => {
+  if (!cloudAuth?.isSignedIn()) return { ok: false, reason: 'not-signed-in' };
+  if (!relativePath) return { ok: false, reason: 'invalid-params' };
+
+  const localPath = path.join(localProjectRoot, relativePath);
+
+  // If file exists locally, return early unless it looks like an HTML login page
+  // accidentally saved with an image extension (can happen on auth redirect).
+  if (fs.existsSync(localPath)) {
+    try {
+      const probe = fs.readFileSync(localPath, 'utf8').slice(0, 512).trimStart().toLowerCase();
+      const looksLikeHtml = probe.startsWith('<!doctype html') || probe.startsWith('<html');
+      if (!looksLikeHtml) return { ok: true, exists: true };
+      console.warn(`[cloud:fetchAsset] Existing file looks like HTML, re-downloading: ${localPath}`);
+    } catch {
+      // Binary/non-utf8 file is fine; treat as existing.
+      return { ok: true, exists: true };
+    }
+  }
+
+  const token = cloudAuth.getToken();
+  const cloudUrl = cloudSync?.cloudUrl;
+  const userId = cloudSync?.userId;
+  if (!cloudUrl || !userId || !token) return { ok: false, reason: 'no-cloud-connection' };
+
+  const projectName = path.basename(localProjectRoot);
+  const cloudRelativePath = `${projectName}/${relativePath}`;
+  const fetchUrl = `${cloudUrl.replace(/\/$/, '')}/u/${userId}/api/project-file?path=${encodeURIComponent(cloudRelativePath)}`;
+
+  try {
+    const response = await fetch(fetchUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-User-Id': userId,
+      },
+    });
+    if (!response.ok) return { ok: false, reason: `HTTP ${response.status}` };
+
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('text/html')) {
+      return { ok: false, reason: 'unexpected-html-response' };
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    fs.mkdirSync(path.dirname(localPath), { recursive: true });
+    fs.writeFileSync(localPath, buffer);
+    console.log(`[cloud:fetchAsset] Downloaded: ${cloudRelativePath} -> ${localPath} (${buffer.length} bytes)`);
+    return { ok: true, path: localPath, size: buffer.length };
+  } catch (err) {
+    console.warn(`[cloud:fetchAsset] Failed: ${err.message}`);
     return { ok: false, reason: err.message };
   }
 });

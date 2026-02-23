@@ -65,6 +65,26 @@ const DEFAULT_SETTINGS = {
   // Custom AI command sections
   customSections: [],
 
+  // Voice settings
+  voice: {
+    // User-configurable push-to-talk shortcut
+    shortcut: {
+      altKey: true,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      key: 'w',
+    },
+    // parakeet | openai | groq
+    provider: 'parakeet',
+    // Optional Parakeet URL. Can be preseeded from env.
+    // Example: ws://192.168.2.24:8765
+    parakeetUrl: process.env.MRMD_PARAKEET_URL || '',
+    // Optional per-provider model overrides
+    openaiModel: 'gpt-4o-mini-transcribe',
+    groqModel: 'whisper-large-v3-turbo',
+  },
+
   // Default preferences
   defaults: {
     juiceLevel: 2,
@@ -148,6 +168,14 @@ class SettingsService {
 
         // Merge with defaults to handle schema upgrades
         this.settings = this.mergeWithDefaults(loaded);
+
+        // Runtime env fallback for Parakeet URL:
+        // If settings has no value, allow backend to seed from MRMD_PARAKEET_URL.
+        // This keeps local manual overrides intact while allowing centralized config.
+        if (!this.settings?.voice?.parakeetUrl && process.env.MRMD_PARAKEET_URL) {
+          this.settings.voice = this.settings.voice || {};
+          this.settings.voice.parakeetUrl = process.env.MRMD_PARAKEET_URL;
+        }
 
         // If merge added new fields, save back
         if (JSON.stringify(loaded) !== JSON.stringify(this.settings)) {

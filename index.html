@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws://127.0.0.1:* http://127.0.0.1:*; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:* https: http: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https:; img-src 'self' data: blob: https: http:; frame-src 'self' blob: data:">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ws: wss: http: https:; connect-src 'self' ws: wss: http: https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://esm.sh https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com blob:; font-src 'self' https://fonts.gstatic.com https://www.openresponses.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https:; img-src 'self' data: blob: https: http:; frame-src 'self' blob: data:">
   <title>mrmd</title>
   <link rel="icon" type="image/png" sizes="32x32" href="./assets/icon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./assets/icon-16.png">
@@ -343,6 +343,7 @@
     /* Main content */
     .content {
       flex: 1;
+      min-width: 0;
       display: flex;
       align-items: stretch;
       overflow-y: auto;
@@ -918,9 +919,9 @@
       transform: translateX(0);
     }
 
-    /* When rail is open, shift content left to make room */
+    /* Keep notebook width stable when rail opens (no horizontal jump) */
     .content.rail-open {
-      margin-right: 48px;
+      margin-right: 0;
       transition: margin-right 0.2s ease;
     }
 
@@ -4180,6 +4181,447 @@
     }
 
     /* =========================================================================
+       FULL TERMINAL PANEL — swipeable/shortcut-accessible terminal view
+       ========================================================================= */
+
+    /* Viewport wrapper — clips horizontal overflow for the slide */
+    .app-viewport {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* The sliding track holds notebook + terminal side by side */
+    .app-slide-track {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transform: translateX(0);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+    }
+
+    .app-slide-track.at-terminal {
+      width: 200%;
+      transform: translateX(-50%);
+    }
+
+    .app-slide-track.at-terminal .app-slide-page {
+      width: 50%;
+      flex: 0 0 50%;
+    }
+
+    /* Split mode: notebook + terminal side-by-side */
+    .app-slide-track.split {
+      width: 100%;
+      transform: translateX(0);
+    }
+
+    .app-slide-track.split .app-slide-page {
+      width: 50%;
+      flex: 0 0 50%;
+    }
+
+    .app-slide-track.split #slide-terminal {
+      border-left: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+    }
+
+    /* Hide terminal pane by default; show in split/full modes */
+    #slide-terminal {
+      display: none;
+    }
+    .app-slide-track.at-terminal #slide-terminal,
+    .app-slide-track.split #slide-terminal {
+      display: flex;
+    }
+
+    /* Each "page" in the slider */
+    .app-slide-page {
+      width: 100%;
+      flex: 0 0 100%;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ensure .content fills the slide page */
+    .app-slide-page > .content {
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    /* The full terminal panel */
+    .full-terminal-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--term-background, var(--editor-background, #1e1e1e));
+    }
+
+    .full-terminal-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      background: var(--term-header-bg, var(--mrmd-popup-bg, #252526));
+      border-bottom: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+      flex-shrink: 0;
+      gap: 10px;
+    }
+
+    .full-terminal-back,
+    .full-terminal-mode-btn,
+    .full-terminal-close,
+    .full-terminal-font-btn,
+    .full-terminal-focus-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .full-terminal-mode-btn svg,
+    .full-terminal-focus-btn svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.9;
+    }
+
+    .full-terminal-back:hover,
+    .full-terminal-mode-btn:hover,
+    .full-terminal-close:hover,
+    .full-terminal-font-btn:hover,
+    .full-terminal-focus-btn:hover {
+      background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+      color: var(--term-foreground, var(--editor-foreground, #fff));
+      border-color: var(--term-border, var(--widget-border, #3c3c3c));
+    }
+
+    .full-terminal-mode-btn.active,
+    .full-terminal-focus-btn.active {
+      background: transparent;
+      color: var(--accent, #58a6ff);
+      border-color: var(--accent, #58a6ff);
+    }
+
+    .full-terminal-title {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+    }
+
+    .full-terminal-status {
+      font-size: 11px;
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+    }
+
+    .full-terminal-status.connected {
+      color: var(--ansi-green, #4ade80);
+    }
+
+    .full-terminal-status.error {
+      color: var(--ansi-red, #f87171);
+    }
+
+    .full-terminal-tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      background: var(--term-header-bg, var(--mrmd-popup-bg, #252526));
+      border-bottom: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+      flex-shrink: 0;
+    }
+
+    .full-terminal-tabs {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .full-terminal-tab,
+    .full-terminal-tab-add,
+    .full-terminal-tab-close {
+      height: 24px;
+      border: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+      border-radius: 6px;
+      background: transparent;
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0 8px;
+      white-space: nowrap;
+    }
+
+    .full-terminal-tab.active {
+      background: var(--accent, #58a6ff);
+      color: #fff;
+      border-color: var(--accent, #58a6ff);
+    }
+
+    .full-terminal-tab-add,
+    .full-terminal-tab-close {
+      width: 24px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .full-terminal-tab:hover,
+    .full-terminal-tab-add:hover,
+    .full-terminal-tab-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--term-foreground, var(--editor-foreground, #fff));
+    }
+
+    .full-terminal-body {
+      flex: 1;
+      min-height: 0;
+      padding: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .full-terminal-body .xterm {
+      height: 100%;
+    }
+
+    .full-terminal-body .xterm-viewport {
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      touch-action: none;
+      /* Hide native scrollbar — we draw our own */
+      scrollbar-width: none;
+    }
+    .full-terminal-body .xterm-viewport::-webkit-scrollbar {
+      display: none;
+    }
+
+    .full-terminal-body .xterm-screen {
+      touch-action: none;
+    }
+
+    /* Custom scroll track — always visible as a wide touch zone on right */
+    .term-scroll-track {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 40px;
+      z-index: 20;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.04);
+      border-left: 2px solid rgba(255, 255, 255, 0.12);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .term-scroll-track.scrub-active {
+      background: rgba(88, 166, 255, 0.1);
+      border-left-color: var(--accent, #58a6ff);
+    }
+
+    /* "SCROLL" label hint */
+    .term-scroll-track::after {
+      content: 'SCROLL';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255, 255, 255, 0.28);
+      font-size: 9px;
+      letter-spacing: 1px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      pointer-events: none;
+    }
+    .term-scroll-track.scrub-active::after {
+      color: var(--accent, #58a6ff);
+      opacity: 0.6;
+    }
+
+    .term-scroll-thumb {
+      position: absolute;
+      right: 4px;
+      width: 8px;
+      min-height: 24px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.35);
+      transition: background 0.15s, width 0.15s;
+    }
+    .term-scroll-track.scrub-active .term-scroll-thumb {
+      background: var(--accent, #58a6ff);
+      width: 12px;
+      right: 2px;
+    }
+
+    /* Speed badge — shows scroll direction/speed */
+    .term-scroll-speed {
+      position: absolute;
+      right: 48px;
+      transform: translateY(-50%);
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid var(--accent, #58a6ff);
+      color: #fff;
+      font-size: 16px;
+      pointer-events: none;
+      z-index: 21;
+      opacity: 0;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .term-scroll-speed.visible {
+      opacity: 1;
+    }
+
+    .full-terminal-mobile-keys {
+      display: none;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 4px 6px;
+      background: rgba(30, 30, 30, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .full-terminal-mobile-keys.collapsed {
+      display: none !important;
+      height: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .full-terminal-mobile-keys-toggle {
+      display: none;
+      width: 100%;
+      height: 22px;
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(30, 30, 30, 0.5);
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+      font-size: 10px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      z-index: 10;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .full-terminal-mobile-keys-toggle.active {
+      color: var(--term-foreground, var(--editor-foreground, #ddd));
+      border-top-color: var(--term-border, var(--widget-border, #3c3c3c));
+    }
+
+    .full-terminal-mobile-key {
+      min-width: 34px;
+      height: 26px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--term-header-fg, var(--widget-text-muted, #ccc));
+      font-size: 10px;
+      padding: 0 5px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .full-terminal-mobile-key:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .full-terminal-mobile-key.mod.active {
+      background: var(--accent, #58a6ff);
+      border-color: var(--accent, #58a6ff);
+      color: #fff;
+    }
+
+    .full-terminal-mobile-key.wide {
+      min-width: 48px;
+    }
+
+    body.terminal-focus .titlebar,
+    body.terminal-focus .status-bar,
+    body.terminal-focus .terminal-edge-indicator {
+      display: none !important;
+    }
+
+    body.terminal-focus .app-viewport {
+      height: 100vh;
+    }
+
+    body.terminal-focus .full-terminal-body {
+      padding: 0;
+    }
+
+    body.terminal-focus .full-terminal-tabs-bar,
+    body.terminal-focus .full-terminal-mobile-keys,
+    body.terminal-focus #full-terminal-back,
+    body.terminal-focus #full-terminal-split,
+    body.terminal-focus #full-terminal-full,
+    body.terminal-focus #full-terminal-kill,
+    body.terminal-focus #full-terminal-focus,
+    body.terminal-focus #full-terminal-status,
+    body.terminal-focus #full-terminal-title {
+      display: none !important;
+    }
+
+    body.terminal-focus .full-terminal-header {
+      justify-content: flex-end;
+      min-height: 28px;
+      padding: 4px 6px;
+    }
+
+    /* Edge indicator — subtle hint that terminal is available */
+    .terminal-edge-indicator {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 48px;
+      background: var(--term-border, var(--widget-border, #3c3c3c));
+      border-radius: 2px 0 0 2px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .terminal-edge-indicator.visible {
+      opacity: 0.65;
+      pointer-events: auto;
+      cursor: pointer;
+      width: 6px;
+      background: var(--accent, #58a6ff);
+    }
+
+    .terminal-edge-indicator.visible:hover {
+      opacity: 1;
+    }
+
+    /* =========================================================================
        MOBILE RESPONSIVE LAYER
        
        Inspired by Quarto, Astro docs, MkDocs Material, Docusaurus, and the
@@ -4341,6 +4783,116 @@
         height: 8px;
       }
 
+      /* Full terminal panel — compact header on mobile */
+      .full-terminal-header {
+        padding: 4px 8px;
+        min-height: 32px;
+        gap: 4px;
+      }
+
+      .full-terminal-back,
+      .full-terminal-mode-btn,
+      .full-terminal-close,
+      .full-terminal-focus-btn {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        font-size: 12px;
+      }
+
+      .full-terminal-back svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .full-terminal-title {
+        font-size: 11px;
+      }
+
+      .full-terminal-status {
+        font-size: 10px !important;
+      }
+
+      /* Compact tabs bar */
+      .full-terminal-tabs-bar {
+        padding: 3px 8px;
+        gap: 4px;
+      }
+
+      .full-terminal-tab,
+      .full-terminal-tab-add,
+      .full-terminal-tab-close {
+        height: 20px !important;
+        font-size: 10px !important;
+        padding: 0 6px;
+        border-radius: 4px;
+      }
+
+      .full-terminal-tab-add,
+      .full-terminal-tab-close {
+        width: 20px !important;
+        padding: 0;
+        font-size: 12px !important;
+      }
+
+      .full-terminal-mobile-keys {
+        display: flex;
+      }
+
+      .full-terminal-mobile-keys-toggle {
+        display: flex !important;
+      }
+
+      /* When terminal is active on mobile, hide the bottom rail bar to save space */
+      body.terminal-active-mobile .side-rail {
+        transform: translateY(100%) !important;
+        pointer-events: none;
+        opacity: 0;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+      }
+
+      /* Show a small floating button to bring the rail back */
+      .terminal-show-rail-btn {
+        display: none;
+        position: fixed;
+        bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+        right: 8px;
+        height: 22px;
+        padding: 0 8px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 11px;
+        background: rgba(30, 30, 30, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: var(--term-header-fg, var(--widget-text-muted, #ccc));
+        font-size: 10px;
+        cursor: pointer;
+        z-index: 460;
+        align-items: center;
+        gap: 3px;
+      }
+
+      body.terminal-active-mobile .terminal-show-rail-btn {
+        display: flex;
+      }
+
+      body.terminal-active-mobile.rail-visible .side-rail {
+        transform: translateY(0) !important;
+        pointer-events: auto;
+        opacity: 1;
+      }
+
+      body.terminal-active-mobile.rail-visible .terminal-show-rail-btn {
+        display: none;
+      }
+
+      /* Edge indicator — wider on mobile for easier swipe */
+      .terminal-edge-indicator {
+        width: 8px;
+        height: 64px;
+      }
+
       /* Hide less important status items on mobile */
       .status-file {
         max-width: 50vw;
@@ -4358,14 +4910,17 @@
         border-left: none;
         border-top: 1px solid var(--border);
         border-radius: 16px 16px 0 0;
-        transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(calc(100% + 40px));
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                    visibility 0.3s;
         box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
         z-index: 600;
+        visibility: hidden;
       }
 
       .rail-panel.open {
         transform: translateY(0);
+        visibility: visible;
       }
 
       .rail-panel-header {
@@ -4867,8 +5422,8 @@
         flex-direction: row !important;
         justify-content: space-around;
         align-items: center;
-        padding: 4px 0 !important;
-        padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 6px 0 4px !important;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
         border-left: none !important;
         border-top: 1px solid var(--border);
         background: var(--bg-secondary);
@@ -4876,6 +5431,8 @@
         -webkit-backdrop-filter: blur(16px);
         transform: none !important;
         z-index: 450 !important;
+        /* Prevent browser chrome from clipping the bar */
+        min-height: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       /* Always show rail on mobile (override .side-rail without .open) */
@@ -4934,12 +5491,15 @@
         border-radius: 16px 16px 0 0 !important;
         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.3) !important;
         z-index: 600 !important;
-        transform: translateY(100%) !important;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transform: translateY(calc(100% + 40px)) !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                    visibility 0.3s !important;
+        visibility: hidden !important;
       }
 
       .rail-panel.open {
         transform: translateY(0) !important;
+        visibility: visible !important;
       }
 
       /* Pinning doesn't make sense on mobile — just overlay */
@@ -5048,12 +5608,12 @@
 
       /* Push the editor bottom padding up to account for bottom tab bar */
       #editor-container {
-        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       /* Status bar: sits above the rail bottom bar */
       .status-bar {
-        bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important;
         z-index: 400;
       }
 
@@ -5086,10 +5646,13 @@
         height: calc(var(--mobile-vh, 100vh)) !important;
         max-height: 100dvh !important;
         border-radius: 0 !important;
+        transform: translateY(calc(100% + 40px)) !important;
+        visibility: hidden !important;
       }
 
       .rail-panel.open {
         transform: translateY(0) !important;
+        visibility: visible !important;
       }
 
       /* Panel content: fill remaining space, scroll */
@@ -5377,9 +5940,142 @@
         --bg-secondary: #0a0a0a;
       }
     }
+
+    /* ====================================================================
+       VOICE RECORDING — Full-screen shimmer + mic button
+       ==================================================================== */
+
+    /* Shimmer border overlay — covers entire .app when recording */
+    .voice-shimmer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99999;
+      border: 3px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      /* Animated gradient border */
+      border-image: linear-gradient(
+        90deg,
+        rgba(239, 68, 68, 0.0) 0%,
+        rgba(239, 68, 68, 0.7) 25%,
+        rgba(248, 113, 113, 0.9) 50%,
+        rgba(239, 68, 68, 0.7) 75%,
+        rgba(239, 68, 68, 0.0) 100%
+      ) 1;
+      animation: voice-shimmer-border 2s linear infinite;
+    }
+
+    .voice-shimmer-overlay.active {
+      display: block;
+    }
+
+    /* Inner glow */
+    .voice-shimmer-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.08),
+                  inset 0 0 60px rgba(239, 68, 68, 0.04);
+      pointer-events: none;
+      animation: voice-shimmer-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes voice-shimmer-border {
+      0% { border-image-source: linear-gradient(90deg, rgba(239,68,68,0) 0%, rgba(239,68,68,0.7) 25%, rgba(248,113,113,0.9) 50%, rgba(239,68,68,0.7) 75%, rgba(239,68,68,0) 100%); }
+      50% { border-image-source: linear-gradient(90deg, rgba(239,68,68,0.7) 0%, rgba(248,113,113,0.9) 25%, rgba(239,68,68,0.7) 50%, rgba(239,68,68,0) 75%, rgba(239,68,68,0.7) 100%); }
+      100% { border-image-source: linear-gradient(90deg, rgba(239,68,68,0) 0%, rgba(239,68,68,0.7) 25%, rgba(248,113,113,0.9) 50%, rgba(239,68,68,0.7) 75%, rgba(239,68,68,0) 100%); }
+    }
+
+    @keyframes voice-shimmer-glow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* Recording duration badge — top-center of screen */
+    .voice-recording-badge {
+      display: none;
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100000;
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      gap: 6px;
+      align-items: center;
+      font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .voice-recording-badge.active {
+      display: flex;
+    }
+
+    .voice-recording-badge .voice-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+      animation: voice-dot-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes voice-dot-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Mic button in mobile toolbar — matches existing titlebar-mobile-btn */
+    #mobile-voice-btn.voice-active {
+      color: rgba(239, 68, 68, 1);
+    }
+
+    /* Transcribing state */
+    .voice-recording-badge.transcribing {
+      background: rgba(99, 102, 241, 0.9);
+    }
+
+    /* Voice status toast */
+    .voice-toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100001;
+      background: var(--bg-secondary);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .voice-toast.visible {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
+  <!-- Voice recording shimmer overlay (covers entire viewport) -->
+  <div class="voice-shimmer-overlay" id="voice-shimmer-overlay"></div>
+  <div class="voice-recording-badge" id="voice-recording-badge" title="Click to stop recording">
+    <span class="voice-dot"></span>
+    <span class="voice-timer" id="voice-timer">0:00</span>
+  </div>
+  <div class="voice-toast" id="voice-toast"></div>
+
   <!-- =======================================================================
        DATA LOSS PREVENTION - Sync Warning Banner
        =======================================================================
@@ -5446,6 +6142,21 @@
             <path d="M4.5 4.5l2 2M9.5 9.5l2 2M11.5 4.5l-2 2M4.5 11.5l2-2"/>
           </svg>
         </button>
+        <button class="titlebar-btn titlebar-mobile-btn" id="mobile-voice-btn" title="Voice (Alt+W)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5.5" y="1.5" width="5" height="9" rx="2.5"/>
+            <path d="M3 7.5a5 5 0 0010 0"/>
+            <line x1="8" y1="12.5" x2="8" y2="14.5"/>
+            <line x1="5.5" y1="14.5" x2="10.5" y2="14.5"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn titlebar-mobile-btn" id="mobile-terminal-btn" title="Terminal">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>
+            <path d="M4.5 6l2.5 2-2.5 2"/>
+            <line x1="8.5" y1="10" x2="11.5" y2="10"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Desktop: rail toggle (right, absolute) -->
@@ -5458,6 +6169,10 @@
       </button>
     </div>
 
+    <div class="app-viewport" id="app-viewport">
+      <div class="app-slide-track" id="app-slide-track">
+        <!-- Page 1: Notebook -->
+        <div class="app-slide-page" id="slide-notebook">
     <div class="content">
       <!-- Project Navigation Sidebar -->
       <div id="nav-sidebar" class="nav-sidebar">
@@ -5527,6 +6242,64 @@
       <!-- Floating toggle when TOC is collapsed -->
       <button class="sidebar-toggle-floating toc-toggle-floating" id="toc-toggle-floating" title="Expand">‹</button>
     </div>
+    <!-- Edge indicator for swiping to terminal -->
+    <div class="terminal-edge-indicator" id="terminal-edge-indicator"></div>
+        </div><!-- /slide-notebook -->
+
+        <!-- Page 2: Full Terminal -->
+        <div class="app-slide-page" id="slide-terminal">
+          <div class="full-terminal-panel" id="full-terminal-panel">
+            <div class="full-terminal-header">
+              <button class="full-terminal-back" id="full-terminal-back" title="Back to notebook (Ctrl+`)" onclick="hideFullTerminal()">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 2L4 8l6 6"/>
+                </svg>
+              </button>
+              <span class="full-terminal-title" id="full-terminal-title">Terminal</span>
+              <button class="full-terminal-mode-btn" id="full-terminal-split" title="Split view" onclick="showSplitTerminal()" aria-label="Split view">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="3" width="4.8" height="10" rx="1.1"/><rect x="9" y="3" width="4.8" height="10" rx="1.1"/></svg>
+              </button>
+              <button class="full-terminal-mode-btn" id="full-terminal-full" title="Full terminal" onclick="showFullTerminal()" aria-label="Full terminal">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/></svg>
+              </button>
+              <button class="full-terminal-mode-btn" id="full-terminal-kill" title="Stop active terminal" aria-label="Stop active terminal">
+                <svg viewBox="0 0 16 16" fill="currentColor" stroke="none"><rect x="4.5" y="4.5" width="7" height="7" rx="1.2"/></svg>
+              </button>
+              <button class="full-terminal-focus-btn" id="full-terminal-focus" title="Focus mode" aria-label="Focus mode">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 2.5H2.5V6"/><path d="M10 2.5h3.5V6"/><path d="M6 13.5H2.5V10"/><path d="M10 13.5h3.5V10"/></svg>
+              </button>
+              <span class="full-terminal-status" id="full-terminal-status">○ not connected</span>
+              <button class="full-terminal-close" id="full-terminal-close" title="Close terminal" onclick="hideFullTerminal()">×</button>
+            </div>
+            <div class="full-terminal-tabs-bar">
+              <div class="full-terminal-tabs" id="full-terminal-tabs"></div>
+              <button class="full-terminal-tab-add" id="full-terminal-tab-add" title="New terminal tab">+</button>
+              <button class="full-terminal-tab-close" id="full-terminal-tab-close" title="Close active tab">×</button>
+            </div>
+            <div class="full-terminal-body" id="full-terminal-body"></div>
+            <button class="full-terminal-mobile-keys-toggle active" id="term-keys-toggle" title="Toggle key controls">Hide</button>
+            <div class="full-terminal-mobile-keys" id="full-terminal-mobile-keys">
+              <button class="full-terminal-mobile-key mod" id="term-mod-ctrl">Ctrl</button>
+              <button class="full-terminal-mobile-key mod" id="term-mod-alt">Alt</button>
+              <button class="full-terminal-mobile-key mod" id="term-mod-super">Super</button>
+              <button class="full-terminal-mobile-key mod" id="term-mod-shift">Shift</button>
+              <button class="full-terminal-mobile-key" data-term-seq="esc">Esc</button>
+              <button class="full-terminal-mobile-key" data-term-seq="tab">Tab</button>
+              <button class="full-terminal-mobile-key" data-term-seq="up">↑</button>
+              <button class="full-terminal-mobile-key" data-term-seq="left">←</button>
+              <button class="full-terminal-mobile-key" data-term-seq="down">↓</button>
+              <button class="full-terminal-mobile-key" data-term-seq="right">→</button>
+              <button class="full-terminal-mobile-key wide" data-term-seq="enter">Enter</button>
+              <button class="full-terminal-mobile-key wide" data-term-seq="backspace">⌫</button>
+              <button class="full-terminal-mobile-key wide" data-term-seq="ctrl-c">Ctrl+C</button>
+              <button class="full-terminal-mobile-key wide" data-term-seq="ctrl-l">Ctrl+L</button>
+              <button class="full-terminal-mobile-key wide" data-term-seq="ctrl-d">Ctrl+D</button>
+            </div>
+          </div>
+        </div><!-- /slide-terminal -->
+      </div><!-- /app-slide-track -->
+    </div><!-- /app-viewport -->
+    <button class="terminal-show-rail-btn" id="terminal-show-rail-btn">Rail</button>
 
     <!-- Side Rail -->
     <div class="side-rail" id="side-rail">
@@ -5536,6 +6309,15 @@
       <button class="rail-btn" data-panel="artifact" title="Artifact Preview"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 5h12M5 5v9"/></svg></button>
       <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
       <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
+
+      <div class="rail-divider"></div>
+      <button class="rail-btn" id="rail-terminal-btn" title="Terminal (Ctrl+`)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/>
+          <path d="M4.5 6l2.5 2-2.5 2"/>
+          <line x1="8.5" y1="10" x2="11.5" y2="10"/>
+        </svg>
+      </button>
 
       <div class="rail-spacer"></div>
 
@@ -5723,6 +6505,39 @@ session:
             <span class="rail-panel-item-label">Theme</span>
             <span class="rail-panel-item-meta" id="settings-theme">github</span>
           </div>
+          <div class="rail-panel-item" style="cursor: default;">
+            <span class="rail-panel-item-label">UI Scale</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button class="full-terminal-tab-close" style="width:24px;height:24px;" onclick="adjustUiScale(-5)" title="Smaller UI">−</button>
+              <span class="rail-panel-item-meta" id="settings-ui-scale">100%</span>
+              <button class="full-terminal-tab-add" style="width:24px;height:24px;" onclick="adjustUiScale(5)" title="Bigger UI">+</button>
+              <button class="full-terminal-tab" style="height:24px;" onclick="resetUiScale()" title="Reset UI scale">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Voice</div>
+          <div class="rail-panel-item" onclick="editVoiceShortcut()" title="Click to change shortcut">
+            <span class="rail-panel-item-label">Shortcut</span>
+            <span class="rail-panel-item-meta" id="settings-voice-shortcut">Alt+W</span>
+          </div>
+          <div class="rail-panel-item" onclick="cycleVoiceProvider()" title="Click to change transcription provider">
+            <span class="rail-panel-item-label">Provider</span>
+            <span class="rail-panel-item-meta" id="settings-voice-provider">parakeet</span>
+          </div>
+          <div class="rail-panel-item" onclick="editVoiceParakeetUrl()" title="Click to set Parakeet server URL">
+            <span class="rail-panel-item-label">Parakeet URL</span>
+            <span class="rail-panel-item-meta" id="settings-voice-parakeet" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">not set</span>
+          </div>
+          <div class="rail-panel-item" onclick="editVoiceApiKey()" title="Set API key for OpenAI/Groq">
+            <span class="rail-panel-item-label">API key</span>
+            <span class="rail-panel-item-meta" id="settings-voice-api-key">not set</span>
+          </div>
+          <div class="rail-panel-item" style="cursor: default;">
+            <span class="rail-panel-item-label">Status</span>
+            <span class="rail-panel-item-meta" id="settings-voice-status">—</span>
+          </div>
         </div>
 
         <div class="rail-panel-section">
@@ -5749,7 +6564,7 @@ session:
         <button class="ai-settings-btn" id="ai-settings-btn" title="AI Settings (API Keys, Models)">
           <svg viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/><path d="M13.3 8.9l.9.5c.2.1.3.4.2.6l-.9 1.5c-.1.2-.4.3-.6.2l-.9-.5c-.3.2-.6.4-1 .5l-.1 1c0 .3-.2.5-.5.5h-1.8c-.3 0-.5-.2-.5-.5l-.1-1c-.4-.1-.7-.3-1-.5l-.9.5c-.2.1-.5 0-.6-.2l-.9-1.5c-.1-.2 0-.5.2-.6l.9-.5c0-.3 0-.6 0-.9 0-.3 0-.6 0-.9l-.9-.5c-.2-.1-.3-.4-.2-.6l.9-1.5c.1-.2.4-.3.6-.2l.9.5c.3-.2.6-.4 1-.5l.1-1c0-.3.2-.5.5-.5h1.8c.3 0 .5.2.5.5l.1 1c.4.1.7.3 1 .5l.9-.5c.2-.1.5 0 .6.2l.9 1.5c.1.2 0 .5-.2.6l-.9.5c0 .3 0 .6 0 .9 0 .3 0 .6 0 .9z"/></svg>
         </button>
-        <button class="rail-panel-pin" data-pin-panel="ai" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="ai">×</button>
+        <button class="rail-panel-pin" data-pin-panel="ai" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="ai" onclick="closePanel('ai'); removeMobileRailScrim?.();">×</button>
       </div>
       <div class="rail-panel-content">
         <div id="ai-panel-status" class="ai-panel-status" style="display: none;">
@@ -6180,6 +6995,7 @@ session:
 
   <!-- Load mrmd-editor -->
   <script src="../mrmd-editor/dist/mrmd.iife.js"></script>
+  <script src="../mrmd-voice/dist/mrmd-voice.iife.js"></script>
 
   <!-- Load xterm.js for terminal blocks -->
   <link rel="stylesheet" href="./node_modules/xterm/css/xterm.css">
@@ -6267,6 +7083,32 @@ session:
       pickerVirtualInit: false,
       pickerShowAllFolders: false,
     };
+
+    const NOTEBOOK_SYNC_STATE_KEY = 'mrmd-notebook-sync-map';
+
+    function persistNotebookSyncMap() {
+      try {
+        const entries = Array.from(state.syncedNotebooks.entries());
+        localStorage.setItem(NOTEBOOK_SYNC_STATE_KEY, JSON.stringify(entries));
+      } catch (e) {
+        console.warn('[notebook] Failed to persist sync map:', e.message);
+      }
+    }
+
+    function restoreNotebookSyncMap() {
+      try {
+        const raw = localStorage.getItem(NOTEBOOK_SYNC_STATE_KEY);
+        if (!raw) return;
+        const entries = JSON.parse(raw);
+        if (!Array.isArray(entries)) return;
+        state.syncedNotebooks = new Map(entries.filter((x) => Array.isArray(x) && x.length === 2));
+        console.log('[notebook] Restored synced notebooks:', state.syncedNotebooks.size);
+      } catch (e) {
+        console.warn('[notebook] Failed to restore sync map:', e.message);
+      }
+    }
+
+    restoreNotebookSyncMap();
 
     // DEBUG: Expose state to window for console debugging
     window._state = state;
@@ -9873,6 +10715,7 @@ session:
         // Track the synced notebook
         console.log('[notebook] Adding to syncedNotebooks: key=', result.shadowPath, 'value=', ipynbPath);
         state.syncedNotebooks.set(result.shadowPath, ipynbPath);
+        persistNotebookSyncMap();
 
         return result.shadowPath;
       } catch (e) {
@@ -9903,6 +10746,7 @@ session:
           console.log('Stopping notebook sync for:', ipynbPath);
           await electronAPI.notebook.stopSync(ipynbPath);
           state.syncedNotebooks.delete(state.currentFile);
+          persistNotebookSyncMap();
         }
       }
 
@@ -9933,8 +10777,9 @@ session:
         // Check if already synced
         for (const [shadowPath, ipynb] of state.syncedNotebooks) {
           if (ipynb === filePath) {
-            console.log('Notebook already synced, opening shadow:', shadowPath);
-            filePath = shadowPath;
+            console.log('Notebook already synced, re-establishing sync and opening shadow:', shadowPath);
+            const restartedShadowPath = await startNotebookSync(filePath);
+            filePath = restartedShadowPath || shadowPath;
             break;
           }
         }
@@ -10155,6 +11000,9 @@ session:
         // Register PTY for terminal blocks (```term)
         registerPtyWithEditor();
 
+        // Reconnect full terminal panel for new file
+        reconnectFullTerminal();
+
       } catch (e) {
         console.error('Error opening file:', e);
         alert('Error: ' + e.message);
@@ -10216,6 +11064,11 @@ session:
         });
       });
 
+      // Terminal button in rail (not a panel — toggles full terminal view)
+      document.getElementById('rail-terminal-btn')?.addEventListener('click', () => {
+        toggleFullTerminal();
+      });
+
       // Keyboard shortcut: Ctrl+\ to toggle rail
       document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === '\\') {
@@ -10230,11 +11083,26 @@ session:
         if (e.key === 'Escape') {
           if (railState.activePanel) {
             closePanel(railState.activePanel);
+            removeMobileRailScrim();
           } else if (railState.open) {
             closeRail();
           }
         }
       });
+
+      // Safety net: close buttons should always work even after zoom/layout changes.
+      document.addEventListener('click', (e) => {
+        const closeBtn = e.target?.closest?.('.rail-panel-close');
+        if (!closeBtn) return;
+        const panel = closeBtn.closest('.rail-panel');
+        const panelId = panel?.id?.replace('panel-', '');
+        if (panelId) {
+          closePanel(panelId);
+        } else {
+          forceCloseAllPanels();
+        }
+        removeMobileRailScrim();
+      }, true);
     }
 
     /**
@@ -10304,6 +11172,10 @@ session:
         if (themeEl && statusTheme) {
           themeEl.textContent = statusTheme.textContent;
         }
+        const uiScaleEl = document.getElementById('settings-ui-scale');
+        if (uiScaleEl) {
+          uiScaleEl.textContent = `${Number(localStorage.getItem(UI_SCALE_KEY) || 100)}%`;
+        }
         refreshCloudStatus({ silent: true });
       }
     }
@@ -10315,12 +11187,29 @@ session:
       const panel = document.getElementById(`panel-${panelId}`);
       const btn = document.querySelector(`.rail-btn[data-panel="${panelId}"]`);
 
-      panel?.classList.remove('open');
+      // Force-close regardless of current rail state
+      panel?.classList.remove('open', 'pinned');
       btn?.classList.remove('active');
 
       if (railState.activePanel === panelId) {
         railState.activePanel = null;
       }
+      if (railState.pinnedPanel === panelId) {
+        railState.pinnedPanel = null;
+      }
+
+      // Remove panel-pinned layout side effects
+      const content = document.querySelector('.content');
+      content?.classList.remove('panel-pinned', 'panel-pinned-wide');
+    }
+
+    function forceCloseAllPanels() {
+      document.querySelectorAll('.rail-panel').forEach((p) => p.classList.remove('open', 'pinned'));
+      document.querySelectorAll('.rail-btn.active').forEach((b) => b.classList.remove('active'));
+      document.querySelector('.content')?.classList.remove('panel-pinned', 'panel-pinned-wide');
+      railState.activePanel = null;
+      railState.pinnedPanel = null;
+      removeMobileRailScrim();
     }
 
     /**
@@ -10367,6 +11256,7 @@ session:
     // Initialize rail on page load
     document.addEventListener('DOMContentLoaded', () => {
       initSideRail();
+      initFullTerminalPanel();
     });
 
     // =========================================================================
@@ -10528,6 +11418,12 @@ session:
             ctrlK.showCtrlKModal(view);
           }
         }, 200);
+      });
+
+      // ---- Terminal button ----
+      document.getElementById('mobile-terminal-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFullTerminal();
       });
 
       // Close mobile nav on Escape
@@ -15257,6 +16153,54 @@ session:
      * @param {Object} editor - The mrmd editor instance
      * @param {string} documentPath - Absolute path to the current document
      */
+
+    // Track which asset paths we've already attempted to download (avoid retries)
+    const _assetDownloadAttempted = new Set();
+
+    /**
+     * Download a missing asset from the cloud server and save it locally.
+     * Called when the asset resolver encounters a local path that might not
+     * exist (e.g. image added from phone/browser, synced via Yjs but not
+     * the file itself).
+     */
+    async function _downloadMissingAsset(localPath, projectRoot, editor) {
+      // Only available in Electron with cloud support
+      if (!electronAPI?.cloud?.fetchAsset) return;
+
+      // Compute relative path from project root
+      const relativePath = localPath.startsWith(projectRoot + '/')
+        ? localPath.slice(projectRoot.length + 1)
+        : localPath.startsWith(projectRoot)
+          ? localPath.slice(projectRoot.length).replace(/^\//, '')
+          : null;
+      if (!relativePath) return;
+
+      console.log(`[AssetSync] Checking asset: ${relativePath}`);
+
+      try {
+        const result = await electronAPI.cloud.fetchAsset(projectRoot, relativePath);
+        if (!result?.ok) {
+          if (result?.exists) return; // File already exists locally, no action needed
+          console.log(`[AssetSync] Could not fetch: ${relativePath} (${result?.reason || 'unknown'})`);
+          return;
+        }
+
+        console.log(`[AssetSync] Downloaded: ${relativePath} (${result.size} bytes)`);
+
+        // Trigger a re-render so the image loads now that the file exists
+        if (editor?.view) {
+          try {
+            // Dispatch a no-op transaction to force decoration rebuild
+            editor.view.dispatch({
+              effects: mrmd.codemirror.StateEffect.appendConfig.of([]),
+            });
+          } catch { /* ignore */ }
+        }
+      } catch (err) {
+        console.warn(`[AssetSync] Failed: ${relativePath}:`, err.message);
+      }
+    }
+
     function setupAssetResolver(editor, documentPath) {
       if (!editor?.view) return;
 
@@ -15330,6 +16274,15 @@ session:
         // Desktop/Electron mode: use file://
         const fileUrl = 'file://' + resolvedPath;
         console.log(`[AssetResolver] ${url} -> ${fileUrl}`);
+
+        // Cloud asset sync: if the file doesn't exist locally (e.g. added from
+        // phone/browser), try to download it from the cloud server in the
+        // background and re-render once saved.
+        if (!_assetDownloadAttempted.has(resolvedPath)) {
+          _assetDownloadAttempted.add(resolvedPath);
+          _downloadMissingAsset(resolvedPath, projectRoot, editor).catch(() => {});
+        }
+
         return fileUrl;
       };
 
@@ -16149,9 +17102,1200 @@ session:
         } else {
           console.log('[pty] PTY server not started (auto_start may be false)');
         }
+
+        // If full terminal already exists, reconnect only when needed.
+        // Avoid reconnect churn that causes flicker on mobile/web.
+        if (fullTermState.initialized) {
+          const nextBaseUrl = state.terminalConfig?.baseUrl || null;
+          const needsReconnect = fullTermState.baseUrl !== nextBaseUrl
+            || !fullTermState.ptyClient?.isConnected?.();
+          if (needsReconnect) {
+            reconnectFullTerminal();
+          }
+        }
       } catch (e) {
         console.error('[pty] Error registering PTY with editor:', e);
       }
+    }
+
+    // =========================================================================
+    // FULL TERMINAL PANEL — swipeable/shortcut-accessible terminal view
+    // =========================================================================
+
+    const fullTermState = {
+      active: false,       // Whether we're showing the terminal page
+      initialized: false,  // Whether xterm has been created
+      term: null,          // xterm.js Terminal instance
+      fitAddon: null,      // FitAddon instance
+      ptyClient: null,     // PtyClient instance
+      resizeObserver: null, // ResizeObserver for fit
+      sessionId: null,     // PTY session ID
+      retryTimer: null,    // reconnect timer when PTY isn't ready yet
+      inputHandlerDispose: null, // xterm onData subscription disposer
+      mode: 'hidden',
+      suppressDisconnectEvent: false,
+      reconnectBackoffMs: 800,
+      reconnectAttempts: 0,
+      baseUrl: null,
+      resizeFitTimer: null,
+      tabs: [], // { id, label, sessionId, cwd }
+      activeTabId: null,
+      nextTabId: 1,
+      modifiers: { ctrl: false, alt: false, super: false, shift: false },
+      fontSize: 14,
+      focusMode: false,
+    };
+
+    /**
+     * Toggle the full terminal panel (slide between notebook and terminal)
+     */
+    function toggleFullTerminal() {
+      if (fullTermState.active) {
+        hideFullTerminal();
+      } else {
+        showFullTerminal();
+      }
+    }
+
+    function updateFullTerminalModeUi() {
+      const splitBtn = document.getElementById('full-terminal-split');
+      const fullBtn = document.getElementById('full-terminal-full');
+      splitBtn?.classList.toggle('active', fullTermState.mode === 'split');
+      fullBtn?.classList.toggle('active', fullTermState.mode === 'full');
+    }
+
+    function isBrowserClient() {
+      return typeof window !== 'undefined' && Boolean(window.MRMD_SERVER_URL);
+    }
+
+    function getDefaultTerminalCwd() {
+      if (state.currentFile) {
+        const lastSlash = state.currentFile.lastIndexOf('/');
+        if (lastSlash > 0) return state.currentFile.substring(0, lastSlash);
+      }
+      return state.projectDir || '/tmp';
+    }
+
+    function buildTerminalTabLabel(indexHint = null) {
+      const i = indexHint ?? (fullTermState.tabs.length + 1);
+      return `Term ${i}`;
+    }
+
+    function getActiveTerminalTab() {
+      return fullTermState.tabs.find(t => t.id === fullTermState.activeTabId) || null;
+    }
+
+    function updateFullTerminalTitle() {
+      const titleEl = document.getElementById('full-terminal-title');
+      if (!titleEl) return;
+      const tab = getActiveTerminalTab();
+      const fileName = state.currentFile ? state.currentFile.split('/').pop() : 'Terminal';
+      titleEl.textContent = `${tab?.label || 'Terminal'} — ${fileName}`;
+    }
+
+    function renderFullTerminalTabs() {
+      const list = document.getElementById('full-terminal-tabs');
+      if (!list) return;
+
+      list.innerHTML = '';
+      fullTermState.tabs.forEach((tab) => {
+        const el = document.createElement('button');
+        el.className = `full-terminal-tab ${tab.id === fullTermState.activeTabId ? 'active' : ''}`;
+        el.textContent = tab.label;
+        el.title = `${tab.label} — ${tab.cwd}`;
+        el.onclick = () => switchFullTerminalTab(tab.id);
+        list.appendChild(el);
+      });
+
+      updateFullTerminalTitle();
+    }
+
+    function ensureTerminalTab() {
+      if (fullTermState.tabs.length > 0 && fullTermState.activeTabId) return getActiveTerminalTab();
+
+      const tab = {
+        id: `term-tab-${fullTermState.nextTabId++}`,
+        label: buildTerminalTabLabel(1),
+        sessionId: `fullterm:${state.currentFile || 'untitled'}:1`,
+        cwd: getDefaultTerminalCwd(),
+      };
+      fullTermState.tabs = [tab];
+      fullTermState.activeTabId = tab.id;
+      renderFullTerminalTabs();
+      return tab;
+    }
+
+    function createTerminalTab() {
+      const n = fullTermState.tabs.length + 1;
+      const tab = {
+        id: `term-tab-${fullTermState.nextTabId++}`,
+        label: buildTerminalTabLabel(n),
+        sessionId: `fullterm:${state.currentFile || 'untitled'}:${Date.now()}:${n}`,
+        cwd: getDefaultTerminalCwd(),
+      };
+      fullTermState.tabs.push(tab);
+      fullTermState.activeTabId = tab.id;
+      renderFullTerminalTabs();
+      if (fullTermState.initialized && fullTermState.term) {
+        fullTermState.term.clear();
+        connectFullTerminal(fullTermState.term, tab.sessionId, tab.cwd);
+      }
+      return tab;
+    }
+
+    function switchFullTerminalTab(tabId) {
+      if (!tabId || tabId === fullTermState.activeTabId) return;
+      const tab = fullTermState.tabs.find(t => t.id === tabId);
+      if (!tab) return;
+
+      fullTermState.activeTabId = tabId;
+      renderFullTerminalTabs();
+      if (fullTermState.term) {
+        fullTermState.term.clear();
+        connectFullTerminal(fullTermState.term, tab.sessionId, tab.cwd);
+      }
+    }
+
+    async function killActiveTerminalTab() {
+      const tab = getActiveTerminalTab();
+      if (!tab || !fullTermState.ptyClient) return;
+      try {
+        await fullTermState.ptyClient.kill();
+      } catch (e) {
+        console.warn('[FullTerm] Kill failed:', e.message);
+      }
+      if (fullTermState.term) {
+        fullTermState.term.clear();
+        fullTermState.term.write('\x1b[33m[Session stopped]\x1b[0m\r\n');
+      }
+    }
+
+    function closeActiveTerminalTab() {
+      if (fullTermState.tabs.length <= 1) {
+        hideFullTerminal();
+        return;
+      }
+      const currentId = fullTermState.activeTabId;
+      const idx = fullTermState.tabs.findIndex(t => t.id === currentId);
+      if (idx < 0) return;
+
+      fullTermState.tabs.splice(idx, 1);
+      const next = fullTermState.tabs[Math.max(0, idx - 1)] || fullTermState.tabs[0];
+      fullTermState.activeTabId = next?.id || null;
+      renderFullTerminalTabs();
+      if (next && fullTermState.term) {
+        fullTermState.term.clear();
+        connectFullTerminal(fullTermState.term, next.sessionId, next.cwd);
+      }
+    }
+
+    function updateTerminalModifierButtons() {
+      const m = fullTermState.modifiers;
+      document.getElementById('term-mod-ctrl')?.classList.toggle('active', !!m.ctrl);
+      document.getElementById('term-mod-alt')?.classList.toggle('active', !!m.alt);
+      document.getElementById('term-mod-super')?.classList.toggle('active', !!m.super);
+      document.getElementById('term-mod-shift')?.classList.toggle('active', !!m.shift);
+    }
+
+    function toggleTerminalModifier(name) {
+      if (!fullTermState.modifiers[name]) fullTermState.modifiers[name] = false;
+      fullTermState.modifiers[name] = !fullTermState.modifiers[name];
+      updateTerminalModifierButtons();
+    }
+
+    function clearTerminalModifiers() {
+      fullTermState.modifiers = { ctrl: false, alt: false, super: false, shift: false };
+      updateTerminalModifierButtons();
+    }
+
+    function terminalArrowSequence(dir) {
+      const map = { up: 'A', down: 'B', right: 'C', left: 'D' };
+      const code = map[dir] || 'A';
+      const m = fullTermState.modifiers;
+      const modValue = 1 + (m.shift ? 1 : 0) + (m.alt ? 2 : 0) + (m.ctrl ? 4 : 0) + (m.super ? 8 : 0);
+      if (modValue === 1) return `\x1b[${code}`;
+      return `\x1b[1;${modValue}${code}`;
+    }
+
+    function sendTerminalSoftKey(name) {
+      const client = fullTermState.ptyClient;
+      if (!client || !client.isConnected?.()) return;
+
+      let out = '';
+      switch (name) {
+        case 'esc': out = '\x1b'; break;
+        case 'tab': out = fullTermState.modifiers.shift ? '\x1b[Z' : '\t'; break;
+        case 'enter': out = '\r'; break;
+        case 'backspace': out = '\x7f'; break;
+        case 'up':
+        case 'down':
+        case 'left':
+        case 'right':
+          out = terminalArrowSequence(name);
+          break;
+        case 'ctrl-c': out = String.fromCharCode('C'.charCodeAt(0) - 64); break;
+        case 'ctrl-l': out = String.fromCharCode('L'.charCodeAt(0) - 64); break;
+        case 'ctrl-d': out = String.fromCharCode('D'.charCodeAt(0) - 64); break;
+        default:
+          return;
+      }
+
+      client.write(out);
+      // one-shot modifiers for better mobile ergonomics
+      clearTerminalModifiers();
+      fullTermState.term?.focus?.();
+    }
+
+    function initTerminalMobileControls() {
+      // Prevent all mobile key buttons from stealing focus (which dismisses the keyboard).
+      // mousedown/touchstart preventDefault stops focus shift.
+      // We fire the action on touchend (touch) or click (mouse), with a guard against double-fire.
+      const preventFocusSteal = (el, action) => {
+        if (!el) return;
+        let lastFired = 0;
+        const guard = () => {
+          const now = Date.now();
+          if (now - lastFired < 120) return;
+          lastFired = now;
+          action();
+        };
+        el.addEventListener('mousedown', (e) => e.preventDefault());
+        el.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        el.addEventListener('touchend', (e) => { e.preventDefault(); guard(); }, { passive: false });
+        el.addEventListener('click', (e) => { e.preventDefault(); guard(); });
+      };
+
+      const modBtns = {
+        ctrl: document.getElementById('term-mod-ctrl'),
+        alt: document.getElementById('term-mod-alt'),
+        super: document.getElementById('term-mod-super'),
+        shift: document.getElementById('term-mod-shift'),
+      };
+
+      Object.entries(modBtns).forEach(([name, btn]) => {
+        if (!btn) return;
+        preventFocusSteal(btn, () => toggleTerminalModifier(name));
+      });
+
+      document.querySelectorAll('#full-terminal-mobile-keys [data-term-seq]').forEach((btn) => {
+        preventFocusSteal(btn, () => sendTerminalSoftKey(btn.dataset.termSeq));
+      });
+
+      // Toggle mobile key controls visibility
+      const keysToggle = document.getElementById('term-keys-toggle');
+      if (keysToggle) {
+        const toggleKeysAction = () => {
+          const keysBar = document.getElementById('full-terminal-mobile-keys');
+          if (!keysBar) return;
+          const collapsed = keysBar.classList.toggle('collapsed');
+          keysToggle.textContent = collapsed ? 'Keys' : 'Hide';
+          keysToggle.classList.toggle('active', !collapsed);
+          // Re-fit terminal when key bar toggles
+          if (fullTermState.fitAddon) {
+            setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 80);
+          }
+        };
+        preventFocusSteal(keysToggle, toggleKeysAction);
+      }
+
+      // Toggle bottom rail bar visibility
+      document.getElementById('terminal-show-rail-btn')?.addEventListener('click', () => {
+        document.body.classList.toggle('rail-visible');
+        // Auto-hide rail again after a delay
+        setTimeout(() => {
+          document.body.classList.remove('rail-visible');
+        }, 5000);
+      });
+
+      updateTerminalModifierButtons();
+    }
+
+    function applyModifiersToInput(data) {
+      const m = fullTermState.modifiers;
+      if (!m.ctrl && !m.alt && !m.super && !m.shift) return data;
+
+      let out = data;
+      if (m.ctrl && typeof data === 'string' && data.length === 1) {
+        const ch = data.toUpperCase();
+        const code = ch.charCodeAt(0);
+        if (code >= 65 && code <= 90) {
+          out = String.fromCharCode(code - 64);
+        } else if (ch === ' ') {
+          out = '\x00';
+        }
+      }
+
+      if (m.alt || m.super) {
+        out = `\x1b${out}`;
+      }
+
+      clearTerminalModifiers();
+      return out;
+    }
+
+    function updateTerminalFocusButton() {
+      document.getElementById('full-terminal-focus')?.classList.toggle('active', !!fullTermState.focusMode);
+    }
+
+    function setTerminalFocusMode(on) {
+      fullTermState.focusMode = !!on;
+      document.body.classList.toggle('terminal-focus', fullTermState.focusMode);
+      updateTerminalFocusButton();
+      if (fullTermState.fitAddon) {
+        setTimeout(() => {
+          try { fullTermState.fitAddon.fit(); } catch (e) {}
+        }, 120);
+      }
+    }
+
+    function adjustTerminalFontSize(delta) {
+      const next = Math.max(10, Math.min(28, (fullTermState.fontSize || 14) + delta));
+      fullTermState.fontSize = next;
+      if (fullTermState.term) {
+        fullTermState.term.options.fontSize = next;
+        if (fullTermState.fitAddon) {
+          setTimeout(() => {
+            try { fullTermState.fitAddon.fit(); } catch (e) {}
+          }, 30);
+        }
+      }
+    }
+
+    function applyTerminalLayout(mode) {
+      const track = document.getElementById('app-slide-track');
+      const slideNotebook = document.getElementById('slide-notebook');
+      const slideTerminal = document.getElementById('slide-terminal');
+      if (!track || !slideNotebook || !slideTerminal) return;
+
+      // Always clear first so stale state can't survive transitions.
+      track.classList.remove('at-terminal', 'split');
+
+      // Reset inline layout
+      track.style.width = '100%';
+      track.style.transform = 'translateX(0)';
+      slideNotebook.style.display = 'flex';
+      slideTerminal.style.display = 'none';
+      slideNotebook.style.width = '100%';
+      slideNotebook.style.flex = '0 0 100%';
+      slideTerminal.style.width = '100%';
+      slideTerminal.style.flex = '0 0 100%';
+
+      if (mode === 'full') {
+        // True full terminal: hide notebook page entirely.
+        slideNotebook.style.display = 'none';
+        slideTerminal.style.display = 'flex';
+      } else if (mode === 'split') {
+        track.classList.add('split');
+        slideNotebook.style.display = 'flex';
+        slideTerminal.style.display = 'flex';
+        slideNotebook.style.width = '50%';
+        slideNotebook.style.flex = '0 0 50%';
+        slideTerminal.style.width = '50%';
+        slideTerminal.style.flex = '0 0 50%';
+      }
+      // hidden mode keeps reset defaults (notebook only)
+    }
+
+    /**
+     * Show the full terminal panel
+     */
+    function showFullTerminal() {
+      const track = document.getElementById('app-slide-track');
+      const viewport = document.getElementById('app-viewport');
+      const indicator = document.getElementById('terminal-edge-indicator');
+      if (!track) return;
+
+      // Force a true full-screen-like view inside the app
+      // (rail/panels can otherwise make the layout feel offset)
+      if (railState?.open) {
+        closeRail();
+      }
+
+      fullTermState.active = true;
+      fullTermState.mode = 'full';
+      viewport?.classList.remove('terminal-split'); // backward-compat cleanup
+      document.body.classList.add('terminal-active-mobile');
+      document.body.classList.remove('rail-visible');
+      ensureTerminalTab();
+      renderFullTerminalTabs();
+      applyTerminalLayout('full');
+      updateFullTerminalModeUi();
+      if (indicator) indicator.classList.remove('visible');
+
+      // Initialize terminal on first show
+      if (!fullTermState.initialized) {
+        initFullTerminal();
+      } else if (fullTermState.term) {
+        // Re-fit and refocus
+        setTimeout(() => {
+          if (fullTermState.fitAddon) {
+            try { fullTermState.fitAddon.fit(); } catch (e) {}
+          }
+          // Reconnect on demand if we got disconnected while hidden.
+          if (!fullTermState.ptyClient?.isConnected?.()) {
+            reconnectFullTerminal();
+          }
+          fullTermState.term.focus();
+        }, 350); // After transition
+      }
+    }
+
+    /**
+     * Show split notebook + terminal view
+     */
+    function showSplitTerminal() {
+      const track = document.getElementById('app-slide-track');
+      const viewport = document.getElementById('app-viewport');
+      const indicator = document.getElementById('terminal-edge-indicator');
+      if (!track) return;
+
+      if (railState?.open) {
+        closeRail();
+      }
+
+      fullTermState.active = true;
+      fullTermState.mode = 'split';
+      viewport?.classList.remove('terminal-split'); // backward-compat cleanup
+      document.body.classList.add('terminal-active-mobile');
+      document.body.classList.remove('rail-visible');
+      ensureTerminalTab();
+      renderFullTerminalTabs();
+      applyTerminalLayout('split');
+      updateFullTerminalModeUi();
+      if (indicator) indicator.classList.remove('visible');
+
+      if (!fullTermState.initialized) {
+        initFullTerminal();
+      } else if (fullTermState.term) {
+        setTimeout(() => {
+          if (fullTermState.fitAddon) {
+            try { fullTermState.fitAddon.fit(); } catch (e) {}
+          }
+          fullTermState.term.focus();
+        }, 100);
+      }
+    }
+
+    /**
+     * Hide the full terminal panel (go back to notebook)
+     */
+    function hideFullTerminal() {
+      const track = document.getElementById('app-slide-track');
+      const viewport = document.getElementById('app-viewport');
+      const indicator = document.getElementById('terminal-edge-indicator');
+      if (!track) return;
+
+      fullTermState.active = false;
+      fullTermState.mode = 'hidden';
+      setTerminalFocusMode(false);
+      document.body.classList.remove('terminal-active-mobile', 'rail-visible');
+      viewport?.classList.remove('terminal-split');
+      applyTerminalLayout('hidden');
+      updateFullTerminalModeUi();
+      if (indicator && fullTermState.initialized) {
+        indicator.classList.add('visible');
+      }
+
+      // Refocus editor
+      setTimeout(() => {
+        if (state.editor?.view) {
+          state.editor.view.focus();
+        }
+      }, 350);
+    }
+
+    function getFullTerminalXtermTheme() {
+      const style = getComputedStyle(document.documentElement);
+      const get = (name, fallback) => {
+        const value = style.getPropertyValue(name).trim();
+        return value || fallback;
+      };
+
+      return {
+        background: get('--term-background', get('--editor-background', '#1e1e1e')),
+        foreground: get('--term-foreground', get('--editor-foreground', '#d4d4d4')),
+        cursor: get('--term-cursor', get('--editor-cursor', '#aeafad')),
+        cursorAccent: get('--term-cursor-accent', get('--editor-background', '#1e1e1e')),
+        selectionBackground: get('--term-selection', get('--editor-selection', '#264f78')),
+        black: get('--ansi-black', '#1e1e1e'),
+        red: get('--ansi-red', '#f87171'),
+        green: get('--ansi-green', '#4ade80'),
+        yellow: get('--ansi-yellow', '#facc15'),
+        blue: get('--ansi-blue', '#60a5fa'),
+        magenta: get('--ansi-magenta', '#c084fc'),
+        cyan: get('--ansi-cyan', '#22d3ee'),
+        white: get('--ansi-white', '#e0e0e0'),
+        brightBlack: get('--ansi-bright-black', '#6b7280'),
+        brightRed: get('--ansi-bright-red', '#fca5a5'),
+        brightGreen: get('--ansi-bright-green', '#86efac'),
+        brightYellow: get('--ansi-bright-yellow', '#fde047'),
+        brightBlue: get('--ansi-bright-blue', '#93c5fd'),
+        brightMagenta: get('--ansi-bright-magenta', '#d8b4fe'),
+        brightCyan: get('--ansi-bright-cyan', '#67e8f9'),
+        brightWhite: get('--ansi-bright-white', '#ffffff'),
+      };
+    }
+
+    /**
+     * Initialize xterm.js in the full terminal panel
+     */
+    function initFullTerminal() {
+      const container = document.getElementById('full-terminal-body');
+      if (!container) return;
+
+      if (typeof Terminal === 'undefined') {
+        container.innerHTML = '<div style="padding:20px;color:#f87171;font-family:monospace;">xterm.js not loaded</div>';
+        return;
+      }
+
+      // Ensure at least one terminal tab exists
+      const tab = ensureTerminalTab();
+      const cwd = tab?.cwd || getDefaultTerminalCwd();
+      const sessionId = tab?.sessionId || `fullterm:${state.currentFile || 'untitled'}`;
+      fullTermState.sessionId = sessionId;
+
+      // Update title
+      const titleEl = document.getElementById('full-terminal-title');
+      if (titleEl) {
+        const fileName = state.currentFile ? state.currentFile.split('/').pop() : 'Terminal';
+        titleEl.textContent = `${tab?.label || 'Terminal'} — ${fileName}`;
+      }
+
+      // Get theme from CSS variables
+      const theme = getFullTerminalXtermTheme();
+
+      // Create terminal
+      const term = new Terminal({
+        cursorBlink: true,
+        fontSize: fullTermState.fontSize || 14,
+        fontFamily: '"SF Mono", "Fira Code", "Monaco", "Inconsolata", monospace',
+        scrollback: 50000,
+        convertEol: true,
+        theme: theme,
+      });
+
+      fullTermState.term = term;
+
+      // Fit addon
+      if (typeof FitAddon !== 'undefined') {
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        fullTermState.fitAddon = fitAddon;
+      }
+
+      // Web links addon
+      if (typeof WebLinksAddon !== 'undefined') {
+        term.loadAddon(new WebLinksAddon.WebLinksAddon());
+      }
+
+      // Open terminal in container
+      term.open(container);
+
+      // Fit after a moment
+      setTimeout(() => {
+        if (fullTermState.fitAddon) {
+          try { fullTermState.fitAddon.fit(); } catch (e) {}
+        }
+        term.focus();
+      }, 100);
+
+      // --- Mobile touch-scroll helper ---
+      // Two mechanisms:
+      // 1) Normal drag: swipe anywhere to scroll (direct scrollTop manipulation)
+      // 2) Speed scrubber: touch right edge, hold — a big scroll zone appears.
+      //    Moving finger up/down from start point scrolls at a speed proportional
+      //    to distance. Like a joystick for scrolling.
+      (function initTermTouchScroll() {
+        const screen = container.querySelector('.xterm-screen');
+        const vp = container.querySelector('.xterm-viewport');
+        if (!screen || !vp) return;
+
+        // --- Scroll indicator (right-edge track + thumb) ---
+        const track = document.createElement('div');
+        track.className = 'term-scroll-track';
+        container.appendChild(track);
+
+        const thumb = document.createElement('div');
+        thumb.className = 'term-scroll-thumb';
+        track.appendChild(thumb);
+
+        // Speed indicator — shows when scrubber is active
+        const speedBadge = document.createElement('div');
+        speedBadge.className = 'term-scroll-speed';
+        container.appendChild(speedBadge);
+
+        function updateScrollThumb() {
+          if (!vp.scrollHeight || vp.scrollHeight <= vp.clientHeight) {
+            thumb.style.opacity = '0';
+            return;
+          }
+          thumb.style.opacity = '1';
+          const ratio = vp.clientHeight / vp.scrollHeight;
+          const thumbH = Math.max(24, ratio * vp.clientHeight);
+          const thumbTop = (vp.scrollTop / (vp.scrollHeight - vp.clientHeight))
+                           * (vp.clientHeight - thumbH);
+          thumb.style.height = `${thumbH}px`;
+          thumb.style.top = `${thumbTop}px`;
+        }
+        vp.addEventListener('scroll', updateScrollThumb);
+        setTimeout(updateScrollThumb, 200);
+
+        // --- State ---
+        const RIGHT_EDGE_HARD = 40; // always scrub immediately in visible strip
+        const RIGHT_EDGE_SOFT = 68; // near edge: hold-to-scrub activation zone
+        const SCRUB_HOLD_MS = 180;
+        let mode = 'none'; // 'none' | 'drag' | 'arm-scrub' | 'scrub'
+        let startY = 0, prevY = 0;
+        let scrubAnchorY = 0; // Y when scrubber activated
+        let scrubRAF = null;
+        let scrubArmTimer = null;
+        let scrubSpeed = 0; // px/frame at 60fps
+        let dragMomentumRAF = null;
+        let velocityY = 0;
+        let prevTime = 0;
+
+        const stopAll = () => {
+          if (scrubRAF) { cancelAnimationFrame(scrubRAF); scrubRAF = null; }
+          if (dragMomentumRAF) { cancelAnimationFrame(dragMomentumRAF); dragMomentumRAF = null; }
+          if (scrubArmTimer) { clearTimeout(scrubArmTimer); scrubArmTimer = null; }
+          scrubSpeed = 0;
+          speedBadge.classList.remove('visible');
+          track.classList.remove('scrub-active');
+        };
+
+        const activateScrubAt = (clientY) => {
+          const rect = container.getBoundingClientRect();
+          mode = 'scrub';
+          scrubAnchorY = clientY;
+          scrubSpeed = 0;
+          track.classList.add('scrub-active');
+          speedBadge.classList.add('visible');
+          speedBadge.textContent = '⏸';
+          speedBadge.style.top = `${clientY - rect.top}px`;
+          scrubRAF = requestAnimationFrame(scrubLoop);
+        };
+
+        // Continuous scrub loop — runs while scrubber is active
+        function scrubLoop() {
+          if (mode !== 'scrub') return;
+          if (Math.abs(scrubSpeed) >= 0.35) {
+            vp.scrollTop += scrubSpeed;
+            updateScrollThumb();
+          }
+          scrubRAF = requestAnimationFrame(scrubLoop);
+        }
+
+        screen.addEventListener('touchstart', (e) => {
+          if (e.touches.length !== 1) return;
+          stopAll();
+          const t = e.touches[0];
+          startY = t.clientY;
+          prevY = t.clientY;
+          prevTime = performance.now();
+          velocityY = 0;
+
+          const rect = container.getBoundingClientRect();
+          const fromRight = rect.right - t.clientX;
+
+          if (fromRight <= RIGHT_EDGE_HARD) {
+            activateScrubAt(t.clientY);
+            e.preventDefault();
+            return;
+          }
+
+          if (fromRight <= RIGHT_EDGE_SOFT) {
+            mode = 'arm-scrub';
+            speedBadge.classList.add('visible');
+            speedBadge.textContent = 'Hold…';
+            speedBadge.style.top = `${t.clientY - rect.top}px`;
+            scrubArmTimer = setTimeout(() => {
+              scrubArmTimer = null;
+              if (mode === 'arm-scrub') activateScrubAt(prevY);
+            }, SCRUB_HOLD_MS);
+            e.preventDefault();
+            return;
+          }
+
+          mode = 'drag';
+        }, { passive: false });
+
+        screen.addEventListener('touchmove', (e) => {
+          if (e.touches.length !== 1) return;
+          const y = e.touches[0].clientY;
+
+          if (mode === 'arm-scrub') {
+            // If user moves too much before hold timeout, fall back to normal drag.
+            if (Math.abs(y - startY) > 10) {
+              if (scrubArmTimer) { clearTimeout(scrubArmTimer); scrubArmTimer = null; }
+              speedBadge.classList.remove('visible');
+              mode = 'drag';
+            } else {
+              const rect = container.getBoundingClientRect();
+              speedBadge.style.top = `${y - rect.top}px`;
+              e.preventDefault();
+              return;
+            }
+          }
+
+          if (mode === 'scrub') {
+            const delta = y - scrubAnchorY; // + = finger below anchor = scroll down
+            const dist = Math.abs(delta);
+            const sign = delta > 0 ? 1 : -1;
+            // More responsive curve with tiny deadzone
+            let speed;
+            if (dist < 3) speed = 0;
+            else if (dist < 24) speed = sign * (dist - 3) * 0.8;
+            else if (dist < 80) speed = sign * (17 + (dist - 24) * 1.8);
+            else speed = sign * (118 + (dist - 80) * 2.8);
+            scrubSpeed = speed;
+
+            const rect = container.getBoundingClientRect();
+            speedBadge.style.top = `${y - rect.top}px`;
+            const absSpeed = Math.abs(speed);
+            if (absSpeed < 1) speedBadge.textContent = '⏸';
+            else if (absSpeed < 20) speedBadge.textContent = sign > 0 ? '▼' : '▲';
+            else if (absSpeed < 80) speedBadge.textContent = sign > 0 ? '▼▼' : '▲▲';
+            else speedBadge.textContent = sign > 0 ? '⏬' : '⏫';
+
+            e.preventDefault();
+            return;
+          }
+
+          if (mode === 'drag') {
+            const dy = prevY - y;
+            const now = performance.now();
+            const dt = now - prevTime;
+            if (dt > 0) {
+              const iv = dy / dt;
+              velocityY = velocityY * 0.6 + iv * 0.4;
+            }
+            prevY = y;
+            prevTime = now;
+
+            if (Math.abs(y - startY) > 5) {
+              vp.scrollTop += dy;
+              updateScrollThumb();
+              e.preventDefault();
+            }
+          }
+        }, { passive: false });
+
+        const finishTouch = () => {
+          if (mode === 'scrub' || mode === 'arm-scrub') {
+            stopAll();
+            mode = 'none';
+            return;
+          }
+
+          if (mode === 'drag') {
+            mode = 'none';
+            // Momentum
+            let v = velocityY;
+            if (Math.abs(v) < 0.15) return;
+            let last = performance.now();
+            function tick(now) {
+              const dt = now - last;
+              last = now;
+              v *= Math.pow(0.97, dt / 16);
+              if (Math.abs(v) < 0.05) return;
+              vp.scrollTop += v * dt;
+              updateScrollThumb();
+              dragMomentumRAF = requestAnimationFrame(tick);
+            }
+            dragMomentumRAF = requestAnimationFrame(tick);
+          }
+          mode = 'none';
+        };
+
+        screen.addEventListener('touchend', finishTouch, { passive: true });
+        screen.addEventListener('touchcancel', finishTouch, { passive: true });
+      })();
+
+      // Resize observer
+      fullTermState.resizeObserver = new ResizeObserver(() => {
+        if (fullTermState.resizeFitTimer) {
+          clearTimeout(fullTermState.resizeFitTimer);
+        }
+        fullTermState.resizeFitTimer = setTimeout(() => {
+          if (fullTermState.fitAddon && term.element) {
+            try {
+              fullTermState.fitAddon.fit();
+              if (fullTermState.ptyClient?.isConnected()) {
+                fullTermState.ptyClient.resize(term.cols, term.rows);
+              }
+            } catch (e) {}
+          }
+        }, 90);
+      });
+      fullTermState.resizeObserver.observe(container);
+
+      // Connect to PTY
+      connectFullTerminal(term, sessionId, cwd);
+
+      // Watch for theme changes
+      const themeObserver = new MutationObserver(() => {
+        requestAnimationFrame(() => {
+          term.options.theme = getFullTerminalXtermTheme();
+        });
+      });
+      themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+
+      fullTermState.initialized = true;
+
+      // Show edge indicator when we go back
+      const indicator = document.getElementById('terminal-edge-indicator');
+      if (indicator) indicator.classList.add('visible');
+    }
+
+    /**
+     * Connect the full terminal to the PTY server
+     */
+    function connectFullTerminal(term, sessionId, cwd) {
+      // Tear down any previous client/listener first
+      if (fullTermState.retryTimer) {
+        clearTimeout(fullTermState.retryTimer);
+        fullTermState.retryTimer = null;
+      }
+      if (fullTermState.ptyClient) {
+        fullTermState.suppressDisconnectEvent = true;
+        try { fullTermState.ptyClient.disconnect(); } catch (e) {}
+        fullTermState.ptyClient = null;
+      }
+      if (fullTermState.inputHandlerDispose) {
+        try { fullTermState.inputHandlerDispose.dispose?.(); } catch (e) {}
+        fullTermState.inputHandlerDispose = null;
+      }
+
+      // Need a PTY port — use the same one as terminal blocks
+      const baseUrl = state.terminalConfig?.baseUrl;
+      fullTermState.baseUrl = baseUrl || null;
+      if (!baseUrl) {
+        term.write('\x1b[33m[Waiting for PTY server...]\x1b[0m\r\n');
+        term.write('\x1b[33m[Retrying automatically...]\x1b[0m\r\n');
+        updateFullTermStatus('offline');
+
+        // Auto-retry: runtime registration is async and can lag behind UI open.
+        fullTermState.retryTimer = setTimeout(() => {
+          if (fullTermState.initialized && fullTermState.term) {
+            connectFullTerminal(fullTermState.term, sessionId, cwd);
+          }
+        }, 1200);
+        return;
+      }
+
+      updateFullTermStatus('connecting');
+
+      const client = new mrmd.terminal.PtyClient({
+        baseUrl: baseUrl,
+        sessionId: sessionId,
+        cwd: cwd,
+        filePath: state.currentFile,
+        onData: (data) => term.write(data),
+        onConnect: () => {
+          console.log('[FullTerm] Connected');
+          updateFullTermStatus('connected');
+          fullTermState.reconnectBackoffMs = 800;
+          fullTermState.reconnectAttempts = 0;
+        },
+        onDisconnect: (code, reason) => {
+          if (fullTermState.suppressDisconnectEvent) {
+            fullTermState.suppressDisconnectEvent = false;
+            return;
+          }
+
+          console.log('[FullTerm] Disconnected:', code, reason);
+          updateFullTermStatus('disconnected');
+
+          // Auto-reconnect while panel is active (with stricter limits on web/mobile)
+          if (fullTermState.active && fullTermState.term) {
+            const browserClient = isBrowserClient();
+            if (browserClient && fullTermState.reconnectAttempts >= 2) {
+              // Avoid endless reconnect flicker loops on mobile browsers.
+              return;
+            }
+
+            const delay = Math.min(fullTermState.reconnectBackoffMs || 800, browserClient ? 2500 : 5000);
+            fullTermState.retryTimer = setTimeout(() => {
+              fullTermState.reconnectAttempts += 1;
+              connectFullTerminal(fullTermState.term, sessionId, cwd);
+            }, delay);
+            fullTermState.reconnectBackoffMs = Math.min(delay * 1.6, browserClient ? 2500 : 5000);
+          }
+        },
+        onError: (err) => {
+          console.error('[FullTerm] Error:', err);
+          updateFullTermStatus('error');
+        },
+      });
+
+      fullTermState.ptyClient = client;
+
+      client.connect().then(() => {
+        if (fullTermState.fitAddon) {
+          client.resize(term.cols, term.rows);
+        }
+      }).catch((err) => {
+        console.error('[FullTerm] Connect failed:', err);
+        term.write('\x1b[31m[Failed to connect to PTY server]\x1b[0m\r\n');
+        updateFullTermStatus('error');
+
+        if (fullTermState.active && fullTermState.term) {
+          const browserClient = isBrowserClient();
+          if (browserClient && fullTermState.reconnectAttempts >= 2) {
+            return;
+          }
+
+          const delay = Math.min(fullTermState.reconnectBackoffMs || 800, browserClient ? 2500 : 5000);
+          fullTermState.retryTimer = setTimeout(() => {
+            fullTermState.reconnectAttempts += 1;
+            connectFullTerminal(fullTermState.term, sessionId, cwd);
+          }, delay);
+          fullTermState.reconnectBackoffMs = Math.min(delay * 1.6, browserClient ? 2500 : 5000);
+        }
+      });
+
+      // Forward input
+      fullTermState.inputHandlerDispose = term.onData((data) => {
+        client.write(applyModifiersToInput(data));
+      });
+    }
+
+    /**
+     * Update full terminal status indicator
+     */
+    function updateFullTermStatus(status) {
+      const el = document.getElementById('full-terminal-status');
+      if (!el) return;
+      const map = {
+        'connecting': '○ connecting...',
+        'connected': '● connected',
+        'disconnected': '○ disconnected',
+        'offline': '○ offline',
+        'error': '✕ error',
+      };
+      el.textContent = map[status] || status;
+      el.className = `full-terminal-status ${status}`;
+    }
+
+    /**
+     * Reconnect full terminal when file changes
+     * Call this when navigating to a new notebook
+     */
+    function reconnectFullTerminal() {
+      if (!fullTermState.initialized) return;
+
+      if (fullTermState.retryTimer) {
+        clearTimeout(fullTermState.retryTimer);
+        fullTermState.retryTimer = null;
+      }
+
+      // Disconnect old
+      if (fullTermState.ptyClient) {
+        fullTermState.suppressDisconnectEvent = true;
+        fullTermState.ptyClient.disconnect();
+        fullTermState.ptyClient = null;
+      }
+      if (fullTermState.inputHandlerDispose) {
+        try { fullTermState.inputHandlerDispose.dispose?.(); } catch (e) {}
+        fullTermState.inputHandlerDispose = null;
+      }
+
+      // Clear terminal
+      if (fullTermState.term) {
+        fullTermState.term.clear();
+      }
+
+      const tab = ensureTerminalTab();
+      const cwd = tab?.cwd || getDefaultTerminalCwd();
+      const sessionId = tab?.sessionId || `fullterm:${state.currentFile || 'untitled'}`;
+      fullTermState.sessionId = sessionId;
+
+      // Update title
+      const titleEl = document.getElementById('full-terminal-title');
+      if (titleEl) {
+        const fileName = state.currentFile ? state.currentFile.split('/').pop() : 'Terminal';
+        titleEl.textContent = `${tab?.label || 'Terminal'} — ${fileName}`;
+      }
+
+      // Reconnect
+      if (fullTermState.term) {
+        connectFullTerminal(fullTermState.term, sessionId, cwd);
+      }
+    }
+
+    /**
+     * Set up swipe gestures for terminal panel on touch devices
+     */
+    function initTerminalSwipeGestures() {
+      const viewport = document.getElementById('app-viewport');
+      if (!viewport) return;
+
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchStartTime = 0;
+      let isSwiping = false;
+
+      viewport.addEventListener('touchstart', (e) => {
+        // Only track single finger touches
+        if (e.touches.length !== 1) return;
+
+        // Don't treat terminal content scroll/keys as a panel swipe.
+        if (e.target && e.target.closest && (e.target.closest('#full-terminal-body') || e.target.closest('#full-terminal-mobile-keys'))) {
+          isSwiping = false;
+          return;
+        }
+
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isSwiping = false;
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1) return;
+
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+
+        // Determine if this is a horizontal swipe (not vertical scroll)
+        if (!isSwiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          isSwiping = true;
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
+
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - touchStartX;
+        const dt = Date.now() - touchStartTime;
+
+        // Swipe left (show terminal) — must be fast enough and far enough
+        if (dx < -50 && dt < 500 && !fullTermState.active) {
+          showFullTerminal();
+        }
+        // Swipe right (show notebook)
+        else if (dx > 50 && dt < 500 && fullTermState.active) {
+          hideFullTerminal();
+        }
+
+        isSwiping = false;
+      }, { passive: true });
+    }
+
+    /**
+     * Initialize full terminal panel — keyboard shortcut + swipe + button handlers
+     */
+    function initFullTerminalPanel() {
+      // Back/close button
+      const backBtn = document.getElementById('full-terminal-back');
+      if (backBtn) {
+        backBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          hideFullTerminal();
+        });
+      }
+
+      const closeBtn = document.getElementById('full-terminal-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          hideFullTerminal();
+        });
+      }
+
+      const splitBtn = document.getElementById('full-terminal-split');
+      if (splitBtn) {
+        splitBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          showSplitTerminal();
+        });
+      }
+
+      const fullBtn = document.getElementById('full-terminal-full');
+      if (fullBtn) {
+        fullBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          showFullTerminal();
+        });
+      }
+
+      document.getElementById('full-terminal-tab-add')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        createTerminalTab();
+      });
+
+      document.getElementById('full-terminal-tab-close')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeActiveTerminalTab();
+      });
+
+      document.getElementById('full-terminal-kill')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await killActiveTerminalTab();
+      });
+
+      document.getElementById('full-terminal-font-dec')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        adjustTerminalFontSize(-1);
+      });
+
+      document.getElementById('full-terminal-font-inc')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        adjustTerminalFontSize(1);
+      });
+
+      document.getElementById('full-terminal-focus')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        setTerminalFocusMode(!fullTermState.focusMode);
+      });
+
+      // Hard reset any stale terminal layout classes at startup
+      const viewport = document.getElementById('app-viewport');
+      viewport?.classList.remove('terminal-split');
+      fullTermState.active = false;
+      fullTermState.mode = 'hidden';
+      setTerminalFocusMode(false);
+      ensureTerminalTab();
+      applyTerminalLayout('hidden');
+
+      updateFullTerminalModeUi();
+      initTerminalMobileControls();
+
+      // Edge indicator click
+      const indicator = document.getElementById('terminal-edge-indicator');
+      if (indicator) {
+        indicator.addEventListener('click', () => {
+          showFullTerminal();
+        });
+      }
+
+      // Keyboard shortcut: Ctrl+` (backtick) to toggle
+      document.addEventListener('keydown', (e) => {
+        // Ctrl+` or Cmd+` to toggle terminal
+        if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFullTerminal();
+          return;
+        }
+
+        // Escape from terminal goes back to notebook
+        if (e.key === 'Escape' && fullTermState.active) {
+          // Only if the terminal panel is the focus context
+          const activeEl = document.activeElement;
+          const termPanel = document.getElementById('full-terminal-panel');
+          if (termPanel && (termPanel.contains(activeEl) || activeEl === document.body)) {
+            e.preventDefault();
+            hideFullTerminal();
+          }
+        }
+      }, true); // Capture phase to beat xterm's handlers
+
+      // Touch swipe gestures
+      initTerminalSwipeGestures();
+
+      console.log('[FullTerm] Panel initialized — Ctrl+` to toggle, swipe on mobile');
     }
 
     /**
@@ -17882,6 +20026,51 @@ python: .venv
       document.body.appendChild(overlay);
     }
 
+    const UI_SCALE_KEY = 'mrmd-ui-scale';
+
+    function applyUiScale(scale, { persist = true } = {}) {
+      const clamped = Math.max(75, Math.min(140, Number(scale) || 100));
+      const el = document.getElementById('settings-ui-scale');
+      if (el) el.textContent = `${Math.round(clamped)}%`;
+
+      if (document.body?.style && 'zoom' in document.body.style) {
+        document.body.style.zoom = `${clamped}%`;
+      } else {
+        const ratio = clamped / 100;
+        document.body.style.transform = `scale(${ratio})`;
+        document.body.style.transformOrigin = 'top left';
+        document.body.style.width = `${100 / ratio}%`;
+      }
+
+      // Scaling can leave mobile bottom-sheet panels in awkward states.
+      // Force-close all side panels after scale changes.
+      forceCloseAllPanels();
+
+      if (persist) {
+        localStorage.setItem(UI_SCALE_KEY, String(Math.round(clamped)));
+      }
+
+      if (fullTermState?.fitAddon) {
+        setTimeout(() => {
+          try { fullTermState.fitAddon.fit(); } catch (e) {}
+        }, 120);
+      }
+    }
+
+    function adjustUiScale(delta) {
+      const current = Number(localStorage.getItem(UI_SCALE_KEY) || 100);
+      applyUiScale(current + Number(delta || 0));
+    }
+
+    function resetUiScale() {
+      applyUiScale(100);
+    }
+
+    function loadSavedUiScale() {
+      const saved = Number(localStorage.getItem(UI_SCALE_KEY) || 100);
+      applyUiScale(saved, { persist: false });
+    }
+
     function loadSavedTheme() {
       // Register custom themes first
       registerCustomThemes();
@@ -18466,6 +20655,513 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
     }
 
     // =========================================================================
+    // VOICE-TO-TEXT
+    // =========================================================================
+
+    /** @type {MrmdVoice.MrmdVoice|null} */
+    let voiceInstance = null;
+    let voiceTimerInterval = null;
+    let voiceParakeetUrl = '';
+    let voiceProvider = 'parakeet'; // parakeet | openai | groq
+    let voiceApiKeyConfigured = false;
+
+    /**
+     * File extension for the recording MIME type.
+     */
+    function voiceMimeToExt(mime) {
+      if (mime.includes('webm')) return 'webm';
+      if (mime.includes('ogg')) return 'ogg';
+      if (mime.includes('mp4')) return 'm4a';
+      return 'webm';
+    }
+
+    /**
+     * Save a voice audio blob as a project asset.
+     * Uses the asset service for binary-safe writes.
+     */
+    async function saveVoiceBlob(blob, recordingId, suffix = '') {
+      if (!state.project?.root) {
+        console.warn('[voice] No project open — cannot save audio');
+        return;
+      }
+
+      const ext = voiceMimeToExt(blob.type);
+      const filename = `voice/${recordingId}${suffix}.${ext}`;
+
+      try {
+        const arrayBuf = await blob.arrayBuffer();
+        const uint8 = new Uint8Array(arrayBuf);
+        await electronAPI.asset.save(state.project.root, uint8, filename);
+        console.log(`[voice] Saved audio: _assets/${filename} (${(blob.size / 1024).toFixed(1)}KB)`);
+      } catch (err) {
+        console.error('[voice] Failed to save audio:', err);
+      }
+    }
+
+    /**
+     * Clean up voice assets older than 1 hour.
+     */
+    async function cleanupVoiceAssets() {
+      if (!state.project?.root) return;
+
+      try {
+        // List all assets and find voice recordings
+        const assets = await electronAPI.asset.list(state.project.root);
+        if (!assets?.length) return;
+
+        const cutoff = Date.now() - (60 * 60 * 1000); // 1 hour ago
+        for (const asset of assets) {
+          // Only clean up voice recordings (in voice/ subdir)
+          const assetName = asset.path || asset.name || '';
+          if (!assetName.includes('voice/')) continue;
+
+          // Parse timestamp from filename: 2026-02-23T06-31-56
+          const match = assetName.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})/);
+          if (match) {
+            // Convert back: 2026-02-23T06-31-56 → 2026-02-23T06:31:56
+            const isoStr = match[1].replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+            const ts = new Date(isoStr).getTime();
+            if (ts && ts < cutoff) {
+              try {
+                await electronAPI.asset.delete(state.project.root, assetName);
+                console.log(`[voice] Cleaned up old recording: ${assetName}`);
+              } catch { /* ignore */ }
+            }
+          }
+        }
+      } catch {
+        // Best-effort cleanup — don't block anything
+      }
+    }
+
+    function initVoice() {
+      if (typeof MrmdVoice === 'undefined') {
+        console.warn('[voice] mrmd-voice not loaded — voice features disabled');
+        return;
+      }
+
+      voiceInstance = new MrmdVoice.MrmdVoice({
+        onSaveCheckpoint: async (blob, recordingId) => {
+          await saveVoiceBlob(blob, recordingId, '.checkpoint');
+        },
+        onSaveAudio: async (blob, recordingId) => {
+          await saveVoiceBlob(blob, recordingId);
+        },
+        onRecordingStart: (recordingId) => {
+          console.log(`[voice] Recording started: ${recordingId}`);
+          setVoiceRecordingUI(true);
+        },
+        onRecordingStop: ({ duration }) => {
+          console.log(`[voice] Recording stopped: ${duration.toFixed(1)}s`);
+        },
+        onStatusChange: (status) => {
+          if (status === 'idle') {
+            setVoiceRecordingUI(false);
+          } else if (status === 'transcribing') {
+            setVoiceTranscribingUI();
+          }
+        },
+        onTranscribing: () => {
+          showVoiceToast('Transcribing...');
+        },
+        onTranscriptionComplete: ({ text, backend, insertedTo }) => {
+          const preview = text.length > 60 ? text.substring(0, 60) + '…' : text;
+          showVoiceToast(`✓ ${preview}`);
+          console.log(`[voice] Transcription (${backend} → ${insertedTo}): ${text}`);
+        },
+        onTranscriptionError: (msg) => {
+          showVoiceToast(`⚠ ${msg}`);
+        },
+      });
+
+      // Wire text routing to editor
+      voiceInstance.textRouter.onInsertToEditor = (text) => {
+        if (state.editor?.view) {
+          const cursor = state.editor.view.state.selection.main.head;
+          state.editor.view.dispatch({
+            changes: { from: cursor, insert: text },
+            selection: { anchor: cursor + text.length },
+          });
+        }
+      };
+
+      // Wire text routing to terminal (write to active PTY)
+      voiceInstance.textRouter.onInsertToTerminal = (text) => {
+        // Write to the active full-terminal PTY client
+        if (fullTermState.ptyClient?.isConnected?.()) {
+          fullTermState.ptyClient.write(text);
+        }
+      };
+
+      // Load voice settings (Parakeet URL, shortcut)
+      loadVoiceSettings();
+      loadVoiceShortcut();
+
+      // Set up mic button click
+      document.getElementById('mobile-voice-btn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleVoice();
+      });
+
+      // Set up recording badge click (stop recording)
+      document.getElementById('voice-recording-badge')?.addEventListener('click', () => {
+        if (voiceInstance?.recording) {
+          toggleVoice();
+        }
+      });
+
+      // Run cleanup on init and every 15 minutes
+      cleanupVoiceAssets();
+      setInterval(cleanupVoiceAssets, 15 * 60 * 1000);
+    }
+
+    async function loadVoiceSettings() {
+      if (!voiceInstance) return;
+      try {
+        voiceParakeetUrl = await electronAPI.settings.get('voice.parakeetUrl', '') || '';
+        voiceProvider = await electronAPI.settings.get('voice.provider', 'parakeet') || 'parakeet';
+
+        updateVoiceParakeetDisplay(voiceParakeetUrl);
+        updateVoiceProviderDisplay();
+
+        await configureVoiceBackends();
+
+        // Check backend status after a short delay (let connections settle)
+        setTimeout(updateVoiceStatusDisplay, 1500);
+      } catch (err) {
+        console.warn('[voice] Could not load voice settings:', err);
+      }
+    }
+
+    async function configureVoiceBackends() {
+      if (!voiceInstance) return;
+
+      // Reset all backends first
+      voiceInstance.setParakeetUrl('');
+      voiceInstance.clearApiBackends?.();
+
+      if (voiceProvider === 'parakeet') {
+        if (voiceParakeetUrl) {
+          voiceInstance.setParakeetBridge(
+            async (blob) => {
+              const arr = new Uint8Array(await blob.arrayBuffer());
+              return await electronAPI.voice.transcribeParakeet({
+                audioBytes: Array.from(arr),
+                mimeType: blob.type || 'audio/webm',
+                url: voiceParakeetUrl,
+              });
+            },
+            async () => {
+              const res = await electronAPI.voice.checkParakeet(voiceParakeetUrl);
+              return !!res?.available;
+            }
+          );
+          console.log(`[voice] Parakeet bridge backend: ${voiceParakeetUrl}`);
+        }
+        updateVoiceApiKeyDisplay(false);
+        return;
+      }
+
+      // API providers
+      const apiKey = await electronAPI.settings.getApiKey(voiceProvider);
+      const hasKey = !!(apiKey && String(apiKey).trim());
+      voiceApiKeyConfigured = hasKey;
+      updateVoiceApiKeyDisplay(hasKey);
+
+      if (!hasKey) return;
+
+      const modelKey = `voice.${voiceProvider}Model`;
+      const model = await electronAPI.settings.get(modelKey, '');
+      voiceInstance.setApiBackend(voiceProvider, apiKey, model || undefined);
+    }
+
+    async function toggleVoice() {
+      if (!voiceInstance) return;
+      try {
+        await voiceInstance.toggle();
+      } catch (err) {
+        console.error('[voice] Toggle failed:', err);
+        showVoiceToast(`⚠ Microphone error: ${err.message}`);
+      }
+    }
+
+    function setVoiceRecordingUI(active) {
+      const shimmer = document.getElementById('voice-shimmer-overlay');
+      const badge = document.getElementById('voice-recording-badge');
+      const micBtn = document.getElementById('mobile-voice-btn');
+
+      if (active) {
+        shimmer?.classList.add('active');
+        badge?.classList.remove('transcribing');
+        badge?.classList.add('active');
+        micBtn?.classList.add('voice-active');
+        startVoiceTimer();
+      } else {
+        shimmer?.classList.remove('active');
+        badge?.classList.remove('active', 'transcribing');
+        micBtn?.classList.remove('voice-active');
+        stopVoiceTimer();
+      }
+    }
+
+    function setVoiceTranscribingUI() {
+      const badge = document.getElementById('voice-recording-badge');
+      const timer = document.getElementById('voice-timer');
+      badge?.classList.remove('active');
+      badge?.classList.add('active', 'transcribing');
+      if (timer) timer.textContent = '⏳';
+      stopVoiceTimer();
+
+      // Keep shimmer but change to transcribing state
+      const shimmer = document.getElementById('voice-shimmer-overlay');
+      shimmer?.classList.remove('active');
+    }
+
+    function startVoiceTimer() {
+      stopVoiceTimer();
+      const timer = document.getElementById('voice-timer');
+      const updateTimer = () => {
+        if (!voiceInstance?.recording) return;
+        const secs = Math.floor(voiceInstance.elapsed);
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        if (timer) timer.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      };
+      updateTimer();
+      voiceTimerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function stopVoiceTimer() {
+      if (voiceTimerInterval) {
+        clearInterval(voiceTimerInterval);
+        voiceTimerInterval = null;
+      }
+    }
+
+    let voiceToastTimeout = null;
+    function showVoiceToast(message, durationMs = 3000) {
+      const toast = document.getElementById('voice-toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('visible');
+      clearTimeout(voiceToastTimeout);
+      voiceToastTimeout = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, durationMs);
+    }
+
+    // ---- Voice shortcut configuration ----
+
+    // Default shortcut: { altKey: true, key: 'w' }
+    let voiceShortcut = { altKey: true, ctrlKey: false, metaKey: false, shiftKey: false, key: 'w' };
+
+    function voiceShortcutLabel() {
+      const parts = [];
+      if (voiceShortcut.ctrlKey) parts.push('Ctrl');
+      if (voiceShortcut.altKey) parts.push('Alt');
+      if (voiceShortcut.metaKey) parts.push('Cmd');
+      if (voiceShortcut.shiftKey) parts.push('Shift');
+      parts.push(voiceShortcut.key.toUpperCase());
+      return parts.join('+');
+    }
+
+    function matchesVoiceShortcut(e) {
+      return e.altKey === !!voiceShortcut.altKey
+        && e.ctrlKey === !!voiceShortcut.ctrlKey
+        && e.metaKey === !!voiceShortcut.metaKey
+        && e.shiftKey === !!voiceShortcut.shiftKey
+        && e.key.toLowerCase() === voiceShortcut.key.toLowerCase();
+    }
+
+    async function loadVoiceShortcut() {
+      try {
+        const saved = await electronAPI.settings.get('voice.shortcut', null);
+        if (saved && saved.key) {
+          voiceShortcut = saved;
+        }
+      } catch { /* use default */ }
+      updateVoiceShortcutDisplay();
+    }
+
+    async function saveVoiceShortcut(shortcut) {
+      voiceShortcut = shortcut;
+      try {
+        await electronAPI.settings.set('voice.shortcut', shortcut);
+      } catch (err) {
+        console.warn('[voice] Failed to save shortcut:', err);
+      }
+      updateVoiceShortcutDisplay();
+    }
+
+    function updateVoiceShortcutDisplay() {
+      const el = document.getElementById('settings-voice-shortcut');
+      if (el) el.textContent = voiceShortcutLabel();
+      // Also update the mic button tooltip
+      const micBtn = document.getElementById('mobile-voice-btn');
+      if (micBtn) micBtn.title = `Voice (${voiceShortcutLabel()})`;
+    }
+
+    function editVoiceShortcut() {
+      const el = document.getElementById('settings-voice-shortcut');
+      if (!el) return;
+
+      el.textContent = 'Press shortcut...';
+      el.style.color = 'var(--accent)';
+
+      function onKey(e) {
+        // Ignore lone modifier keys
+        if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        document.removeEventListener('keydown', onKey, { capture: true });
+        el.style.color = '';
+
+        // Require at least one modifier
+        if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          el.textContent = voiceShortcutLabel();
+          showVoiceToast('Shortcut must include a modifier key (Alt, Ctrl, Cmd, Shift)');
+          return;
+        }
+
+        const newShortcut = {
+          altKey: e.altKey,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+          key: e.key.length === 1 ? e.key.toLowerCase() : e.key,
+        };
+
+        saveVoiceShortcut(newShortcut);
+        showVoiceToast(`Voice shortcut set to ${voiceShortcutLabel()}`);
+      }
+
+      document.addEventListener('keydown', onKey, { capture: true });
+
+      // Cancel on Escape or after 5 seconds
+      const cancel = () => {
+        document.removeEventListener('keydown', onKey, { capture: true });
+        el.style.color = '';
+        el.textContent = voiceShortcutLabel();
+      };
+      setTimeout(cancel, 5000);
+    }
+
+    function updateVoiceProviderDisplay() {
+      const el = document.getElementById('settings-voice-provider');
+      if (el) el.textContent = voiceProvider;
+    }
+
+    async function cycleVoiceProvider() {
+      const providers = ['parakeet', 'openai', 'groq'];
+      const idx = providers.indexOf(voiceProvider);
+      voiceProvider = providers[(idx + 1) % providers.length];
+      await electronAPI.settings.set('voice.provider', voiceProvider);
+      updateVoiceProviderDisplay();
+      await configureVoiceBackends();
+      await updateVoiceStatusDisplay();
+      showVoiceToast(`Voice provider: ${voiceProvider}`);
+    }
+
+    async function editVoiceParakeetUrl() {
+      const current = voiceParakeetUrl || '';
+      const url = window.prompt('Parakeet WebSocket URL (e.g., ws://192.168.2.24:8765):', current);
+      if (url === null) return;
+
+      const trimmed = String(url || '').trim();
+      try {
+        await electronAPI.settings.set('voice.parakeetUrl', trimmed);
+        voiceParakeetUrl = trimmed;
+        updateVoiceParakeetDisplay(trimmed);
+        if (voiceProvider === 'parakeet') {
+          await configureVoiceBackends();
+          await updateVoiceStatusDisplay();
+        }
+        showVoiceToast(trimmed ? `Parakeet URL set` : 'Parakeet URL cleared');
+      } catch (err) {
+        showVoiceToast(`⚠ Failed to save: ${err.message}`);
+      }
+    }
+
+    async function editVoiceApiKey() {
+      if (voiceProvider === 'parakeet') {
+        showVoiceToast('Switch provider to OpenAI or Groq first');
+        return;
+      }
+
+      const hasKey = await electronAPI.settings.hasApiKey(voiceProvider);
+      const input = window.prompt(
+        `Set ${voiceProvider.toUpperCase()} API key (${hasKey ? 'currently set' : 'not set'}):`,
+        ''
+      );
+      if (input === null) return;
+
+      const key = String(input || '').trim();
+      try {
+        await electronAPI.settings.setApiKey(voiceProvider, key);
+        await configureVoiceBackends();
+        await updateVoiceStatusDisplay();
+        showVoiceToast(key ? `${voiceProvider} API key saved` : `${voiceProvider} API key cleared`);
+      } catch (err) {
+        showVoiceToast(`⚠ Failed to save API key: ${err.message}`);
+      }
+    }
+
+    function updateVoiceParakeetDisplay(url) {
+      const el = document.getElementById('settings-voice-parakeet');
+      if (el) {
+        el.textContent = url || 'not set';
+        el.title = url || '';
+      }
+    }
+
+    function updateVoiceApiKeyDisplay(hasKey) {
+      const el = document.getElementById('settings-voice-api-key');
+      if (!el) return;
+      if (voiceProvider === 'parakeet') {
+        el.textContent = 'n/a';
+        el.style.color = 'var(--text-dim)';
+        return;
+      }
+      el.textContent = hasKey ? 'configured' : 'not set';
+      el.style.color = hasKey ? 'var(--success)' : 'var(--warning)';
+    }
+
+    async function updateVoiceStatusDisplay() {
+      const el = document.getElementById('settings-voice-status');
+      if (!el || !voiceInstance) return;
+
+      el.textContent = 'checking...';
+      try {
+        const status = await voiceInstance.getBackendStatus();
+        const active = status.find(b => b.available);
+        if (active) {
+          const label = active.name.startsWith('api:') ? active.name.replace('api:', '') : active.name;
+          el.textContent = `✓ ${label}`;
+          el.style.color = 'var(--success)';
+        } else if (status.length > 0) {
+          el.textContent = '✕ unreachable';
+          el.style.color = 'var(--error)';
+        } else {
+          el.textContent = 'no backend';
+          el.style.color = 'var(--text-dim)';
+        }
+      } catch {
+        el.textContent = '—';
+        el.style.color = '';
+      }
+    }
+
+    // Global voice shortcut handler (uses configurable shortcut)
+    document.addEventListener('keydown', (e) => {
+      if (matchesVoiceShortcut(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleVoice();
+      }
+    }, { capture: true });
+
+    // =========================================================================
     // INITIALIZATION
     // =========================================================================
 
@@ -18514,6 +21210,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       // Load saved theme (must be after mrmd.js is loaded)
       loadSavedTheme();
+      loadSavedUiScale();
 
       // Set up project file change listener
       electronAPI.project.onChanged(({ projectRoot }) => {
@@ -18533,6 +21230,9 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       // DATA LOSS PREVENTION: Start watchdog for periodic backups
       startWatchdog();
+
+      // Initialize voice-to-text
+      initVoice();
 
       // Show file picker on start
       setTimeout(showFilePicker, 100);

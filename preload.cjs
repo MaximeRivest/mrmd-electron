@@ -227,6 +227,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // VOICE API
+  // ==========================================================================
+
+  voice: {
+    checkParakeet: (url) => ipcRenderer.invoke('voice:checkParakeet', { url }),
+    transcribeParakeet: ({ audioBytes, mimeType, url }) =>
+      ipcRenderer.invoke('voice:transcribeParakeet', { audioBytes, mimeType, url }),
+  },
+
+  // ==========================================================================
   // CLOUD AUTH + SYNC API
   // ==========================================================================
 
@@ -236,6 +246,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     signOut: () => ipcRenderer.invoke('cloud:signOut'),
     validate: () => ipcRenderer.invoke('cloud:validate'),
     bridgeDoc: (projectDir, docName) => ipcRenderer.invoke('cloud:bridgeDoc', { projectDir, docName }),
+    fetchAsset: (localProjectRoot, relativePath) => ipcRenderer.invoke('cloud:fetchAsset', { localProjectRoot, relativePath }),
   },
 
   // ==========================================================================
