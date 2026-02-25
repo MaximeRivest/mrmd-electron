@@ -1342,6 +1342,144 @@
       background: var(--hover-bg);
     }
 
+    .voice-history-search {
+      width: 100%;
+      margin: 0 0 8px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .voice-history-search:focus {
+      border-color: var(--accent);
+    }
+
+    .voice-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .voice-history-empty {
+      color: var(--text-dim);
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    .voice-history-item {
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 8px;
+    }
+
+    .voice-history-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .voice-history-text {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .voice-history-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .voice-history-action {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 5px;
+      font-size: 11px;
+      padding: 3px 7px;
+      cursor: pointer;
+    }
+
+    .voice-history-action:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+      border-color: var(--text-dim);
+    }
+
+    .voice-history-action:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .voice-retranscribe-dialog {
+      width: min(420px, calc(100vw - 40px));
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      color: var(--text);
+    }
+
+    .voice-retranscribe-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .voice-retranscribe-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .voice-retranscribe-row label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .voice-retranscribe-row select,
+    .voice-retranscribe-row input {
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 9px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .voice-retranscribe-row select:focus,
+    .voice-retranscribe-row input:focus {
+      border-color: var(--accent);
+    }
+
+    .voice-retranscribe-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .voice-retranscribe-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
     .cloud-account-summary {
       font-size: 12px;
       line-height: 1.45;
@@ -4224,7 +4362,26 @@
     }
 
     .app-slide-track.split #slide-terminal {
-      border-left: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+      border-left: none;
+    }
+
+    /* Draggable split divider */
+    .split-divider {
+      display: none;
+      width: 5px;
+      cursor: col-resize;
+      background: var(--term-border, var(--widget-border, #3c3c3c));
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+      transition: background 0.15s;
+    }
+    .split-divider:hover,
+    .split-divider.dragging {
+      background: var(--accent, #4fc3f7);
+    }
+    .app-slide-track.split .split-divider {
+      display: block;
     }
 
     /* Hide terminal pane by default; show in split/full modes */
@@ -4859,14 +5016,15 @@
         bottom: calc(4px + env(safe-area-inset-bottom, 0px));
         right: 8px;
         height: 22px;
-        padding: 0 8px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 0 9px;
+        border: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
         border-radius: 11px;
-        background: rgba(30, 30, 30, 0.75);
+        background: var(--term-header-bg, var(--mrmd-popup-bg, #252526));
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        color: var(--term-header-fg, var(--widget-text-muted, #ccc));
+        color: var(--term-header-fg, var(--widget-text-muted, #bbb));
         font-size: 10px;
+        letter-spacing: 0.02em;
         cursor: pointer;
         z-index: 460;
         align-items: center;
@@ -6043,6 +6201,11 @@
       background: rgba(99, 102, 241, 0.9);
     }
 
+    .voice-recording-badge.warning {
+      background: rgba(245, 158, 11, 0.92);
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), 0 0 16px rgba(245, 158, 11, 0.25);
+    }
+
     /* Voice status toast */
     .voice-toast {
       position: fixed;
@@ -6246,6 +6409,9 @@
     <div class="terminal-edge-indicator" id="terminal-edge-indicator"></div>
         </div><!-- /slide-notebook -->
 
+        <!-- Draggable split divider (visible only in split mode) -->
+        <div class="split-divider" id="split-divider"></div>
+
         <!-- Page 2: Full Terminal -->
         <div class="app-slide-page" id="slide-terminal">
           <div class="full-terminal-panel" id="full-terminal-panel">
@@ -6308,6 +6474,7 @@
       <button class="rail-btn" data-panel="variables" title="Variables"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l2 8h4M10 4l2 8"/></svg></button>
       <button class="rail-btn" data-panel="artifact" title="Artifact Preview"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 5h12M5 5v9"/></svg></button>
       <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
+      <button class="rail-btn" data-panel="voice-history" title="Voice History"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5a2 2 0 012 2V8a2 2 0 11-4 0V4.5a2 2 0 012-2z"/><path d="M4.5 7.5v.5a3.5 3.5 0 007 0v-.5"/><path d="M8 11.5v2"/><path d="M6 13.5h4"/></svg></button>
       <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
 
       <div class="rail-divider"></div>
@@ -6541,6 +6708,18 @@ session:
         </div>
 
         <div class="rail-panel-section">
+          <div class="rail-panel-section-title">AI Defaults</div>
+          <div class="rail-panel-item" onclick="cycleDefaultJuice()" title="Click to change default quality level">
+            <span class="rail-panel-item-label">Quality</span>
+            <span class="rail-panel-item-meta" id="settings-default-juice">1</span>
+          </div>
+          <div class="rail-panel-item" onclick="cycleDefaultReasoning()" title="Click to change default reasoning level">
+            <span class="rail-panel-item-label">Reasoning</span>
+            <span class="rail-panel-item-meta" id="settings-default-reasoning">0</span>
+          </div>
+        </div>
+
+        <div class="rail-panel-section">
           <div class="rail-panel-section-title">Cloud Sync</div>
           <div class="cloud-account-summary" id="cloud-account-summary">Checking cloud status...</div>
           <div class="cloud-account-user" id="cloud-account-user" style="display: none;"></div>
@@ -6581,8 +6760,8 @@ session:
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Quality <span class="ai-level-hint">Shift+1-5</span></div>
           <div class="ai-juice-selector">
-            <button class="ai-juice-btn" data-juice="0" title="Quick - Fast & cheap (Shift+1)">1</button>
-            <button class="ai-juice-btn selected" data-juice="1" title="Balanced - Good quality (Shift+2)">2</button>
+            <button class="ai-juice-btn selected" data-juice="0" title="Quick - Fast & cheap (Shift+1)">1</button>
+            <button class="ai-juice-btn" data-juice="1" title="Balanced - Good quality (Shift+2)">2</button>
             <button class="ai-juice-btn" data-juice="2" title="Deep - Deep reasoning (Shift+3)">3</button>
             <button class="ai-juice-btn" data-juice="3" title="Maximum - Best single model (Shift+4)">4</button>
             <button class="ai-juice-btn" data-juice="4" title="Ultimate - Multi-model (Shift+5)">5</button>
@@ -6591,8 +6770,8 @@ session:
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Reasoning <span class="ai-level-hint">0-5</span></div>
           <div class="ai-juice-selector">
-            <button class="ai-reasoning-btn" data-reasoning="0" title="Off - No extended thinking (0)">0</button>
-            <button class="ai-reasoning-btn selected" data-reasoning="1" title="Minimal - Light reasoning (1)">1</button>
+            <button class="ai-reasoning-btn selected" data-reasoning="0" title="Off - No extended thinking (0)">0</button>
+            <button class="ai-reasoning-btn" data-reasoning="1" title="Minimal - Light reasoning (1)">1</button>
             <button class="ai-reasoning-btn" data-reasoning="2" title="Low - Some reasoning (2)">2</button>
             <button class="ai-reasoning-btn" data-reasoning="3" title="Medium - Moderate reasoning (3)">3</button>
             <button class="ai-reasoning-btn" data-reasoning="4" title="High - Deep reasoning (4)">4</button>
@@ -6675,6 +6854,48 @@ session:
             <span class="ai-cmd-label">Address All</span>
             <span class="ai-cmd-hint">document</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Voice History -->
+    <div class="rail-panel" id="panel-voice-history">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Voice History</span>
+        <button class="rail-panel-btn" id="voice-history-refresh" title="Refresh"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <button class="rail-panel-btn" id="voice-history-clear" title="Clear history"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V3h4v1M5 4l.5 9h5L11 4"/></svg></button>
+        <button class="rail-panel-pin" data-pin-panel="voice-history" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.95 5.95 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="voice-history">×</button>
+      </div>
+      <div class="rail-panel-content">
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Last hour</div>
+          <input id="voice-history-search" class="voice-history-search" type="text" placeholder="Filter text/provider/model..." autocomplete="off" spellcheck="false" />
+          <div id="voice-history-list" class="voice-history-list">
+            <div class="voice-history-empty">No recent transcriptions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="voice-retranscribe-overlay" style="display:none;">
+      <div class="voice-retranscribe-dialog">
+        <div class="voice-retranscribe-title">Retranscribe audio</div>
+        <div class="voice-retranscribe-row">
+          <label for="voice-retranscribe-provider">Provider</label>
+          <select id="voice-retranscribe-provider">
+            <option value="parakeet">parakeet</option>
+            <option value="openai">openai</option>
+            <option value="groq">groq</option>
+          </select>
+        </div>
+        <div class="voice-retranscribe-row">
+          <label for="voice-retranscribe-model">Model (optional)</label>
+          <input id="voice-retranscribe-model" type="text" placeholder="Use configured model if empty" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="voice-retranscribe-hint" id="voice-retranscribe-hint">Uses current app backend settings and API keys.</div>
+        <div class="voice-retranscribe-actions">
+          <button class="cloud-btn cloud-btn-secondary" id="voice-retranscribe-cancel">Cancel</button>
+          <button class="cloud-btn cloud-btn-primary" id="voice-retranscribe-run">Retranscribe</button>
         </div>
       </div>
     </div>
@@ -10858,7 +11079,7 @@ session:
         }
 
         // Editor options
-        const currentTheme = localStorage.getItem('mrmd-theme') || 'daylight';
+        const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
         const editorOptions = {
           theme: currentTheme,
           cellControls: {
@@ -10902,6 +11123,18 @@ session:
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
+
+        // Place cursor on first empty line (after frontmatter) for a clean first impression.
+        // Without this, cursor lands at position 0, showing raw YAML frontmatter source.
+        if (mrmd.findInitialCursorPosition) {
+          const pos = mrmd.findInitialCursorPosition(state.editor.getContent());
+          if (pos > 0) {
+            state.editor.view.dispatch({
+              selection: { anchor: pos },
+              scrollIntoView: true,
+            });
+          }
+        }
 
         // Ensure this document is added to the cloud bridge (if signed in).
         if (window.electronAPI?.cloud?.bridgeDoc) {
@@ -11177,6 +11410,8 @@ session:
           uiScaleEl.textContent = `${Number(localStorage.getItem(UI_SCALE_KEY) || 100)}%`;
         }
         refreshCloudStatus({ silent: true });
+      } else if (panelId === 'voice-history') {
+        renderVoiceHistoryPanel();
       }
     }
 
@@ -14355,12 +14590,12 @@ session:
     /**
      * Current juice level (0-4)
      */
-    let currentJuiceLevel = 1;
+    let currentJuiceLevel = 0;
 
     /**
      * Current reasoning level (0-5)
      */
-    let currentReasoningLevel = 1;
+    let currentReasoningLevel = 0;
 
     /**
      * Map of juice levels to whether they support reasoning
@@ -14412,6 +14647,57 @@ session:
       document.querySelectorAll('.ai-reasoning-btn').forEach(btn => {
         btn.classList.toggle('selected', parseInt(btn.dataset.reasoning) === currentReasoningLevel);
       });
+    }
+
+    // =========================================================================
+    // AI Default Level Settings
+    // =========================================================================
+
+    /**
+     * Load saved default AI levels from settings and apply them.
+     * Called on startup after AI client is ready.
+     */
+    async function loadDefaultAiLevels() {
+      try {
+        const savedJuice = await electronAPI.settings.get('defaults.juiceLevel', 1);
+        const savedReasoning = await electronAPI.settings.get('defaults.reasoningLevel', 0);
+        const juice = parseInt(savedJuice);
+        const reasoning = parseInt(savedReasoning);
+        if (!isNaN(juice)) setJuiceLevel(juice - 1); // Settings stores 1-5, internal uses 0-4
+        if (!isNaN(reasoning)) setReasoningLevel(reasoning);
+        updateDefaultAiDisplay();
+      } catch (err) {
+        console.warn('[ai] Could not load default AI levels:', err);
+      }
+    }
+
+    function updateDefaultAiDisplay() {
+      const juiceEl = document.getElementById('settings-default-juice');
+      const reasoningEl = document.getElementById('settings-default-reasoning');
+      if (juiceEl) juiceEl.textContent = currentJuiceLevel + 1; // Display 1-5
+      if (reasoningEl) reasoningEl.textContent = currentReasoningLevel;
+    }
+
+    async function cycleDefaultJuice() {
+      const next = (currentJuiceLevel + 1) % 5; // 0-4 cycle
+      setJuiceLevel(next);
+      try {
+        await electronAPI.settings.set('defaults.juiceLevel', next + 1); // Store as 1-5
+      } catch (err) {
+        console.warn('[ai] Could not save default juice level:', err);
+      }
+      updateDefaultAiDisplay();
+    }
+
+    async function cycleDefaultReasoning() {
+      const next = (currentReasoningLevel + 1) % 6; // 0-5 cycle
+      setReasoningLevel(next);
+      try {
+        await electronAPI.settings.set('defaults.reasoningLevel', next);
+      } catch (err) {
+        console.warn('[ai] Could not save default reasoning level:', err);
+      }
+      updateDefaultAiDisplay();
     }
 
     // =========================================================================
@@ -14601,6 +14887,7 @@ session:
     // Initialize AI panel on load
     document.addEventListener('DOMContentLoaded', () => {
       initAiPanel();
+      loadDefaultAiLevels(); // Apply saved default juice/reasoning levels
       initAiSettingsModal();
       initCloudUi();
       initCloudDiagnosticsModal();
@@ -17150,10 +17437,13 @@ session:
      * Toggle the full terminal panel (slide between notebook and terminal)
      */
     function toggleFullTerminal() {
-      if (fullTermState.active) {
-        hideFullTerminal();
-      } else {
+      // Cycle: hidden → split → full → hidden
+      if (!fullTermState.active || fullTermState.mode === 'hidden') {
+        showSplitTerminal();
+      } else if (fullTermState.mode === 'split') {
         showFullTerminal();
+      } else {
+        hideFullTerminal();
       }
     }
 
@@ -17461,10 +17751,14 @@ session:
       }
     }
 
+    /** Persisted split ratio (notebook fraction, 0.2–0.8). */
+    let splitRatio = parseFloat(localStorage.getItem('mrmd-split-ratio')) || 0.5;
+
     function applyTerminalLayout(mode) {
       const track = document.getElementById('app-slide-track');
       const slideNotebook = document.getElementById('slide-notebook');
       const slideTerminal = document.getElementById('slide-terminal');
+      const divider = document.getElementById('split-divider');
       if (!track || !slideNotebook || !slideTerminal) return;
 
       // Always clear first so stale state can't survive transitions.
@@ -17479,6 +17773,7 @@ session:
       slideNotebook.style.flex = '0 0 100%';
       slideTerminal.style.width = '100%';
       slideTerminal.style.flex = '0 0 100%';
+      if (divider) divider.style.display = 'none';
 
       if (mode === 'full') {
         // True full terminal: hide notebook page entirely.
@@ -17488,17 +17783,97 @@ session:
         track.classList.add('split');
         slideNotebook.style.display = 'flex';
         slideTerminal.style.display = 'flex';
-        slideNotebook.style.width = '50%';
-        slideNotebook.style.flex = '0 0 50%';
-        slideTerminal.style.width = '50%';
-        slideTerminal.style.flex = '0 0 50%';
+        if (divider) divider.style.display = 'block';
+        applySplitRatio();
       }
       // hidden mode keeps reset defaults (notebook only)
+    }
+
+    /** Apply the current splitRatio to the notebook/terminal panes. */
+    function applySplitRatio() {
+      const slideNotebook = document.getElementById('slide-notebook');
+      const slideTerminal = document.getElementById('slide-terminal');
+      if (!slideNotebook || !slideTerminal) return;
+
+      const r = Math.max(0.15, Math.min(0.85, splitRatio));
+      // Divider is 5px; calc remaining space
+      const notebookPct = `calc(${(r * 100).toFixed(2)}% - 3px)`;
+      const terminalPct = `calc(${((1 - r) * 100).toFixed(2)}% - 2px)`;
+      slideNotebook.style.width = notebookPct;
+      slideNotebook.style.flex = `0 0 ${notebookPct}`;
+      slideTerminal.style.width = terminalPct;
+      slideTerminal.style.flex = `0 0 ${terminalPct}`;
     }
 
     /**
      * Show the full terminal panel
      */
+    // ── Split divider drag logic ──────────────────────────────────────────
+    (function initSplitDivider() {
+      const divider = document.getElementById('split-divider');
+      if (!divider) return;
+
+      let dragging = false;
+
+      function onPointerDown(e) {
+        if (fullTermState.mode !== 'split') return;
+        e.preventDefault();
+        dragging = true;
+        divider.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        // Prevent text selection and iframe stealing events during drag
+        document.body.style.userSelect = 'none';
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+      }
+
+      function onPointerMove(e) {
+        if (!dragging) return;
+        const viewport = document.getElementById('app-viewport');
+        if (!viewport) return;
+        const rect = viewport.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        splitRatio = Math.max(0.15, Math.min(0.85, x / rect.width));
+        applySplitRatio();
+      }
+
+      function onPointerUp() {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+
+        // Persist and re-fit terminal
+        localStorage.setItem('mrmd-split-ratio', String(splitRatio));
+        if (fullTermState.fitAddon) {
+          setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 50);
+        }
+        // Also resize PTY to match new terminal dimensions
+        if (fullTermState.ptyClient?.isConnected?.() && fullTermState.term) {
+          setTimeout(() => {
+            try {
+              fullTermState.ptyClient.resize(fullTermState.term.cols, fullTermState.term.rows);
+            } catch (e) {}
+          }, 100);
+        }
+      }
+
+      divider.addEventListener('pointerdown', onPointerDown);
+
+      // Double-click to reset to 50/50
+      divider.addEventListener('dblclick', () => {
+        splitRatio = 0.5;
+        localStorage.setItem('mrmd-split-ratio', '0.5');
+        applySplitRatio();
+        if (fullTermState.fitAddon) {
+          setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 50);
+        }
+      });
+    })();
+
     function showFullTerminal() {
       const track = document.getElementById('app-slide-track');
       const viewport = document.getElementById('app-viewport');
@@ -17570,6 +17945,9 @@ session:
         setTimeout(() => {
           if (fullTermState.fitAddon) {
             try { fullTermState.fitAddon.fit(); } catch (e) {}
+          }
+          if (fullTermState.ptyClient?.isConnected?.() && fullTermState.term) {
+            try { fullTermState.ptyClient.resize(fullTermState.term.cols, fullTermState.term.rows); } catch (e) {}
           }
           fullTermState.term.focus();
         }, 100);
@@ -19157,7 +19535,7 @@ python: .venv
     // THEME MANAGEMENT
     // =========================================================================
 
-    const THEMES = ['github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
+    const THEMES = ['wizard-study-dark', 'wizard-study-light', 'github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
     let currentThemeIndex = 0;
     const CUSTOM_THEMES_KEY = 'mrmd-custom-themes';
 
@@ -19273,7 +19651,7 @@ python: .venv
 
       const allThemes = getAllThemeNames();
       const customThemeNames = loadCustomThemes().map(t => t.name);
-      const currentTheme = localStorage.getItem('mrmd-theme') || 'daylight';
+      const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
 
       // Create menu
       themeMenuElement = document.createElement('div');
@@ -19282,12 +19660,12 @@ python: .venv
         <div class="theme-picker-header">Select Theme</div>
         <div class="theme-picker-section">
           <div class="theme-picker-section-title">Dark</div>
-          ${THEMES.filter(t => ['github', 'midnight', 'moonlight', 'nord', 'grayscale-dark'].includes(t))
+          ${THEMES.filter(t => ['wizard-study-dark', 'github', 'midnight', 'moonlight', 'nord', 'grayscale-dark'].includes(t))
             .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
         </div>
         <div class="theme-picker-section">
           <div class="theme-picker-section-title">Light</div>
-          ${THEMES.filter(t => ['daylight', 'openresponses', 'grayscale-light'].includes(t))
+          ${THEMES.filter(t => ['wizard-study-light', 'daylight', 'openresponses', 'grayscale-light'].includes(t))
             .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
         </div>
         ${customThemeNames.length > 0 ? `
@@ -20075,7 +20453,7 @@ python: .venv
       // Register custom themes first
       registerCustomThemes();
 
-      const saved = localStorage.getItem('mrmd-theme') || 'daylight';
+      const saved = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
       const allThemes = getAllThemeNames();
       currentThemeIndex = allThemes.indexOf(saved);
       if (currentThemeIndex < 0) currentThemeIndex = 0;
@@ -20664,6 +21042,23 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
     let voiceParakeetUrl = '';
     let voiceProvider = 'parakeet'; // parakeet | openai | groq
     let voiceApiKeyConfigured = false;
+    let lastVoiceRecordingId = null;
+
+    const VOICE_HISTORY_KEY = 'mrmd-voice-history-v1';
+    const VOICE_HISTORY_WINDOW_MS = 60 * 60 * 1000; // last hour
+    /** @type {Array<{id:string, ts:number, text:string, backend?:string, insertedTo?:string, recordingId?:string, audioAsset?:string, provider?:string}>} */
+    let voiceHistory = [];
+    /** @type {Map<string, { blob: Blob, ts: number, mimeType: string, audioAsset?: string, checkpointAsset?: string, checkpointAt?: number, saveFailures?: number }>} */
+    const voiceRecordingStore = new Map();
+    let voiceHistoryFilter = '';
+    let voiceRetranscribeEntryId = null;
+    let voiceCheckpointHealth = {
+      recordingId: null,
+      startedAt: 0,
+      lastCheckpointAt: 0,
+      warned: false,
+      failures: 0,
+    };
 
     /**
      * File extension for the recording MIME type.
@@ -20675,6 +21070,15 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       return 'webm';
     }
 
+    function voiceExtToMime(ext = '') {
+      const e = String(ext || '').toLowerCase();
+      if (e === 'webm') return 'audio/webm';
+      if (e === 'ogg') return 'audio/ogg';
+      if (e === 'm4a' || e === 'mp4') return 'audio/mp4';
+      if (e === 'wav') return 'audio/wav';
+      return 'audio/webm';
+    }
+
     /**
      * Save a voice audio blob as a project asset.
      * Uses the asset service for binary-safe writes.
@@ -20682,7 +21086,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
     async function saveVoiceBlob(blob, recordingId, suffix = '') {
       if (!state.project?.root) {
         console.warn('[voice] No project open — cannot save audio');
-        return;
+        return null;
       }
 
       const ext = voiceMimeToExt(blob.type);
@@ -20691,11 +21095,88 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       try {
         const arrayBuf = await blob.arrayBuffer();
         const uint8 = new Uint8Array(arrayBuf);
-        await electronAPI.asset.save(state.project.root, uint8, filename);
-        console.log(`[voice] Saved audio: _assets/${filename} (${(blob.size / 1024).toFixed(1)}KB)`);
+        const res = await electronAPI.asset.save(state.project.root, uint8, filename);
+        const savedPath = res?.path || filename;
+        console.log(`[voice] Saved audio: _assets/${savedPath} (${(blob.size / 1024).toFixed(1)}KB)`);
+        return savedPath;
       } catch (err) {
         console.error('[voice] Failed to save audio:', err);
+        return null;
       }
+    }
+
+    function playVoiceWarningBeep() {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        const now = ctx.currentTime;
+        const beep = (t, f, d) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.value = f;
+          g.gain.value = 0.0001;
+          o.connect(g);
+          g.connect(ctx.destination);
+          g.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+          o.start(t);
+          o.stop(t + d + 0.02);
+        };
+        beep(now, 880, 0.12);
+        beep(now + 0.16, 660, 0.14);
+        setTimeout(() => { try { ctx.close(); } catch {} }, 600);
+      } catch {}
+    }
+
+    function updateVoiceSaveHealthUI() {
+      const badge = document.getElementById('voice-recording-badge');
+      if (!badge) return;
+      const rec = voiceInstance?.recording;
+      if (!rec) {
+        badge.classList.remove('warning');
+        return;
+      }
+
+      const now = Date.now();
+      const firstCheckpointGraceMs = 75_000; // allow first checkpoint window
+      const staleMs = 75_000; // if no checkpoint for too long, warn loudly
+
+      const startedAgo = now - (voiceCheckpointHealth.startedAt || now);
+      const lastCp = voiceCheckpointHealth.lastCheckpointAt || 0;
+      const stale = lastCp ? (now - lastCp > staleMs) : (startedAgo > firstCheckpointGraceMs);
+
+      badge.classList.toggle('warning', !!stale);
+      badge.title = stale
+        ? 'Audio checkpoint stale — stop recording soon to avoid data loss'
+        : 'Click to stop recording';
+
+      if (stale && !voiceCheckpointHealth.warned) {
+        voiceCheckpointHealth.warned = true;
+        showVoiceToast('⚠ Audio backup checkpoint has stalled. Stop recording and retry to avoid data loss.', 6000);
+        playVoiceWarningBeep();
+      }
+
+      if (!stale) {
+        voiceCheckpointHealth.warned = false;
+      }
+    }
+
+    function noteVoiceCheckpoint(recordingId, { ok, assetPath = null } = {}) {
+      const rec = voiceRecordingStore.get(recordingId) || { ts: Date.now() };
+      if (ok) {
+        rec.checkpointAt = Date.now();
+        if (assetPath) rec.checkpointAsset = assetPath;
+        rec.saveFailures = 0;
+        voiceCheckpointHealth.lastCheckpointAt = rec.checkpointAt;
+        voiceCheckpointHealth.failures = 0;
+      } else {
+        rec.saveFailures = (rec.saveFailures || 0) + 1;
+        voiceCheckpointHealth.failures = (voiceCheckpointHealth.failures || 0) + 1;
+      }
+      voiceRecordingStore.set(recordingId, rec);
+      updateVoiceSaveHealthUI();
     }
 
     /**
@@ -20734,6 +21215,438 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       }
     }
 
+    function pruneVoiceHistory() {
+      const cutoff = Date.now() - VOICE_HISTORY_WINDOW_MS;
+      voiceHistory = voiceHistory.filter((x) => x.ts >= cutoff);
+      for (const [rid, rec] of voiceRecordingStore.entries()) {
+        if ((rec?.ts || 0) < cutoff) {
+          voiceRecordingStore.delete(rid);
+        }
+      }
+    }
+
+    function saveVoiceHistory() {
+      try {
+        localStorage.setItem(VOICE_HISTORY_KEY, JSON.stringify(voiceHistory));
+      } catch (err) {
+        console.warn('[voice] Failed to persist history:', err.message);
+      }
+    }
+
+    function loadVoiceHistory() {
+      try {
+        const raw = localStorage.getItem(VOICE_HISTORY_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          voiceHistory = parsed.filter((x) => x && typeof x.text === 'string' && typeof x.ts === 'number');
+          pruneVoiceHistory();
+          saveVoiceHistory();
+        }
+      } catch (err) {
+        console.warn('[voice] Failed to load history:', err.message);
+      }
+    }
+
+    async function copyTextToClipboard(text) {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text || '');
+          return true;
+        }
+      } catch {}
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text || '';
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        ta.style.pointerEvents = 'none';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function insertVoiceText(text) {
+      if (!text) return;
+      const terminalActive = fullTermState.active && fullTermState.mode !== 'hidden';
+      if (terminalActive && fullTermState.ptyClient?.isConnected?.()) {
+        fullTermState.ptyClient.write(text);
+        fullTermState.term?.focus?.();
+        return 'terminal';
+      }
+
+      if (state.editor?.view) {
+        const cursor = state.editor.view.state.selection.main.head;
+        state.editor.view.dispatch({
+          changes: { from: cursor, insert: text },
+          selection: { anchor: cursor + text.length },
+        });
+        return 'editor';
+      }
+
+      return 'none';
+    }
+
+    function addVoiceHistoryEntry(entry) {
+      pruneVoiceHistory();
+      voiceHistory.unshift(entry);
+      pruneVoiceHistory();
+      saveVoiceHistory();
+      renderVoiceHistoryPanel();
+    }
+
+    async function getConfiguredVoiceModel(provider) {
+      try {
+        if (!provider || provider === 'parakeet') return '';
+        return await electronAPI.settings.get(`voice.${provider}Model`, '') || '';
+      } catch {
+        return '';
+      }
+    }
+
+    async function setupVoiceBackendFor(provider, modelOverride = '') {
+      if (!voiceInstance) throw new Error('Voice not initialized');
+      const prov = (provider || voiceProvider || 'parakeet').toLowerCase();
+
+      // reset backends first
+      voiceInstance.setParakeetUrl('');
+      voiceInstance.clearApiBackends?.();
+
+      if (prov === 'parakeet') {
+        if (!voiceParakeetUrl) {
+          throw new Error('Parakeet URL not configured');
+        }
+        voiceInstance.setParakeetBridge(
+          async (blob) => {
+            const arr = new Uint8Array(await blob.arrayBuffer());
+            return await electronAPI.voice.transcribeParakeet({
+              audioBytes: Array.from(arr),
+              mimeType: blob.type || 'audio/webm',
+              url: voiceParakeetUrl,
+            });
+          },
+          async () => {
+            const res = await electronAPI.voice.checkParakeet(voiceParakeetUrl);
+            return !!res?.available;
+          }
+        );
+        return;
+      }
+
+      const apiKey = await electronAPI.settings.getApiKey(prov);
+      if (!apiKey || !String(apiKey).trim()) {
+        throw new Error(`${prov} API key not configured`);
+      }
+      const configuredModel = await getConfiguredVoiceModel(prov);
+      const model = (modelOverride || configuredModel || '').trim();
+
+      const isBrowser = !!window.MRMD_HTTP_SHIM;
+      if (isBrowser && typeof electronAPI.voice?.transcribeApi === 'function') {
+        voiceInstance.transcriber.removeBackend('parakeet');
+        voiceInstance.transcriber.removeBackend(`api:${prov}`);
+        voiceInstance.transcriber.addBackend({
+          name: `api:${prov}`,
+          inputType: 'blob',
+          isAvailable: async () => true,
+          transcribe: async (input) => {
+            if (!input?.blob) throw new Error('Missing audio blob');
+            const arr = new Uint8Array(await input.blob.arrayBuffer());
+            return await electronAPI.voice.transcribeApi({
+              audioBytes: Array.from(arr),
+              mimeType: input.blob.type || 'audio/webm',
+              provider: prov,
+              model: model || undefined,
+            });
+          },
+        });
+      } else {
+        voiceInstance.setApiBackend(prov, apiKey, model || undefined);
+      }
+    }
+
+    async function transcribeBlobWithProvider(blob, provider, modelOverride = '') {
+      const prevProvider = voiceProvider;
+      try {
+        await setupVoiceBackendFor(provider, modelOverride);
+        const res = await voiceInstance.transcriber.transcribe({ blob });
+        return res;
+      } finally {
+        // restore current configured app backend
+        voiceProvider = prevProvider;
+        await configureVoiceBackends();
+      }
+    }
+
+    function formatVoiceHistoryAge(ts) {
+      const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+      if (s < 60) return `${s}s ago`;
+      const m = Math.floor(s / 60);
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m / 60);
+      return `${h}h ago`;
+    }
+
+    function renderVoiceHistoryPanel() {
+      const list = document.getElementById('voice-history-list');
+      if (!list) return;
+      pruneVoiceHistory();
+
+      const q = (voiceHistoryFilter || '').trim().toLowerCase();
+      const items = !q ? voiceHistory : voiceHistory.filter((item) => {
+        const hay = [item.text, item.backend, item.provider, item.model, item.insertedTo]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(q);
+      });
+
+      if (!items.length) {
+        list.innerHTML = `<div class="voice-history-empty">${voiceHistory.length ? 'No matches' : 'No recent transcriptions'}</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map((item) => {
+        const canRetranscribe = !!(item.recordingId && (voiceRecordingStore.has(item.recordingId) || item.audioAsset || item.checkpointAsset));
+        const safeText = String(item.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const preview = safeText.length > 260 ? `${safeText.slice(0, 260)}…` : safeText;
+        const modelPart = item.model ? ` · ${item.model}` : '';
+        return `
+          <div class="voice-history-item" data-voice-id="${item.id}">
+            <div class="voice-history-meta">
+              <span>${formatVoiceHistoryAge(item.ts)} · ${item.backend || item.provider || 'voice'}${modelPart} · ${item.insertedTo || 'unknown'}</span>
+              <span>${item.audioAsset ? 'audio saved' : (item.checkpointAsset ? 'checkpoint saved' : 'text only')}</span>
+            </div>
+            <div class="voice-history-text">${preview}</div>
+            <div class="voice-history-actions">
+              <button class="voice-history-action" data-voice-action="copy">Copy</button>
+              <button class="voice-history-action" data-voice-action="insert">Insert</button>
+              <button class="voice-history-action" data-voice-action="retranscribe" ${canRetranscribe ? '' : 'disabled'}>Retranscribe</button>
+              <button class="voice-history-action" data-voice-action="retranscribe-custom" ${canRetranscribe ? '' : 'disabled'}>With model…</button>
+              <button class="voice-history-action" data-voice-action="polish">Polish</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function retranscribeVoiceEntry(entry, options = {}) {
+      if (!voiceInstance || !entry?.recordingId) return;
+
+      const provider = (options.provider || voiceProvider || 'parakeet').toLowerCase();
+      const modelOverride = (options.model || '').trim();
+
+      let rec = voiceRecordingStore.get(entry.recordingId) || null;
+
+      // If blob is not in-memory (after refresh/reopen), restore from _assets.
+      const candidateAsset = entry.audioAsset || entry.checkpointAsset;
+      if ((!rec || !rec.blob) && candidateAsset && state.project?.root && electronAPI.asset?.read) {
+        try {
+          const readRes = await electronAPI.asset.read(state.project.root, candidateAsset);
+          if (readRes?.success && Array.isArray(readRes.bytes) && readRes.bytes.length > 0) {
+            const ext = String(candidateAsset).split('.').pop();
+            const mimeType = voiceExtToMime(ext);
+            const blob = new Blob([new Uint8Array(readRes.bytes)], { type: mimeType });
+            rec = {
+              blob,
+              ts: Date.now(),
+              mimeType,
+              audioAsset: entry.audioAsset,
+              checkpointAsset: entry.checkpointAsset,
+            };
+            voiceRecordingStore.set(entry.recordingId, rec);
+          }
+        } catch (err) {
+          console.warn('[voice] Failed to restore audio asset for retranscription:', err.message);
+        }
+      }
+
+      if (!rec?.blob) {
+        showVoiceToast('Audio unavailable for retranscription');
+        return;
+      }
+
+      try {
+        showVoiceToast('Retranscribing...');
+        const result = await transcribeBlobWithProvider(rec.blob, provider, modelOverride);
+        const text = result?.text || '';
+        if (!text) {
+          showVoiceToast('Retranscription returned no text');
+          return;
+        }
+        await copyTextToClipboard(text);
+        const insertedTo = insertVoiceText(text);
+        addVoiceHistoryEntry({
+          id: `vh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          ts: Date.now(),
+          text,
+          backend: result?.backend || provider,
+          insertedTo,
+          recordingId: entry.recordingId,
+          audioAsset: entry.audioAsset,
+          checkpointAsset: entry.checkpointAsset,
+          provider,
+          model: modelOverride || (await getConfiguredVoiceModel(provider)) || undefined,
+        });
+        showVoiceToast('Retranscribed ✓ (copied)');
+      } catch (err) {
+        console.error('[voice] Retranscribe failed:', err);
+        showVoiceToast(`Retranscribe failed: ${err.message}`);
+      }
+    }
+
+    async function polishVoiceEntry(entry) {
+      if (!entry?.text) return;
+      if (!aiClient) {
+        showVoiceToast('AI server not connected');
+        return;
+      }
+      try {
+        showVoiceToast('Polishing transcription...');
+        const docContext = state.editor?.view?.state?.doc?.toString?.() || '';
+        const result = await aiClient.execute('FixTranscriptionPredict', {
+          text_to_fix: entry.text,
+          local_context: entry.text,
+          document_context: docContext.slice(0, 5000),
+        });
+        const polished = result?.fixed_text || result?.result?.fixed_text || result?.result || result?.text;
+        if (!polished || typeof polished !== 'string') {
+          showVoiceToast('Polish returned no text');
+          return;
+        }
+        await copyTextToClipboard(polished);
+        const insertedTo = insertVoiceText(polished);
+        addVoiceHistoryEntry({
+          id: `vh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          ts: Date.now(),
+          text: polished,
+          backend: 'FixTranscriptionPredict',
+          insertedTo,
+          recordingId: entry.recordingId,
+          audioAsset: entry.audioAsset,
+          checkpointAsset: entry.checkpointAsset,
+          provider: voiceProvider,
+        });
+        showVoiceToast('Polished ✓ (copied)');
+      } catch (err) {
+        console.error('[voice] Polish failed:', err);
+        showVoiceToast(`Polish failed: ${err.message}`);
+      }
+    }
+
+    async function openVoiceRetranscribeDialog(entry) {
+      if (!entry?.id) return;
+      voiceRetranscribeEntryId = entry.id;
+      const overlay = document.getElementById('voice-retranscribe-overlay');
+      const providerEl = document.getElementById('voice-retranscribe-provider');
+      const modelEl = document.getElementById('voice-retranscribe-model');
+      const hintEl = document.getElementById('voice-retranscribe-hint');
+      if (!overlay || !providerEl || !modelEl) return;
+
+      providerEl.value = entry.provider || voiceProvider || 'parakeet';
+      const configuredModel = await getConfiguredVoiceModel(providerEl.value);
+      modelEl.value = configuredModel || entry.model || '';
+      if (hintEl) {
+        hintEl.textContent = providerEl.value === 'parakeet'
+          ? 'Parakeet uses your configured local/server URL.'
+          : 'Optional model override. Leave blank to use configured model.';
+      }
+
+      overlay.style.display = 'flex';
+      setTimeout(() => modelEl.focus(), 0);
+    }
+
+    function closeVoiceRetranscribeDialog() {
+      const overlay = document.getElementById('voice-retranscribe-overlay');
+      if (overlay) overlay.style.display = 'none';
+      voiceRetranscribeEntryId = null;
+    }
+
+    function initVoiceHistoryPanel() {
+      loadVoiceHistory();
+      renderVoiceHistoryPanel();
+
+      document.getElementById('voice-history-refresh')?.addEventListener('click', () => {
+        renderVoiceHistoryPanel();
+      });
+
+      document.getElementById('voice-history-clear')?.addEventListener('click', () => {
+        voiceHistory = [];
+        saveVoiceHistory();
+        renderVoiceHistoryPanel();
+        showVoiceToast('Voice history cleared');
+      });
+
+      document.getElementById('voice-history-search')?.addEventListener('input', (e) => {
+        voiceHistoryFilter = e.target?.value || '';
+        renderVoiceHistoryPanel();
+      });
+
+      const overlay = document.getElementById('voice-retranscribe-overlay');
+      const providerEl = document.getElementById('voice-retranscribe-provider');
+      const modelEl = document.getElementById('voice-retranscribe-model');
+      const hintEl = document.getElementById('voice-retranscribe-hint');
+
+      providerEl?.addEventListener('change', async () => {
+        if (!providerEl) return;
+        const configuredModel = await getConfiguredVoiceModel(providerEl.value);
+        if (modelEl) modelEl.value = configuredModel || '';
+        if (hintEl) {
+          hintEl.textContent = providerEl.value === 'parakeet'
+            ? 'Parakeet uses your configured local/server URL.'
+            : 'Optional model override. Leave blank to use configured model.';
+        }
+      });
+
+      document.getElementById('voice-retranscribe-cancel')?.addEventListener('click', () => {
+        closeVoiceRetranscribeDialog();
+      });
+
+      document.getElementById('voice-retranscribe-run')?.addEventListener('click', async () => {
+        const entry = voiceHistory.find((x) => x.id === voiceRetranscribeEntryId);
+        if (!entry || !providerEl) {
+          closeVoiceRetranscribeDialog();
+          return;
+        }
+        const provider = providerEl.value || voiceProvider;
+        const model = (modelEl?.value || '').trim();
+        closeVoiceRetranscribeDialog();
+        await retranscribeVoiceEntry(entry, { provider, model });
+      });
+
+      overlay?.addEventListener('click', (e) => {
+        if (e.target === overlay) closeVoiceRetranscribeDialog();
+      });
+
+      document.getElementById('voice-history-list')?.addEventListener('click', async (e) => {
+        const btn = e.target?.closest?.('[data-voice-action]');
+        if (!btn) return;
+        const action = btn.dataset.voiceAction;
+        const itemEl = btn.closest('.voice-history-item');
+        const id = itemEl?.dataset?.voiceId;
+        const entry = voiceHistory.find((x) => x.id === id);
+        if (!entry) return;
+
+        if (action === 'copy') {
+          await copyTextToClipboard(entry.text || '');
+          showVoiceToast('Copied transcription');
+        } else if (action === 'insert') {
+          insertVoiceText(entry.text || '');
+          showVoiceToast('Inserted transcription');
+        } else if (action === 'retranscribe') {
+          await retranscribeVoiceEntry(entry, { provider: voiceProvider });
+        } else if (action === 'retranscribe-custom') {
+          await openVoiceRetranscribeDialog(entry);
+        } else if (action === 'polish') {
+          await polishVoiceEntry(entry);
+        }
+      });
+    }
+
     function initVoice() {
       if (typeof MrmdVoice === 'undefined') {
         console.warn('[voice] mrmd-voice not loaded — voice features disabled');
@@ -20742,21 +21655,56 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       voiceInstance = new MrmdVoice.MrmdVoice({
         onSaveCheckpoint: async (blob, recordingId) => {
-          await saveVoiceBlob(blob, recordingId, '.checkpoint');
+          const checkpointAsset = await saveVoiceBlob(blob, recordingId, '.checkpoint');
+          noteVoiceCheckpoint(recordingId, { ok: !!checkpointAsset, assetPath: checkpointAsset || null });
+          if (!checkpointAsset) {
+            showVoiceToast('⚠ Failed to write audio checkpoint', 4500);
+          }
+          const rec = voiceRecordingStore.get(recordingId) || {};
+          voiceRecordingStore.set(recordingId, {
+            ...rec,
+            blob,
+            ts: Date.now(),
+            mimeType: blob.type || rec.mimeType || 'audio/webm',
+            checkpointAsset: checkpointAsset || rec.checkpointAsset,
+            checkpointAt: Date.now(),
+          });
         },
         onSaveAudio: async (blob, recordingId) => {
-          await saveVoiceBlob(blob, recordingId);
+          const audioAsset = await saveVoiceBlob(blob, recordingId);
+          const rec = voiceRecordingStore.get(recordingId) || {};
+          voiceRecordingStore.set(recordingId, {
+            ...rec,
+            blob,
+            ts: Date.now(),
+            mimeType: blob.type || 'audio/webm',
+            audioAsset: audioAsset || rec.audioAsset,
+          });
+          if (!audioAsset) {
+            showVoiceToast('⚠ Final audio save failed. Latest checkpoint kept for recovery.', 5000);
+          }
         },
         onRecordingStart: (recordingId) => {
+          lastVoiceRecordingId = recordingId;
+          voiceCheckpointHealth = {
+            recordingId,
+            startedAt: Date.now(),
+            lastCheckpointAt: 0,
+            warned: false,
+            failures: 0,
+          };
           console.log(`[voice] Recording started: ${recordingId}`);
           setVoiceRecordingUI(true);
         },
-        onRecordingStop: ({ duration }) => {
+        onRecordingStop: ({ duration, recordingId }) => {
+          if (recordingId) lastVoiceRecordingId = recordingId;
           console.log(`[voice] Recording stopped: ${duration.toFixed(1)}s`);
         },
         onStatusChange: (status) => {
           if (status === 'idle') {
             setVoiceRecordingUI(false);
+            voiceCheckpointHealth.recordingId = null;
+            voiceCheckpointHealth.warned = false;
           } else if (status === 'transcribing') {
             setVoiceTranscribingUI();
           }
@@ -20764,18 +21712,59 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
         onTranscribing: () => {
           showVoiceToast('Transcribing...');
         },
-        onTranscriptionComplete: ({ text, backend, insertedTo }) => {
+        onTranscriptionComplete: async ({ text, backend, insertedTo }) => {
           const preview = text.length > 60 ? text.substring(0, 60) + '…' : text;
+          await copyTextToClipboard(text);
+
+          const rec = lastVoiceRecordingId ? voiceRecordingStore.get(lastVoiceRecordingId) : null;
+          const currentModel = await getConfiguredVoiceModel(voiceProvider);
+          addVoiceHistoryEntry({
+            id: `vh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            ts: Date.now(),
+            text,
+            backend,
+            insertedTo,
+            recordingId: lastVoiceRecordingId || undefined,
+            audioAsset: rec?.audioAsset,
+            checkpointAsset: rec?.checkpointAsset,
+            provider: voiceProvider,
+            model: currentModel || undefined,
+          });
+
           showVoiceToast(`✓ ${preview}`);
           console.log(`[voice] Transcription (${backend} → ${insertedTo}): ${text}`);
         },
-        onTranscriptionError: (msg) => {
+        onTranscriptionError: async (msg) => {
+          const rec = lastVoiceRecordingId ? voiceRecordingStore.get(lastVoiceRecordingId) : null;
+          const currentModel = await getConfiguredVoiceModel(voiceProvider);
+          addVoiceHistoryEntry({
+            id: `vh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            ts: Date.now(),
+            text: `[Transcription failed] ${msg}`,
+            backend: 'transcription-error',
+            insertedTo: 'none',
+            recordingId: lastVoiceRecordingId || undefined,
+            audioAsset: rec?.audioAsset,
+            checkpointAsset: rec?.checkpointAsset,
+            provider: voiceProvider,
+            model: currentModel || undefined,
+          });
           showVoiceToast(`⚠ ${msg}`);
+          if (rec?.audioAsset || rec?.checkpointAsset) {
+            showVoiceToast('Audio was saved. Open Voice History to retranscribe.', 5000);
+          }
         },
       });
 
-      // Wire text routing to editor
+      // Wire text routing to editor (but prefer terminal if terminal view is active)
       voiceInstance.textRouter.onInsertToEditor = (text) => {
+        const terminalActive = fullTermState.active && fullTermState.mode !== 'hidden';
+        if (terminalActive && fullTermState.ptyClient?.isConnected?.()) {
+          fullTermState.ptyClient.write(text);
+          fullTermState.term?.focus?.();
+          return;
+        }
+
         if (state.editor?.view) {
           const cursor = state.editor.view.state.selection.main.head;
           state.editor.view.dispatch({
@@ -20796,6 +21785,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       // Load voice settings (Parakeet URL, shortcut)
       loadVoiceSettings();
       loadVoiceShortcut();
+      initVoiceHistoryPanel();
 
       // Set up mic button click
       document.getElementById('mobile-voice-btn')?.addEventListener('click', (e) => {
@@ -20872,7 +21862,35 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       const modelKey = `voice.${voiceProvider}Model`;
       const model = await electronAPI.settings.get(modelKey, '');
-      voiceInstance.setApiBackend(voiceProvider, apiKey, model || undefined);
+
+      // In browser mode (http-shim), proxy API calls through server to keep keys safe.
+      // In Electron, call providers directly from renderer.
+      const isBrowser = !!window.MRMD_HTTP_SHIM;
+      if (isBrowser && typeof electronAPI.voice?.transcribeApi === 'function') {
+        // Server-proxied path (browser/phone): keys stay server-side
+        const prov = voiceProvider;
+        const mod = model || undefined;
+        voiceInstance.transcriber.removeBackend('parakeet');
+        voiceInstance.transcriber.removeBackend(`api:${prov}`);
+        voiceInstance.transcriber.addBackend({
+          name: `api:${prov}`,
+          inputType: 'blob',
+          isAvailable: async () => true,
+          transcribe: async (input) => {
+            if (!input?.blob) throw new Error('Missing audio blob');
+            const arr = new Uint8Array(await input.blob.arrayBuffer());
+            return await electronAPI.voice.transcribeApi({
+              audioBytes: Array.from(arr),
+              mimeType: input.blob.type || 'audio/webm',
+              provider: prov,
+              model: mod,
+            });
+          },
+        });
+      } else {
+        // Direct Electron path
+        voiceInstance.setApiBackend(voiceProvider, apiKey, model || undefined);
+      }
     }
 
     async function toggleVoice() {
@@ -20892,13 +21910,13 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
       if (active) {
         shimmer?.classList.add('active');
-        badge?.classList.remove('transcribing');
+        badge?.classList.remove('transcribing', 'warning');
         badge?.classList.add('active');
         micBtn?.classList.add('voice-active');
         startVoiceTimer();
       } else {
         shimmer?.classList.remove('active');
-        badge?.classList.remove('active', 'transcribing');
+        badge?.classList.remove('active', 'transcribing', 'warning');
         micBtn?.classList.remove('voice-active');
         stopVoiceTimer();
       }
@@ -20925,7 +21943,9 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
         const secs = Math.floor(voiceInstance.elapsed);
         const m = Math.floor(secs / 60);
         const s = secs % 60;
-        if (timer) timer.textContent = `${m}:${String(s).padStart(2, '0')}`;
+        updateVoiceSaveHealthUI();
+        const warn = document.getElementById('voice-recording-badge')?.classList.contains('warning');
+        if (timer) timer.textContent = `${m}:${String(s).padStart(2, '0')}${warn ? ' ⚠' : ''}`;
       };
       updateTimer();
       voiceTimerInterval = setInterval(updateTimer, 1000);

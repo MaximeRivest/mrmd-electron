@@ -169,7 +169,7 @@ export const DEFAULT_WINDOW_HEIGHT = 750;
 /**
  * Default background color (dark theme)
  */
-export const DEFAULT_BACKGROUND_COLOR = '#0d1117';
+export const DEFAULT_BACKGROUND_COLOR = '#1a1b2e';
 
 // ============================================================================
 // PYTHON PATHS

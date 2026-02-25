@@ -133,6 +133,8 @@ export class CloudAuth {
 
   /**
    * Validate a token against markco.dev and return user info.
+   * Throws with a `status` property on HTTP errors so callers can
+   * distinguish auth failures (401/403) from transient network issues.
    */
   async _validateToken(token) {
     const res = await fetch(`${this.cloudUrl}/auth/validate`, {
@@ -141,7 +143,9 @@ export class CloudAuth {
     });
 
     if (!res.ok) {
-      throw new Error(`Validation failed: ${res.status}`);
+      const err = new Error(`Validation failed: ${res.status}`);
+      err.status = res.status;
+      throw err;
     }
 
     const { user } = await res.json();
@@ -150,7 +154,9 @@ export class CloudAuth {
 
   /**
    * Validate the stored token. Returns user if valid, null if expired.
-   * Clears stored token if invalid.
+   * Only clears stored token on definitive auth failures (401/403).
+   * Transient errors (network, timeout, 5xx) preserve the token so the
+   * user doesn't have to re-sign-in after a momentary hiccup.
    */
   async validate() {
     const token = this.getToken();
@@ -161,12 +167,26 @@ export class CloudAuth {
       this._user = user;
       this.settings.set('cloud.user', user);
       return user;
-    } catch {
-      // Token is expired or invalid — clear it
-      this.log('[cloud-auth] Stored token is invalid, clearing');
-      this.settings.set('cloud.token', null);
-      this.settings.set('cloud.user', null);
-      this._user = null;
+    } catch (err) {
+      const status = err?.status;
+
+      if (status === 401 || status === 403) {
+        // Definitive rejection — token is expired or revoked
+        this.log('[cloud-auth] Stored token is invalid, clearing');
+        this.settings.set('cloud.token', null);
+        this.settings.set('cloud.user', null);
+        this._user = null;
+        return null;
+      }
+
+      // Transient error (network, timeout, 5xx) — keep the token and
+      // return the cached user so cloud sync can still attempt to connect.
+      this.log(`[cloud-auth] Validation failed (transient): ${err.message} — keeping token`);
+      const cachedUser = this.getUser();
+      if (cachedUser) {
+        this._user = cachedUser;
+        return cachedUser;
+      }
       return null;
     }
   }

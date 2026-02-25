@@ -55,6 +55,8 @@ export class RuntimeTunnel {
     this.hostname = os.hostname();
     /** @type {((req: {project: string, docPath: string}) => void) | null} */
     this.onBridgeRequest = opts.onBridgeRequest || null;
+    /** @type {((req: {audioBase64: string, mimeType: string, url: string}) => Promise<object>) | null} */
+    this.onVoiceTranscribe = opts.onVoiceTranscribe || null;
     this.ws = null;
     this._destroyed = false;
     this._reconnectTimer = null;
@@ -142,6 +144,7 @@ export class RuntimeTunnel {
       case 'ws-msg':          return this._handleWsMsg(msg);
       case 'ws-close':        return this._handleWsClose(msg);
       case 'bridge-request':  return this._handleBridgeRequest(msg);
+      case 'voice-transcribe': return this._handleVoiceTranscribe(msg);
       case 'provider-status': return; // ignore, for consumers
       default: return; // unknown
     }
@@ -155,6 +158,24 @@ export class RuntimeTunnel {
       try { this.onBridgeRequest({ project, docPath }); } catch (err) {
         console.error('[runtime-tunnel] Bridge request handler error:', err.message);
       }
+    }
+  }
+
+  // ── Voice transcription ────────────────────────────────────────────────
+
+  async _handleVoiceTranscribe(msg) {
+    const { id, audioBase64, mimeType, url } = msg;
+    if (!this.onVoiceTranscribe) {
+      this._send({ t: 'voice-result', id, error: 'Voice transcription not supported on this provider' });
+      return;
+    }
+    try {
+      console.log(`[runtime-tunnel] Voice transcribe request: ${(audioBase64?.length || 0)} chars base64 → ${url}`);
+      const result = await this.onVoiceTranscribe({ audioBase64, mimeType, url });
+      this._send({ t: 'voice-result', id, result });
+    } catch (err) {
+      console.error('[runtime-tunnel] Voice transcribe error:', err.message);
+      this._send({ t: 'voice-result', id, error: err.message });
     }
   }
 

@@ -217,6 +217,7 @@ async function startCloudSyncIfReady() {
     token,
     userId: user.id,
     runtimeService, // Expose local runtimes to the web editor via tunnel
+    onVoiceTranscribe: (req) => transcribeParakeetFromBase64(req),
   });
 
   console.log(`[cloud] Background sync ready for ${user.name || user.email}`);
@@ -1579,6 +1580,25 @@ ipcMain.handle('asset:relativePath', (event, { assetPath, documentPath }) => {
   return assetService.getRelativePath(assetPath, documentPath);
 });
 
+// Read asset bytes (for voice retranscription/history replay)
+ipcMain.handle('asset:read', async (event, { projectRoot, assetPath }) => {
+  try {
+    const assetsRoot = path.resolve(projectRoot, '_assets');
+    const fullPath = path.resolve(assetsRoot, assetPath || '');
+
+    // Prevent path traversal outside _assets
+    if (!fullPath.startsWith(assetsRoot + path.sep) && fullPath !== assetsRoot) {
+      throw new Error('Invalid asset path');
+    }
+
+    const buffer = await fsPromises.readFile(fullPath);
+    return { success: true, bytes: Array.from(buffer) };
+  } catch (e) {
+    console.error('[asset:read] Error:', e.message);
+    return { success: false, error: e.message, bytes: [] };
+  }
+});
+
 // Find orphaned assets
 ipcMain.handle('asset:orphans', async (event, { projectRoot }) => {
   try {
@@ -1768,15 +1788,18 @@ ipcMain.handle('voice:checkParakeet', async (event, { url }) => {
   });
 });
 
-ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType, url }) => {
+/**
+ * Transcribe audio via Parakeet. Reusable by IPC handler and tunnel provider.
+ * Accepts { audioBase64, mimeType, url } — base64 encoded audio.
+ */
+async function transcribeParakeetFromBase64({ audioBase64, mimeType, url }) {
   if (!url) throw new Error('Missing Parakeet URL');
-  if (!audioBytes || !audioBytes.length) throw new Error('Missing audio bytes');
+  if (!audioBase64) throw new Error('Missing audio data');
 
-  // Ensure ffmpeg is available
   try {
     execSync('ffmpeg -version', { stdio: 'ignore' });
   } catch {
-    throw new Error('ffmpeg is required for Parakeet transcription in Electron main process');
+    throw new Error('ffmpeg is required for Parakeet transcription');
   }
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mrmd-voice-'));
@@ -1785,7 +1808,7 @@ ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType,
   const outputPath = path.join(tempDir, 'output.pcm');
 
   try {
-    fs.writeFileSync(inputPath, Buffer.from(audioBytes));
+    fs.writeFileSync(inputPath, Buffer.from(audioBase64, 'base64'));
     await runFfmpegToPcm(inputPath, outputPath);
     const pcm = fs.readFileSync(outputPath);
     return await transcribeParakeetPcm(url, pcm);
@@ -1794,6 +1817,15 @@ ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType,
     try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
     try { fs.rmdirSync(tempDir); } catch { /* ignore */ }
   }
+}
+
+ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType, url }) => {
+  if (!url) throw new Error('Missing Parakeet URL');
+  if (!audioBytes || !audioBytes.length) throw new Error('Missing audio bytes');
+
+  // Convert byte array to base64
+  const audioBase64 = Buffer.from(audioBytes).toString('base64');
+  return transcribeParakeetFromBase64({ audioBase64, mimeType, url });
 });
 
 // ============================================================================
@@ -2113,12 +2145,31 @@ ipcMain.handle('cloud:status', async () => {
       roots: MACHINE_HUB_ROOTS,
       hostedProjects: [...machineHubProjects],
     },
+    systemdService: systemd.getStatus(),
   };
 });
 
 ipcMain.handle('cloud:signIn', async () => {
   const result = await cloudAuth.signIn();
   await startCloudSyncIfReady();
+
+  // Auto-install systemd service on first sign-in (Linux only).
+  // This ensures the machine-agent runs on boot without manual setup.
+  if (systemd.isSupported()) {
+    const status = systemd.getStatus();
+    if (!status.installed) {
+      const installResult = systemd.install({
+        roots: MACHINE_HUB_ROOTS.join(':'),
+        cloudUrl: cloudAuth.cloudUrl,
+      });
+      if (installResult.ok) {
+        console.log('[systemd] Machine agent service auto-installed and started');
+      } else {
+        console.warn('[systemd] Auto-install failed:', installResult.error);
+      }
+    }
+  }
+
   return result;
 });
 
@@ -2135,6 +2186,35 @@ ipcMain.handle('cloud:signOut', async () => {
 ipcMain.handle('cloud:validate', async () => {
   const user = await cloudAuth.validate();
   return { valid: Boolean(user), user };
+});
+
+// ============================================================================
+// SYSTEMD SERVICE MANAGEMENT (machine-agent)
+// ============================================================================
+
+import * as systemd from './src/utils/systemd.js';
+
+ipcMain.handle('systemd:status', () => {
+  return systemd.getStatus();
+});
+
+ipcMain.handle('systemd:install', (_event, opts = {}) => {
+  return systemd.install({
+    roots: opts.roots || MACHINE_HUB_ROOTS.join(':'),
+    cloudUrl: cloudAuth.cloudUrl,
+  });
+});
+
+ipcMain.handle('systemd:uninstall', () => {
+  return systemd.uninstall();
+});
+
+ipcMain.handle('systemd:restart', () => {
+  return systemd.restart();
+});
+
+ipcMain.handle('systemd:logs', (_event, { lines } = {}) => {
+  return systemd.getLogs(lines);
 });
 
 ipcMain.handle('cloud:bridgeDoc', async (_event, { projectDir, docName }) => {
@@ -2207,6 +2287,24 @@ app.whenReady().then(() => {
   startCloudSyncIfReady().catch(err => {
     console.warn('[cloud] Background sync init failed:', err.message);
   });
+
+  // Keep systemd service in sync with current paths/config.
+  // On every startup, if the service is installed, regenerate the unit file
+  // so it always points to the current node binary, script path, and env vars.
+  if (systemd.isSupported()) {
+    const status = systemd.getStatus();
+    if (status.installed) {
+      const result = systemd.install({
+        roots: MACHINE_HUB_ROOTS.join(':'),
+        cloudUrl: cloudAuth.cloudUrl,
+      });
+      if (result.ok) {
+        console.log('[systemd] Service unit refreshed with current paths');
+      } else {
+        console.warn('[systemd] Failed to refresh service unit:', result.error);
+      }
+    }
+  }
 });
 
 app.on('window-all-closed', () => {

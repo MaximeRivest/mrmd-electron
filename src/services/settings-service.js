@@ -87,8 +87,8 @@ const DEFAULT_SETTINGS = {
 
   // Default preferences
   defaults: {
-    juiceLevel: 2,
-    reasoningLevel: 1,
+    juiceLevel: 1,
+    reasoningLevel: 0,
   },
 };
 

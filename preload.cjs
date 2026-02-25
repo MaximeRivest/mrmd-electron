@@ -183,6 +183,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     list: (projectRoot) => ipcRenderer.invoke('asset:list', { projectRoot }),
     save: (projectRoot, file, filename) =>
       ipcRenderer.invoke('asset:save', { projectRoot, file: Array.from(file), filename }),
+    read: (projectRoot, assetPath) =>
+      ipcRenderer.invoke('asset:read', { projectRoot, assetPath }),
     relativePath: (assetPath, documentPath) =>
       ipcRenderer.invoke('asset:relativePath', { assetPath, documentPath }),
     orphans: (projectRoot) => ipcRenderer.invoke('asset:orphans', { projectRoot }),
