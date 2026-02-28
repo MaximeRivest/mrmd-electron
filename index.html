@@ -2305,7 +2305,8 @@
       margin-bottom: 3px;
     }
 
-    .runtime-config-field input {
+    .runtime-config-field input,
+    .runtime-config-field select {
       width: 100%;
       padding: 5px 8px;
       background: var(--bg-secondary);
@@ -2317,7 +2318,8 @@
       outline: none;
     }
 
-    .runtime-config-field input:focus {
+    .runtime-config-field input:focus,
+    .runtime-config-field select:focus {
       border-color: var(--accent);
     }
 
@@ -7312,6 +7314,8 @@ session:
       // Runtime UX state (simplified start/restart/retry)
       runtimePending: new Set(),
       runtimeErrors: new Map(),
+      // language -> effective runtime preference snapshot from backend
+      runtimePrefsByLanguage: new Map(),
       runtimeDiagnosticsOpen: false,
       // Lightweight runtime lifecycle telemetry for debugging/stability
       runtimeEvents: [],
@@ -9663,7 +9667,12 @@ session:
       // Avoid calling it when the user explicitly selected a venv/name/cwd.
       if (!hasExplicitOverrides && state.currentFile && electronAPI.runtime?.forDocumentLanguage) {
         try {
-          resolved = await electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python');
+          resolved = await (electronAPI.runtime.ensureEffective
+            ? electronAPI.runtime.ensureEffective(state.currentFile, 'python', {
+                projectRoot: state.project?.root || state.projectDir || null,
+              })
+            : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python'));
+          if (resolved) setRuntimePreferenceSnapshot('python', resolved);
         } catch {
           // Best-effort only; we'll synthesize fallback config below.
         }
@@ -11210,6 +11219,7 @@ session:
         // Runtime will be properly set up by resolveProjectSession() after editor creation.
         state.pythonPort = null;
         state.pythonVenv = null;
+        state.runtimePrefsByLanguage.clear();
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
@@ -12825,15 +12835,90 @@ session:
 
     function getRuntimeConfigDefaults(language, runtime) {
       const normalized = normalizeRuntimeLanguage(language) || language;
-      const entry = [...state.sessions.values()].find((s) => s?.language === normalized && s?.config) || null;
-      const cfg = entry?.config || {};
+      const pref = state.runtimePrefsByLanguage.get(normalized) || null;
       const projectRoot = state.project?.root || state.projectDir || '.';
 
       return {
-        cwd: runtime?.cwd || cfg.cwd || projectRoot,
-        venv: normalized === 'python' ? (runtime?.venv || cfg.venv || state.session?.config?.venv || '.venv') : '',
-        auto_start: cfg.autoStart !== false,
+        cwd: pref?.cwd || runtime?.cwd || projectRoot,
+        venv: normalized === 'python'
+          ? (pref?.venv || runtime?.venv || state.session?.config?.venv || '.venv')
+          : '',
+        scope: pref?.scope || 'notebook',
+        cwd_mode: pref?.cwdMode || 'project-root',
       };
+    }
+
+    function setRuntimePreferenceSnapshot(language, runtimeOrEffective) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+      if (!normalized) return;
+      const effective = runtimeOrEffective?.effective || runtimeOrEffective || null;
+      if (!effective) return;
+      state.runtimePrefsByLanguage.set(normalized, {
+        scope: effective.scope || 'notebook',
+        cwdMode: effective.cwdMode || 'project-root',
+        cwd: effective.cwd || null,
+        venv: effective.venv || null,
+        profileId: effective.profileId || null,
+        targetId: effective.targetId || null,
+      });
+    }
+
+    async function refreshRuntimePreferenceSnapshots() {
+      if (!state.currentFile || !electronAPI.runtime?.prefs?.get) return;
+
+      try {
+        const snapshot = await electronAPI.runtime.prefs.get(
+          state.currentFile,
+          state.project?.root || state.projectDir || null,
+        );
+        if (!snapshot) return;
+
+        const notebook = snapshot.notebook || {};
+        const project = snapshot.project || {};
+        const defaults = snapshot.defaults || {};
+        const projectRoot = snapshot.context?.projectRoot || state.project?.root || state.projectDir || '.';
+
+        const langs = ['python', 'bash', 'r', 'julia', 'pty'];
+        for (const lang of langs) {
+          const scope = notebook.scopeByLanguage?.[lang]
+            || project.overrides?.scopeByLanguage?.[lang]
+            || defaults.scopeByLanguage?.[lang]
+            || 'notebook';
+
+          const cwdMode = notebook.cwdModeByLanguage?.[lang]
+            || project.overrides?.cwdModeByLanguage?.[lang]
+            || defaults.cwdModeByLanguage?.[lang]
+            || 'project-root';
+
+          const customCwd = notebook.cwdByLanguage?.[lang]
+            || project.overrides?.cwdByLanguage?.[lang]
+            || null;
+
+          const cwd = cwdMode === 'notebook-dir'
+            ? (state.currentFile ? state.currentFile.replace(/\/[^/]+$/, '') : projectRoot)
+            : (cwdMode === 'custom' && customCwd ? customCwd : projectRoot);
+
+          const profileId = notebook.profileByLanguage?.[lang]
+            || project.overrides?.profileByLanguage?.[lang]
+            || defaults.profileByLanguage?.[lang]
+            || null;
+
+          const venv = (lang === 'python' && typeof profileId === 'string' && profileId.startsWith('python:venv:'))
+            ? profileId.slice('python:venv:'.length)
+            : null;
+
+          state.runtimePrefsByLanguage.set(lang, {
+            scope,
+            cwdMode,
+            cwd,
+            venv,
+            profileId,
+            targetId: snapshot.compute?.primaryComputeTargetId || null,
+          });
+        }
+      } catch (e) {
+        console.warn('[runtime-prefs] Failed to refresh preference snapshots:', e?.message || e);
+      }
     }
 
     function renderRuntimeDiagnostics() {
@@ -12982,10 +13067,24 @@ session:
               </div>
             </div>
             <div class="runtime-config-field">
-              <label style="display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" data-field="auto_start" data-language="${normalized}" ${defaults.auto_start ? 'checked' : ''} />
-                Auto-start for this document
-              </label>
+              <label>Scope</label>
+              <div class="runtime-config-field-row">
+                <select data-field="scope" data-language="${normalized}">
+                  <option value="notebook" ${defaults.scope === 'notebook' ? 'selected' : ''}>Notebook</option>
+                  <option value="project" ${defaults.scope === 'project' ? 'selected' : ''}>Project</option>
+                  <option value="global" ${defaults.scope === 'global' ? 'selected' : ''}>Global</option>
+                </select>
+              </div>
+            </div>
+            <div class="runtime-config-field">
+              <label>CWD Mode</label>
+              <div class="runtime-config-field-row">
+                <select data-field="cwd_mode" data-language="${normalized}">
+                  <option value="project-root" ${defaults.cwd_mode === 'project-root' ? 'selected' : ''}>Project root</option>
+                  <option value="notebook-dir" ${defaults.cwd_mode === 'notebook-dir' ? 'selected' : ''}>Notebook directory</option>
+                  <option value="custom" ${defaults.cwd_mode === 'custom' ? 'selected' : ''}>Custom path</option>
+                </select>
+              </div>
             </div>
             <div class="runtime-config-actions">
               <button class="runtime-item-btn" onclick="applyRuntimeConfig('${normalized}')">Apply</button>
@@ -13159,35 +13258,45 @@ session:
     }
 
     /**
-     * Apply runtime configuration changes and persist to frontmatter.
+     * Apply runtime configuration changes and persist in app runtime preferences.
+     * No runtime metadata is written to frontmatter.
      */
     async function applyRuntimeConfig(language) {
       const panel = document.getElementById(`runtime-config-${language}`);
-      if (!panel) return;
+      if (!panel || !state.currentFile) return;
 
       const config = {};
-      panel.querySelectorAll('input[data-field]').forEach(input => {
-        if (input.type === 'checkbox') {
+      panel.querySelectorAll('[data-field]').forEach((input) => {
+        if (input.tagName === 'SELECT') {
+          config[input.dataset.field] = input.value;
+        } else if (input.type === 'checkbox') {
           config[input.dataset.field] = input.checked;
         } else {
           config[input.dataset.field] = input.value;
         }
       });
 
-      // Normalize UI keys to config keys used by mrmd frontmatter helpers.
-      if (Object.prototype.hasOwnProperty.call(config, 'auto_start')) {
-        config.autoStart = !!config.auto_start;
-        delete config.auto_start;
-      }
+      const patch = {
+        scope: config.scope,
+        cwdMode: config.cwd_mode,
+      };
 
-      // Persist to frontmatter via custom event
+      if (config.cwd_mode === 'custom' && config.cwd) {
+        patch.cwd = config.cwd;
+      }
+      if (language === 'python' && config.venv) patch.venv = config.venv;
+
       try {
-        const event = new CustomEvent('mrmd:update-session-config', {
-          detail: { language, config },
-        });
-        document.dispatchEvent(event);
+        const effective = await electronAPI.runtime.prefs.setNotebook(
+          state.currentFile,
+          language,
+          patch,
+          state.project?.root || state.projectDir || null,
+        );
+        setRuntimePreferenceSnapshot(language, effective);
       } catch (e) {
-        console.warn('Failed to update frontmatter:', e);
+        console.error('Failed to save runtime preferences:', e);
+        return;
       }
 
       // If runtime is currently running, restart that language to apply config.
@@ -13202,25 +13311,10 @@ session:
         const { runtime } = getPreferredRuntimeForLanguage(language, state.runningRuntimes || [], attachedIds);
         if (runtime?.id) {
           await killRuntimeAction(runtime.id, language);
-
-          if (language === 'python') {
-            await startRuntimeForLanguage(language, { config });
-          } else if (['bash', 'r', 'julia', 'pty'].includes(language)) {
-            await electronAPI.runtime.start({
-              name: runtime.id,
-              language,
-              cwd: config.cwd || runtime.cwd || state.project?.root || state.projectDir || '.',
-            });
-
-            if (language === 'pty') {
-              await registerPtyWithEditor();
-            } else {
-              await registerRuntimeWithEditor(language);
-            }
-          } else {
-            await startRuntimeForLanguage(language);
-          }
         }
+
+        // Ensure runtime with new effective config and re-register editor bindings.
+        await registerRuntimeWithEditor(language);
       } catch (e) {
         console.error('Failed to apply runtime config:', e);
       }
@@ -13273,6 +13367,8 @@ session:
      */
     async function refreshRuntimes() {
       try {
+        await refreshRuntimePreferenceSnapshots();
+
         // Fetch all runtimes in one call
         const allSessions = await electronAPI.runtime.list();
 
@@ -13675,24 +13771,8 @@ session:
       return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
     }
 
-    // Listen for session config updates from the runtimes panel
-    document.addEventListener('mrmd:update-session-config', (e) => {
-      const { language, config } = e.detail;
-      // Use the state.editor instance to update frontmatter
-      if (state.editor?.updateFrontmatterSession) {
-        state.editor.updateFrontmatterSession(language, config);
-      } else if (state.editor?.view) {
-        // Fallback: use the mrmd-editor frontmatter-updater directly if available
-        try {
-          const mrmd = window.mrmd || window.MrmdEditor;
-          if (mrmd?.updateFrontmatterSession) {
-            mrmd.updateFrontmatterSession(state.editor.view, language, config);
-          }
-        } catch (err) {
-          console.warn('Could not update frontmatter:', err);
-        }
-      }
-    });
+    // Runtime preferences are now app-owned and persisted via electronAPI.runtime.prefs.
+    // Intentionally no frontmatter runtime writes here.
 
     // =========================================================================
     // AI COMMANDS PANEL
@@ -15161,6 +15241,115 @@ session:
     ];
 
     /**
+     * Cross-platform input dialog replacement for window.prompt().
+     * Works in Electron (where prompt may be disabled), browser, and mobile.
+     *
+     * @param {Object} opts
+     * @param {string} [opts.title='Input']
+     * @param {string} [opts.label='Value']
+     * @param {string} [opts.initialValue='']
+     * @param {string} [opts.placeholder='']
+     * @param {boolean} [opts.password=false]
+     * @param {string} [opts.confirmText='Save']
+     * @param {string} [opts.cancelText='Cancel']
+     * @returns {Promise<string|null>} Entered value, or null if cancelled.
+     */
+    function requestTextInput(opts = {}) {
+      const {
+        title = 'Input',
+        label = 'Value',
+        initialValue = '',
+        placeholder = '',
+        password = false,
+        confirmText = 'Save',
+        cancelText = 'Cancel',
+      } = opts;
+
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay visible';
+        overlay.style.zIndex = '2500';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'voice-retranscribe-dialog';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'voice-retranscribe-title';
+        titleEl.textContent = title;
+
+        const row = document.createElement('div');
+        row.className = 'voice-retranscribe-row';
+
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+
+        const input = document.createElement('input');
+        input.type = password ? 'password' : 'text';
+        input.value = initialValue ?? '';
+        input.placeholder = placeholder || '';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+
+        const actions = document.createElement('div');
+        actions.className = 'voice-retranscribe-actions';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cloud-btn cloud-btn-secondary';
+        cancelBtn.textContent = cancelText;
+
+        const okBtn = document.createElement('button');
+        okBtn.className = 'cloud-btn cloud-btn-primary';
+        okBtn.textContent = confirmText;
+
+        row.appendChild(labelEl);
+        row.appendChild(input);
+        actions.appendChild(cancelBtn);
+        actions.appendChild(okBtn);
+        dialog.appendChild(titleEl);
+        dialog.appendChild(row);
+        dialog.appendChild(actions);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        const cleanup = (value) => {
+          document.removeEventListener('keydown', onKey, true);
+          overlay.remove();
+          resolve(value);
+        };
+
+        const submit = () => cleanup(input.value);
+
+        const onKey = (e) => {
+          if (!overlay.isConnected) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            cleanup(null);
+          }
+        };
+
+        document.addEventListener('keydown', onKey, true);
+
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) cleanup(null);
+        });
+
+        cancelBtn.addEventListener('click', () => cleanup(null));
+        okBtn.addEventListener('click', submit);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            submit();
+          }
+        });
+
+        setTimeout(() => {
+          input.focus();
+          input.select();
+        }, 0);
+      });
+    }
+
+    /**
      * Initialize the AI Settings Modal
      */
     function initAiSettingsModal() {
@@ -15216,7 +15405,12 @@ session:
       const addSectionBtn = document.getElementById('add-section-btn');
       if (addSectionBtn) {
         addSectionBtn.addEventListener('click', async () => {
-          const name = prompt('Enter section name:');
+          const name = await requestTextInput({
+            title: 'Add custom section',
+            label: 'Section name',
+            placeholder: 'e.g. Review, Refactor, Notes',
+            confirmText: 'Add',
+          });
           if (name && name.trim()) {
             await electronAPI.settings.addCustomSection(name.trim());
             await loadCustomSections();
@@ -15409,7 +15603,12 @@ session:
       if (addBtn && !addBtn._hasListener) {
         addBtn._hasListener = true;
         addBtn.addEventListener('click', async function() {
-          const provider = prompt('Enter provider name (e.g., together_ai, fireworks_ai, mistral, deepseek, ollama):');
+          const provider = await requestTextInput({
+            title: 'Add API provider',
+            label: 'Provider name',
+            placeholder: 'e.g. together_ai, fireworks_ai, mistral, deepseek, ollama',
+            confirmText: 'Add',
+          });
           if (provider && provider.trim()) {
             const providerId = provider.trim().toLowerCase().replace(/\s+/g, '_');
             // Add empty key to create the row
@@ -17577,9 +17776,11 @@ session:
 
                 try {
                   console.log(`[${runtimeLanguage}] Runtime down, restarting...`);
-                  const fresh = await electronAPI.runtime.forDocumentLanguage(
-                    state.currentFile, normalizedRuntime
-                  );
+                  const fresh = await (electronAPI.runtime.ensureEffective
+                    ? electronAPI.runtime.ensureEffective(state.currentFile, normalizedRuntime, {
+                        projectRoot: state.project?.root || state.projectDir || null,
+                      })
+                    : electronAPI.runtime.forDocumentLanguage(state.currentFile, normalizedRuntime));
                   if (!fresh?.alive || !fresh?.port) {
                     throw new Error(`${runtimeLanguage} runtime restart failed`);
                   }
@@ -17596,6 +17797,7 @@ session:
                   }
 
                   const isReconnection = fresh.port === currentPort;
+                  setRuntimePreferenceSnapshot(normalizedRuntime, fresh);
                   updateClient(fresh.port);
                   pinRuntimeAttachment(normalizedRuntime, fresh, 'auto-restart');
                   onRestarted?.(fresh);
@@ -17668,7 +17870,11 @@ session:
       }
 
       try {
-        const config = await electronAPI.runtime.forDocumentLanguage(state.currentFile, language);
+        const config = await (electronAPI.runtime.ensureEffective
+          ? electronAPI.runtime.ensureEffective(state.currentFile, language, {
+              projectRoot: state.project?.root || state.projectDir || null,
+            })
+          : electronAPI.runtime.forDocumentLanguage(state.currentFile, language));
 
         if (!config) {
           console.log(`[${language}] No session config for this document`);
@@ -17679,7 +17885,7 @@ session:
           return false;
         }
         if (!config.alive || !config.port) {
-          console.log(`[${language}] Not started (auto_start may be false)`);
+          console.log(`[${language}] Not started (runtime unavailable or failed to start)`);
           return false;
         }
 
@@ -17695,6 +17901,9 @@ session:
           console.warn(`[${language}] Refusing silent session switch ${pinned.sessionName} -> ${config.name}`);
           return false;
         }
+
+        // Cache effective runtime preference snapshot from backend
+        setRuntimePreferenceSnapshot(language, config);
 
         // Update state
         if (langConfig.stateKey) state[langConfig.stateKey] = config.port;
@@ -17781,7 +17990,11 @@ session:
       }
 
       try {
-        const ptyConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "pty");
+        const ptyConfig = await (electronAPI.runtime.ensureEffective
+          ? electronAPI.runtime.ensureEffective(state.currentFile, 'pty', {
+              projectRoot: state.project?.root || state.projectDir || null,
+            })
+          : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'pty'));
 
         if (!ptyConfig) {
           console.log('[pty] No PTY session config for this document');
@@ -17791,6 +18004,9 @@ session:
           console.error('[pty] PTY session error:', ptyConfig.error);
           return;
         }
+
+        // Cache effective runtime preference snapshot
+        setRuntimePreferenceSnapshot('pty', ptyConfig);
 
         // Store PTY config in state
         state.ptySession = ptyConfig;
@@ -17847,7 +18063,7 @@ session:
         if (ptyConfig.alive) {
           console.log('[pty] Registered PTY with editor, wsUrl:', ptyConfig.wsUrl);
         } else {
-          console.log('[pty] PTY server not started (auto_start may be false)');
+          console.log('[pty] PTY server not started (runtime unavailable or failed to start)');
         }
 
         // If full terminal already exists, reconnect only when needed.
@@ -19217,7 +19433,11 @@ session:
 
       try {
         // Get ONLY Python session config from project (do not auto-start all runtimes)
-        const sessionConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "python");
+        const sessionConfig = await (electronAPI.runtime.ensureEffective
+          ? electronAPI.runtime.ensureEffective(state.currentFile, 'python', {
+              projectRoot: state.project?.root || state.projectDir || null,
+            })
+          : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python'));
 
         if (sessionConfig) {
           state.session.config = sessionConfig;
@@ -19250,6 +19470,7 @@ session:
               return;
             }
 
+            setRuntimePreferenceSnapshot('python', sessionConfig);
             state.session.info = sessionConfig;
             state.pythonPort = sessionConfig.port;
             updateSessionStatus('connected', sessionConfig.name);
@@ -22527,7 +22748,13 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
     async function editVoiceParakeetUrl() {
       const current = voiceParakeetUrl || '';
-      const url = window.prompt('Parakeet WebSocket URL (e.g., ws://192.168.2.24:8765):', current);
+      const url = await requestTextInput({
+        title: 'Parakeet URL',
+        label: 'WebSocket endpoint',
+        initialValue: current,
+        placeholder: 'ws://192.168.2.24:8765',
+        confirmText: 'Save',
+      });
       if (url === null) return;
 
       const trimmed = String(url || '').trim();
@@ -22552,10 +22779,14 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       }
 
       const hasKey = await electronAPI.settings.hasApiKey(voiceProvider);
-      const input = window.prompt(
-        `Set ${voiceProvider.toUpperCase()} API key (${hasKey ? 'currently set' : 'not set'}):`,
-        ''
-      );
+      const input = await requestTextInput({
+        title: `${voiceProvider.toUpperCase()} API key`,
+        label: hasKey ? 'API key (leave empty to clear)' : 'API key',
+        initialValue: '',
+        placeholder: hasKey ? 'Currently configured' : 'Paste API key',
+        password: true,
+        confirmText: 'Save',
+      });
       if (input === null) return;
 
       const key = String(input || '').trim();
