@@ -19,8 +19,7 @@ import { fileURLToPath } from 'url';
 import { WebSocket } from 'ws';
 
 // Services
-import { ProjectService, RuntimeService, FileService, AssetService, SettingsService } from './src/services/index.js';
-import { Project } from 'mrmd-project';
+import { ProjectService, RuntimeService, FileService, AssetService, SettingsService, RuntimePreferencesService } from './src/services/index.js';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort, isPortInUse } from './src/utils/index.js';
@@ -164,6 +163,7 @@ const runtimeService = new RuntimeService();
 const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
 const settingsService = new SettingsService();
+const runtimePreferencesService = new RuntimePreferencesService({ projectService });
 
 // ============================================================================
 // CLOUD AUTH + SYNC
@@ -272,6 +272,18 @@ function discoverDocNames(projectDir) {
   return docs;
 }
 
+/** Check if a directory looks like a project (has .git or .md files). */
+function looksLikeProject(dir) {
+  try {
+    if (fs.existsSync(path.join(dir, '.git'))) return true;
+    // Fallback: any .md or .qmd files at top level
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    return entries.some(e => e.isFile() && (e.name.endsWith('.md') || e.name.endsWith('.qmd')));
+  } catch {
+    return false;
+  }
+}
+
 /** Discover projects for Machine Hub mode. */
 function discoverMachineHubProjects() {
   const projects = new Set();
@@ -283,7 +295,7 @@ function discoverMachineHubProjects() {
       entries = fs.readdirSync(root, { withFileTypes: true });
 
       // Root itself may be a project
-      if (fs.existsSync(path.join(root, 'mrmd.md'))) {
+      if (looksLikeProject(root)) {
         projects.add(path.resolve(root));
       }
     } catch {
@@ -294,7 +306,7 @@ function discoverMachineHubProjects() {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
       const dir = path.join(root, entry.name);
       try {
-        if (fs.existsSync(path.join(dir, 'mrmd.md'))) {
+        if (looksLikeProject(dir)) {
           projects.add(path.resolve(dir));
         }
       } catch { /* ignore */ }
@@ -634,6 +646,24 @@ function notifySyncDied(projectDir, exitCode, signal) {
   }
 }
 
+function isLikelyMrmdSyncProcess(pid) {
+  if (!pid || Number.isNaN(Number(pid))) return false;
+
+  // Linux fast-path: inspect /proc cmdline
+  try {
+    const cmdlinePath = `/proc/${pid}/cmdline`;
+    if (fs.existsSync(cmdlinePath)) {
+      const cmdline = fs.readFileSync(cmdlinePath, 'utf8').replace(/\0/g, ' ');
+      return cmdline.includes('mrmd-sync') || cmdline.includes('mrmd-sync/bin/cli.js');
+    }
+  } catch {
+    // ignore and fall through
+  }
+
+  // Unknown platform/process metadata unavailable -> conservative
+  return false;
+}
+
 async function getSyncServer(projectDir) {
   const dirHash = computeDirHash(projectDir);
 
@@ -653,10 +683,30 @@ async function getSyncServer(projectDir) {
         // Verify the port is actually reachable (process could be zombie/different)
         const portAlive = await isPortInUse(pidData.port);
         if (portAlive) {
-          console.log(`[sync] Found existing server on port ${pidData.port}`);
-          const server = { proc: null, port: pidData.port, dir: projectDir, refCount: 1, owned: false };
-          syncServers.set(dirHash, server);
-          return server;
+          const allowReuse = process.env.MRMD_SYNC_REUSE_EXISTING === '1';
+          if (allowReuse) {
+            console.log(`[sync] Found existing server on port ${pidData.port} (reusing via MRMD_SYNC_REUSE_EXISTING=1)`);
+            const server = { proc: null, port: pidData.port, dir: projectDir, refCount: 1, owned: false };
+            syncServers.set(dirHash, server);
+            return server;
+          }
+
+          // Default behavior: start a fresh owned sync process to avoid inheriting
+          // stale/unstable external server state (can cause monitor reconnect storms).
+          console.warn(`[sync] Existing server detected on port ${pidData.port}; starting fresh owned server`);
+          if (isLikelyMrmdSyncProcess(pidData.pid)) {
+            try {
+              await killProcessTree(pidData.pid, 'SIGTERM');
+              await new Promise((r) => setTimeout(r, 300));
+              console.log(`[sync] Stopped external mrmd-sync PID ${pidData.pid}`);
+            } catch (e) {
+              console.warn(`[sync] Failed to stop external mrmd-sync PID ${pidData.pid}:`, e.message);
+            }
+          } else {
+            console.warn(`[sync] PID ${pidData.pid} is not recognized as mrmd-sync; not killing`);
+          }
+
+          try { fs.unlinkSync(syncStatePath); } catch (e) {}
         } else {
           console.log(`[sync] PID ${pidData.pid} alive but port ${pidData.port} not listening, removing stale pid`);
           try { fs.unlinkSync(syncStatePath); } catch (e) {}
@@ -1371,59 +1421,131 @@ ipcMain.handle('runtime:restart', async (event, { sessionName }) => {
   }
 });
 
-// Get or create ALL runtimes for a document (single call replaces 5 per-language calls)
-ipcMain.handle('runtime:forDocument', async (event, { documentPath }) => {
+function normalizeRuntimeLanguage(language) {
+  const l = String(language || '').toLowerCase();
+  if (l === 'py' || l === 'python3') return 'python';
+  if (l === 'sh' || l === 'shell' || l === 'zsh') return 'bash';
+  if (l === 'rlang') return 'r';
+  if (l === 'jl') return 'julia';
+  if (l === 'term' || l === 'terminal') return 'pty';
+  return l;
+}
+
+async function ensureEffectiveRuntime(documentPath, language, options = {}) {
+  const normalized = normalizeRuntimeLanguage(language);
+  const supported = new Set(runtimeService.supportedLanguages());
+  if (!supported.has(normalized)) {
+    return {
+      language: normalized,
+      alive: false,
+      available: false,
+      error: `Unsupported runtime language: ${language}`,
+    };
+  }
+
+  const effective = await runtimePreferencesService.getEffectiveForDocument({
+    documentPath,
+    language: normalized,
+    projectRoot: options.projectRoot || null,
+    deviceKind: options.deviceKind || 'desktop',
+  });
+
+  const startConfig = runtimePreferencesService.toRuntimeStartConfig(effective);
+
   try {
-    const project = await projectService.getProject(documentPath);
-    if (!project) return null;
-
-    // Read frontmatter from disk if file exists; for new/unsaved files, proceed without it.
-    let frontmatter = null;
-    try {
-      const content = fs.readFileSync(documentPath, 'utf8');
-      frontmatter = Project.parseFrontmatter(content);
-    } catch (readErr) {
-      if (readErr.code !== 'ENOENT') throw readErr;
-      // File doesn't exist on disk yet (new file from sync) — use project config only
-    }
-
-    return await runtimeService.getForDocument(
-      documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
+    const runtime = await runtimeService.start(startConfig);
+    return {
+      ...runtime,
+      id: runtime.name,
+      alive: true,
+      available: true,
+      autoStart: true,
+      effective,
+    };
   } catch (e) {
-    console.error('[runtime:forDocument] Error:', e.message);
+    return {
+      ...startConfig,
+      id: startConfig.name,
+      alive: false,
+      available: true,
+      autoStart: true,
+      error: e.message,
+      effective,
+    };
+  }
+}
+
+// Runtime preferences (UI-owned, not persisted in markdown)
+ipcMain.handle('runtime:prefs:get', async (event, { documentPath, projectRoot }) => {
+  try {
+    return await runtimePreferencesService.getAll({ documentPath, projectRoot });
+  } catch (e) {
+    console.error('[runtime:prefs:get] Error:', e.message);
     return null;
   }
 });
 
-// Get or create runtime for a document for a SPECIFIC language
-ipcMain.handle('runtime:forDocumentLanguage', async (event, { documentPath, language }) => {
+ipcMain.handle('runtime:prefs:setNotebook', async (event, { documentPath, language, patch, projectRoot }) => {
   try {
-    const project = await projectService.getProject(documentPath);
-    if (!project) return null;
-
-    // Read frontmatter from disk if file exists; for new/unsaved files, proceed without it.
-    let frontmatter = null;
-    try {
-      const content = fs.readFileSync(documentPath, 'utf8');
-      frontmatter = Project.parseFrontmatter(content);
-    } catch (readErr) {
-      if (readErr.code !== 'ENOENT') throw readErr;
-    }
-
-    return await runtimeService.getForDocumentLanguage(
-      language,
+    return await runtimePreferencesService.setNotebookOverride({
       documentPath,
-      project.config,
-      frontmatter,
-      project.root
-    );
+      language,
+      patch: patch || {},
+      projectRoot,
+    });
   } catch (e) {
-    console.error('[runtime:forDocumentLanguage] Error:', e.message);
-    return null;
+    console.error('[runtime:prefs:setNotebook] Error:', e.message);
+    throw e;
+  }
+});
+
+ipcMain.handle('runtime:prefs:setProject', async (event, { projectRoot, language, patch }) => {
+  try {
+    return await runtimePreferencesService.setProjectOverride({
+      projectRoot,
+      language,
+      patch: patch || {},
+    });
+  } catch (e) {
+    console.error('[runtime:prefs:setProject] Error:', e.message);
+    throw e;
+  }
+});
+
+ipcMain.handle('runtime:prefs:setDefault', (event, { language, patch }) => {
+  try {
+    return runtimePreferencesService.setDefault({
+      language,
+      patch: patch || {},
+    });
+  } catch (e) {
+    console.error('[runtime:prefs:setDefault] Error:', e.message);
+    throw e;
+  }
+});
+
+ipcMain.handle('runtime:prefs:clearNotebook', async (event, { documentPath, language, projectRoot }) => {
+  try {
+    return await runtimePreferencesService.clearNotebookOverride({
+      documentPath,
+      language,
+      projectRoot,
+    });
+  } catch (e) {
+    console.error('[runtime:prefs:clearNotebook] Error:', e.message);
+    throw e;
+  }
+});
+
+ipcMain.handle('runtime:ensureEffective', async (event, { documentPath, language, deviceKind, projectRoot }) => {
+  try {
+    return await ensureEffectiveRuntime(documentPath, language, {
+      deviceKind,
+      projectRoot,
+    });
+  } catch (e) {
+    console.error('[runtime:ensureEffective] Error:', e.message);
+    throw e;
   }
 });
 

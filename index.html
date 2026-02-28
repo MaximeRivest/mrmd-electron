@@ -2831,67 +2831,9 @@
     }
 
     /* Setup hints banner */
-    .setup-hints {
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: 8px 16px;
-    }
-
-    .setup-hint {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      background: var(--hover-bg);
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-
     .setup-hint:last-child {
       margin-bottom: 0;
     }
-
-    .hint-icon {
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    .hint-text {
-      flex: 1;
-      font-size: 13px;
-      color: var(--text);
-    }
-
-    .hint-action {
-      padding: 4px 10px;
-      font-size: 12px;
-      background: var(--accent, #3b82f6);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .hint-action:hover {
-      opacity: 0.9;
-    }
-
-    .hint-dismiss {
-      padding: 2px 6px;
-      font-size: 14px;
-      background: transparent;
-      color: var(--text-muted);
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    .hint-dismiss:hover {
-      background: var(--border);
-      color: var(--text);
-    }
-
     /* Inline "no runtime" prompt - appears below code cells */
     .no-runtime-prompt {
       position: fixed;
@@ -3016,54 +2958,7 @@
     }
 
     /* Subtle hover trigger for session config */
-    .session-hover-trigger {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 48px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-
-    .session-hover-trigger.visible {
-      display: flex;
-    }
-
-    .session-hover-action {
-      opacity: 0;
-      padding: 6px 12px;
-      font-size: 12px;
-      color: var(--text-muted);
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: opacity 0.2s ease, background 0.15s, color 0.15s;
-      white-space: nowrap;
-    }
-
-    .session-hover-trigger:hover .session-hover-action {
-      opacity: 1;
-    }
-
-    .session-hover-action:hover {
-      background: var(--bg-tertiary);
-      color: var(--text);
-      border-color: var(--accent);
-    }
-
-    .session-hover-action svg {
-      width: 14px;
-      height: 14px;
-      opacity: 0.7;
-    }
-
+    .session-hover-trigger:hover
     /* =========================================================================
        SETTINGS MODAL
        ========================================================================= */
@@ -5127,26 +5022,6 @@
       }
 
       /* Session hover trigger — larger on mobile */
-      .session-hover-trigger {
-        margin: 8px 16px;
-      }
-
-      .session-hover-action {
-        min-height: 44px;
-        font-size: 14px;
-        padding: 10px 16px;
-      }
-
-      /* Setup hints — full width */
-      .setup-hints {
-        margin: 0 16px;
-      }
-
-      .setup-hint {
-        font-size: 13px;
-        padding: 12px;
-      }
-
       /* Context menus become bottom sheets */
       .nav-context-menu {
         position: fixed !important;
@@ -6368,7 +6243,6 @@
         <button class="sidebar-toggle nav-toggle" id="nav-toggle" title="Collapse">‹</button>
         <div class="nav-header">
           <span class="nav-title" id="nav-title" title="Click to open project config">No Project</span>
-          <button class="nav-action" id="nav-config-btn" title="Project config (mrmd.md)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="8" x2="14" y2="8"/><circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none"/><line x1="2" y1="12" x2="14" y2="12"/><circle cx="7" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg></button>
           <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
         </div>
         <div class="nav-tree" id="nav-tree">
@@ -6391,26 +6265,7 @@
 
       <div id="editor-container">
         <!-- Contextual Python status trigger (replaces old "Add notebook config" button) -->
-        <div id="session-hover-trigger" class="session-hover-trigger">
-          <button class="session-hover-action" id="session-hover-btn" onclick="handleSessionHoverClick()" title="Python environment status">
-            <span id="session-hover-icon">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="8" cy="8" r="7"/>
-                <path d="M8 5v4M8 11v1"/>
-              </svg>
-            </span>
-            <span id="session-hover-text">Python</span>
-          </button>
-        </div>
-        <!-- Setup hints banner (project/venv only) -->
-        <div id="setup-hints" class="setup-hints" style="display: none;">
-          <div class="setup-hint" id="hint-no-project">
-            <span class="hint-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg></span>
-            <span class="hint-text">This folder isn't an mrmd project yet</span>
-            <button class="hint-action" onclick="initializeProject()">Initialize Project</button>
-            <button class="hint-dismiss" onclick="dismissHint('no-project')">×</button>
-          </div>
-          <div class="setup-hint" id="hint-no-venv">
+        <div class="setup-hint" id="hint-no-venv">
             <span class="hint-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12M12 2v12M4 8h8"/></svg></span>
             <span class="hint-text">No virtual environment found</span>
             <button class="hint-action" onclick="showVenvPicker()">Select venv</button>
@@ -7351,6 +7206,42 @@ session:
       pickerShowAllFolders: false,
     };
 
+    function normalizeRuntimeLanguage(language) {
+      const l = String(language || '').toLowerCase();
+      if (l === 'py' || l === 'python3') return 'python';
+      if (l === 'sh' || l === 'shell' || l === 'zsh') return 'bash';
+      if (l === 'rlang') return 'r';
+      if (l === 'jl') return 'julia';
+      if (l === 'term' || l === 'terminal') return 'pty';
+      return l;
+    }
+
+    // Full terminal state must be defined early because runtime registration can
+    // run before terminal helper declarations are reached.
+    const fullTermState = {
+      active: false,
+      initialized: false,
+      term: null,
+      fitAddon: null,
+      ptyClient: null,
+      resizeObserver: null,
+      sessionId: null,
+      retryTimer: null,
+      inputHandlerDispose: null,
+      mode: 'hidden',
+      suppressDisconnectEvent: false,
+      reconnectBackoffMs: 800,
+      reconnectAttempts: 0,
+      baseUrl: null,
+      resizeFitTimer: null,
+      tabs: [],
+      activeTabId: null,
+      nextTabId: 1,
+      modifiers: { ctrl: false, alt: false, super: false, shift: false },
+      fontSize: 14,
+      focusMode: false,
+    };
+
     const NOTEBOOK_SYNC_STATE_KEY = 'mrmd-notebook-sync-map';
 
     function persistNotebookSyncMap() {
@@ -7984,7 +7875,7 @@ session:
         }
 
         function fuzzyMatchPath(pattern, fullPath) {
-          const displayPath = fullPath.replace(/^\\\\/home\\\\/[^/]+/, '~');
+          const displayPath = fullPath.replace(/^\\/home\\/[^/]+/, '~');
           const lastSlash = displayPath.lastIndexOf('/');
           const dir = lastSlash >= 0 ? displayPath.slice(0, lastSlash) : '';
           const name = lastSlash >= 0 ? displayPath.slice(lastSlash + 1) : displayPath;
@@ -8254,7 +8145,7 @@ session:
             const row = {
               path: folderPath,
               name: folderPath.split('/').pop(),
-              dir: folderPath.split('/').slice(0, -1).join('/').replace(/^\\\\/home\\\\/[^/]+/, '~') || '~',
+              dir: folderPath.split('/').slice(0, -1).join('/').replace(/^\\/home\\/[^/]+/, '~') || '~',
               score: matchResult.score,
               nameMatches: matchResult.nameMatches || [],
               dirMatches: matchResult.dirMatches || [],
@@ -8282,7 +8173,7 @@ session:
               const row = {
                 path: folderPath,
                 name: folderPath.split('/').pop(),
-                dir: folderPath.split('/').slice(0, -1).join('/').replace(/^\\\\/home\\\\/[^/]+/, '~') || '~',
+                dir: folderPath.split('/').slice(0, -1).join('/').replace(/^\\/home\\/[^/]+/, '~') || '~',
                 score,
                 nameMatches: [],
                 dirMatches: [],
@@ -9152,7 +9043,7 @@ session:
              onclick="selectFileItem(${index})" ondblclick="createNewProject()">
           <span class="picker-item-icon">+</span>
           <span class="picker-item-name">Create PROJECT: ${row.projectName}</span>
-          <span class="picker-item-path">with mrmd.md, .venv</span>
+          <span class="picker-item-path">with .venv</span>
           ${selected ? '<span class="picker-item-action">[Enter]</span>' : ''}
         </div>
       `;
@@ -9507,6 +9398,13 @@ session:
       document.getElementById('venv-picker-overlay').classList.remove('visible');
     }
 
+    function dismissHint(id) {
+      const key = String(id || '').trim();
+      if (!key) return;
+      const el = document.getElementById(`hint-${key}`);
+      if (el) el.style.display = 'none';
+    }
+
     function filterVenvs(query) {
       state.venvQuery = query;
       const q = query.toLowerCase();
@@ -9665,13 +9563,9 @@ session:
 
       // IMPORTANT: forDocumentLanguage() can auto-start runtimes.
       // Avoid calling it when the user explicitly selected a venv/name/cwd.
-      if (!hasExplicitOverrides && state.currentFile && electronAPI.runtime?.forDocumentLanguage) {
+      if (!hasExplicitOverrides && state.currentFile && electronAPI.runtime?.ensureEffective) {
         try {
-          resolved = await (electronAPI.runtime.ensureEffective
-            ? electronAPI.runtime.ensureEffective(state.currentFile, 'python', {
-                projectRoot: state.project?.root || state.projectDir || null,
-              })
-            : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python'));
+          resolved = await electronAPI.runtime.ensureEffective(state.currentFile, 'python');
           if (resolved) setRuntimePreferenceSnapshot('python', resolved);
         } catch {
           // Best-effort only; we'll synthesize fallback config below.
@@ -9965,7 +9859,7 @@ session:
         }
 
         // Update hints (may show setup prompt again)
-        updateSetupHints();
+        
       }
     }
 
@@ -10101,7 +9995,7 @@ session:
 
     async function refreshProjectAfterNavMutation(anchorFilePath = null) {
       if (!state.project?.root) return;
-      const anchor = anchorFilePath || state.currentFile || `${state.project.root}/mrmd.md`;
+      const anchor = anchorFilePath || state.currentFile || `${state.project.root}/index.md`;
       const project = await electronAPI.project.get(anchor);
       if (!project) return;
 
@@ -10811,7 +10705,7 @@ session:
         }
 
         // Refresh
-        const project = await electronAPI.project.get(state.project.root + '/mrmd.md');
+        const project = await electronAPI.project.get(state.project.root + '/index.md');
         state.project = project;
         renderNavTreeFull();
       } catch (e) {
@@ -10868,13 +10762,6 @@ session:
       const item = e.target.closest('.nav-context-item');
       if (item) {
         handleNavContextAction(item.dataset.action);
-      }
-    });
-
-    // Header config button - opens mrmd.md
-    document.getElementById('nav-config-btn').addEventListener('click', () => {
-      if (state.project?.root) {
-        openFile(state.project.root + '/mrmd.md');
       }
     });
 
@@ -11325,7 +11212,7 @@ session:
         await warmupRuntimesForCurrentDocument();
 
         // Check for missing configuration and show hints
-        updateSetupHints();
+        
 
         // If user adds a new language code block, warm up that runtime in background
         // before first execution for a smoother experience.
@@ -17776,11 +17663,7 @@ session:
 
                 try {
                   console.log(`[${runtimeLanguage}] Runtime down, restarting...`);
-                  const fresh = await (electronAPI.runtime.ensureEffective
-                    ? electronAPI.runtime.ensureEffective(state.currentFile, normalizedRuntime, {
-                        projectRoot: state.project?.root || state.projectDir || null,
-                      })
-                    : electronAPI.runtime.forDocumentLanguage(state.currentFile, normalizedRuntime));
+                  const fresh = await electronAPI.runtime.ensureEffective(state.currentFile, normalizedRuntime);
                   if (!fresh?.alive || !fresh?.port) {
                     throw new Error(`${runtimeLanguage} runtime restart failed`);
                   }
@@ -17870,11 +17753,7 @@ session:
       }
 
       try {
-        const config = await (electronAPI.runtime.ensureEffective
-          ? electronAPI.runtime.ensureEffective(state.currentFile, language, {
-              projectRoot: state.project?.root || state.projectDir || null,
-            })
-          : electronAPI.runtime.forDocumentLanguage(state.currentFile, language));
+        const config = await electronAPI.runtime.ensureEffective(state.currentFile, language);
 
         if (!config) {
           console.log(`[${language}] No session config for this document`);
@@ -17990,11 +17869,7 @@ session:
       }
 
       try {
-        const ptyConfig = await (electronAPI.runtime.ensureEffective
-          ? electronAPI.runtime.ensureEffective(state.currentFile, 'pty', {
-              projectRoot: state.project?.root || state.projectDir || null,
-            })
-          : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'pty'));
+        const ptyConfig = await electronAPI.runtime.ensureEffective(state.currentFile, 'pty');
 
         if (!ptyConfig) {
           console.log('[pty] No PTY session config for this document');
@@ -18085,29 +17960,8 @@ session:
     // FULL TERMINAL PANEL — swipeable/shortcut-accessible terminal view
     // =========================================================================
 
-    const fullTermState = {
-      active: false,       // Whether we're showing the terminal page
-      initialized: false,  // Whether xterm has been created
-      term: null,          // xterm.js Terminal instance
-      fitAddon: null,      // FitAddon instance
-      ptyClient: null,     // PtyClient instance
-      resizeObserver: null, // ResizeObserver for fit
-      sessionId: null,     // PTY session ID
-      retryTimer: null,    // reconnect timer when PTY isn't ready yet
-      inputHandlerDispose: null, // xterm onData subscription disposer
-      mode: 'hidden',
-      suppressDisconnectEvent: false,
-      reconnectBackoffMs: 800,
-      reconnectAttempts: 0,
-      baseUrl: null,
-      resizeFitTimer: null,
-      tabs: [], // { id, label, sessionId, cwd }
-      activeTabId: null,
-      nextTabId: 1,
-      modifiers: { ctrl: false, alt: false, super: false, shift: false },
-      fontSize: 14,
-      focusMode: false,
-    };
+    // fullTermState is declared near the global state section so it is
+    // available during early runtime registration.
 
     /**
      * Toggle the full terminal panel (slide between notebook and terminal)
@@ -19433,11 +19287,7 @@ session:
 
       try {
         // Get ONLY Python session config from project (do not auto-start all runtimes)
-        const sessionConfig = await (electronAPI.runtime.ensureEffective
-          ? electronAPI.runtime.ensureEffective(state.currentFile, 'python', {
-              projectRoot: state.project?.root || state.projectDir || null,
-            })
-          : electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python'));
+        const sessionConfig = await electronAPI.runtime.ensureEffective(state.currentFile, 'python');
 
         if (sessionConfig) {
           state.session.config = sessionConfig;
@@ -19515,358 +19365,13 @@ session:
       if (message.includes('mrmd-python not installed')) {
         console.log('Hint: mrmd-python needs to be installed in the venv');
       } else if (message.includes('not found')) {
-        console.log('Hint: Check that the venv path in mrmd.md is correct');
+        console.log('Hint: Check that the venv path in Runtimes panel is correct');
       }
     }
 
     // =========================================================================
-    // NO RUNTIME INLINE PROMPT
+    // NO RUNTIME HANDLER
     // =========================================================================
-
-    /**
-     * Current no-runtime prompt state
-     */
-    let noRuntimePrompt = null;
-
-    /**
-     * Show inline prompt when user tries to run code but no runtime is available.
-     * This is the "moment of friction" approach from the Jobs/Ive UX discussion.
-     *
-     * @param {number} cellIndex - Index of the cell that failed
-     * @param {Object} cell - Cell info {language, code, start, end}
-     * @param {string} language - Language that needs a runtime
-     * @param {function} retryCallback - Call this after runtime is set up to retry execution
-     */
-    function showNoRuntimePrompt(cellIndex, cell, language, retryCallback) {
-      // Remove any existing prompt
-      hideNoRuntimePrompt();
-
-      // Create prompt element
-      const prompt = document.createElement('div');
-      prompt.className = 'no-runtime-prompt';
-      prompt.id = 'no-runtime-prompt';
-
-      // Position below the cell (approximate - we'll refine this)
-      const editorRect = document.getElementById('editor').getBoundingClientRect();
-      prompt.style.top = `${editorRect.top + 100}px`;
-
-      // Get language-specific info
-      const langLabel = language === 'python' || language === 'py' || language === 'python3'
-        ? 'Python'
-        : language.charAt(0).toUpperCase() + language.slice(1);
-
-      const isPython = ['python', 'py', 'python3'].includes(language.toLowerCase());
-
-      prompt.innerHTML = `
-        <button class="no-runtime-prompt-dismiss" onclick="hideNoRuntimePrompt()">×</button>
-        <div class="no-runtime-prompt-header">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M8 1v8M8 12v2"/>
-            <circle cx="8" cy="8" r="7"/>
-          </svg>
-          <span>No ${langLabel} runtime ready</span>
-        </div>
-        <div class="no-runtime-prompt-actions" id="no-runtime-actions">
-          ${isPython ? `
-            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
-              Start Python runtime
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="toggleNoRuntimeAdvanced()">
-              More options...
-            </button>
-            <div id="no-runtime-advanced" style="display:none; width: 100%; margin-top: 8px;">
-              <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
-                Restart runtimes
-              </button>
-              <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
-                Create .venv
-              </button>
-              <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
-                Choose existing...
-              </button>
-            </div>
-            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
-              Dismiss
-            </button>
-          ` : `
-            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
-              Start ${langLabel} runtime
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
-              Dismiss
-            </button>
-          `}
-        </div>
-      `;
-
-      document.body.appendChild(prompt);
-
-      // Store state for callbacks
-      noRuntimePrompt = {
-        element: prompt,
-        language,
-        cellIndex,
-        cell,
-        retryCallback,
-      };
-
-      console.log('[noRuntime] Showing prompt for', language, 'cell', cellIndex);
-    }
-
-    /**
-     * Hide the no-runtime prompt
-     */
-    function hideNoRuntimePrompt() {
-      const existing = document.getElementById('no-runtime-prompt');
-      if (existing) {
-        existing.remove();
-      }
-      noRuntimePrompt = null;
-    }
-
-    /**
-     * Toggle advanced no-runtime actions (cloud UI keeps this collapsed by default)
-     */
-    function toggleNoRuntimeAdvanced() {
-      const panel = document.getElementById('no-runtime-advanced');
-      if (!panel) return;
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    }
-
-    /**
-     * Create .venv in project directory and retry execution
-     */
-    async function createVenvAndRetry() {
-      if (!noRuntimePrompt) return;
-
-      const { retryCallback, language } = noRuntimePrompt;
-      const actionsEl = document.getElementById('no-runtime-actions');
-
-      // Show progress
-      if (actionsEl) {
-        actionsEl.innerHTML = `
-          <div class="no-runtime-prompt-progress">
-            <div class="no-runtime-prompt-spinner"></div>
-            <span>Creating .venv...</span>
-          </div>
-        `;
-      }
-
-      try {
-        const venvPath = state.projectDir
-          ? `${state.projectDir}/.venv`
-          : `${state.currentFile.replace(/\/[^/]+$/, '')}/.venv`;
-
-        console.log('[noRuntime] Creating venv at:', venvPath);
-
-        // Create venv using Python
-        const createResult = await electronAPI.createVenv(venvPath);
-
-        if (!createResult?.success) {
-          throw new Error(createResult?.error || 'Failed to create venv');
-        }
-
-        // Update progress - installing mrmd-python
-        if (actionsEl) {
-          actionsEl.innerHTML = `
-            <div class="no-runtime-prompt-progress">
-              <div class="no-runtime-prompt-spinner"></div>
-              <span>Installing mrmd-python...</span>
-            </div>
-          `;
-        }
-
-        // Install mrmd-python in the venv
-        console.log('[noRuntime] Installing mrmd-python in:', venvPath);
-        const installResult = await electronAPI.installMrmdPython(venvPath);
-
-        if (!installResult?.success) {
-          throw new Error(installResult?.error || 'Failed to install mrmd-python');
-        }
-
-        // Update progress - starting
-        if (actionsEl) {
-          actionsEl.innerHTML = `
-            <div class="no-runtime-prompt-progress">
-              <div class="no-runtime-prompt-spinner"></div>
-              <span>Starting Python...</span>
-            </div>
-          `;
-        }
-
-        // Start runtime (unified runtime API)
-        const config = await resolvePythonStartConfig({ venv: venvPath });
-        const startResult = await startPythonRuntimeFromConfig(config, 'no-runtime-create-venv');
-        console.log('[noRuntime] Python runtime registered:', startResult.name || config.name);
-
-        // Refresh runtimes panel and update hints
-        if (typeof refreshRuntimes === 'function') refreshRuntimes();
-        updateSetupHints();
-
-        // Hide prompt and retry
-        hideNoRuntimePrompt();
-
-        if (retryCallback) {
-          console.log('[noRuntime] Retrying execution...');
-          retryCallback();
-        }
-
-      } catch (e) {
-        console.error('[noRuntime] Failed to create venv:', e);
-        if (actionsEl) {
-          actionsEl.innerHTML = `
-            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
-              <span>Failed: ${e.message}</span>
-            </div>
-            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
-              Dismiss
-            </button>
-          `;
-        }
-      }
-    }
-
-    /**
-     * Open venv picker and retry execution after selection
-     */
-    async function chooseVenvAndRetry() {
-      if (!noRuntimePrompt) return;
-
-      const { retryCallback } = noRuntimePrompt;
-
-      // Store retry callback for after venv selection
-      window._pendingRuntimeRetry = retryCallback;
-
-      // Hide the prompt
-      hideNoRuntimePrompt();
-
-      // Show venv picker
-      showVenvPicker();
-    }
-
-    function normalizeRuntimeLanguage(language) {
-      const raw = String(language || '').toLowerCase();
-      if (['python', 'py', 'python3'].includes(raw)) return 'python';
-      if (['bash', 'sh', 'shell'].includes(raw)) return 'bash';
-      if (['r', 'rlang'].includes(raw)) return 'r';
-      if (['julia', 'jl'].includes(raw)) return 'julia';
-      if (['pty', 'term', 'terminal'].includes(raw)) return 'pty';
-      if (['javascript', 'js', 'node', 'typescript', 'ts'].includes(raw)) return 'node';
-      return raw;
-    }
-
-    /**
-     * Start the missing runtime from the inline prompt and retry the failed cell.
-     */
-    async function startRuntimeAndRetry() {
-      if (!noRuntimePrompt) return;
-
-      const { language, retryCallback } = noRuntimePrompt;
-      const normalized = normalizeRuntimeLanguage(language);
-      const actionsEl = document.getElementById('no-runtime-actions');
-
-      if (actionsEl) {
-        actionsEl.innerHTML = `
-          <div class="no-runtime-prompt-progress">
-            <div class="no-runtime-prompt-spinner"></div>
-            <span>Starting ${normalized} runtime...</span>
-          </div>
-        `;
-      }
-
-      try {
-        if (normalized === 'node') {
-          // JS runtime is client-side; just retry.
-        } else if (['python', 'bash', 'r', 'julia', 'pty'].includes(normalized)) {
-          await startRuntimeForLanguage(normalized);
-
-          const attachedIds = {
-            python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
-            bash: state.bashSession?.name,
-            r: state.rSession?.name,
-            julia: state.juliaSession?.name,
-            pty: state.ptySession?.name,
-          };
-          const { runtime } = getPreferredRuntimeForLanguage(normalized, state.runningRuntimes || [], attachedIds);
-          if (!runtime && normalized !== 'python') {
-            throw new Error(`${normalized} runtime is still unavailable`);
-          }
-          if (normalized === 'python' && !state.pythonPort && !runtime) {
-            throw new Error('Python runtime is still unavailable. Try Create .venv or Choose existing.');
-          }
-        } else {
-          throw new Error(`Unsupported runtime: ${language}`);
-        }
-
-        hideNoRuntimePrompt();
-        await new Promise(r => setTimeout(r, 120));
-        if (typeof retryCallback === 'function') {
-          await retryCallback();
-        }
-      } catch (e) {
-        console.error('[noRuntime] Failed to start runtime:', e);
-        if (actionsEl) {
-          actionsEl.innerHTML = `
-            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
-              <span>Failed: ${e.message}</span>
-            </div>
-            <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()" style="margin-top: 8px;">
-              Try again
-            </button>
-            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
-              Dismiss
-            </button>
-          `;
-        }
-      }
-    }
-
-    /**
-     * Restart all currently known runtimes, then retry failed execution.
-     */
-    async function restartRuntimesAndRetry() {
-      if (!noRuntimePrompt) return;
-      const { retryCallback } = noRuntimePrompt;
-      const actionsEl = document.getElementById('no-runtime-actions');
-
-      if (actionsEl) {
-        actionsEl.innerHTML = `
-          <div class="no-runtime-prompt-progress">
-            <div class="no-runtime-prompt-spinner"></div>
-            <span>Restarting runtimes...</span>
-          </div>
-        `;
-      }
-
-      try {
-        // Restart runtimes used in this document only.
-        const langs = [...getDocumentLanguagesFromEditor()]
-          .map(normalizeDocLanguageToRuntime)
-          .filter(Boolean);
-
-        for (const lang of new Set(langs)) {
-          await restartRuntimeForLanguage(lang);
-        }
-
-        hideNoRuntimePrompt();
-        await new Promise(r => setTimeout(r, 180));
-        if (typeof retryCallback === 'function') {
-          await retryCallback();
-        }
-      } catch (e) {
-        console.error('[noRuntime] Failed to restart runtimes:', e);
-        if (actionsEl) {
-          actionsEl.innerHTML = `
-            <div class="no-runtime-prompt-progress" style="color: var(--error, #ef4444);">
-              <span>Failed: ${e.message}</span>
-            </div>
-            <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()" style="margin-top: 8px;">
-              Dismiss
-            </button>
-          `;
-        }
-      }
-    }
 
     /**
      * Hook up noRuntime event handler to editor
@@ -19905,294 +19410,19 @@ session:
               autoRecovering = false;
               return;
             }
-            console.log('[noRuntime] Auto-recover did not register runtime for', normalized, '- showing prompt');
+            console.log('[noRuntime] Auto-recover did not register runtime for', normalized, '- opening panel');
           } catch (e) {
             console.warn('[noRuntime] Auto-recover failed:', e?.message || e);
           }
           autoRecovering = false;
         }
 
-        showNoRuntimePrompt(cellIndex, cell, language, retryCallback);
+        openPanel('runtimes');
+        alert(`No ${normalized} runtime available. Please configure it in the Runtimes panel.`);
       });
 
       console.log('[noRuntime] Handler registered');
     }
-
-    // =========================================================================
-    // SETUP HINTS
-    // =========================================================================
-
-    const dismissedHints = new Set();
-
-    /**
-     * Update setup hints based on current state
-     */
-    function updateSetupHints() {
-      const hintsEl = document.getElementById('setup-hints');
-      const sessionHoverTrigger = document.getElementById('session-hover-trigger');
-      const hoverBtn = document.getElementById('session-hover-btn');
-      const hoverText = document.getElementById('session-hover-text');
-      const hoverIcon = document.getElementById('session-hover-icon');
-
-      if (!hintsEl) return;
-
-      const hints = [];
-
-      // Check for missing project config
-      const hasProjectConfig = state.project?.config?.name;
-      if (!hasProjectConfig && !dismissedHints.has('no-project')) {
-        hints.push('no-project');
-      }
-
-      // Check for missing session config in document
-      const hasSessionConfig = checkDocumentHasSessionConfig();
-
-      // Check for missing venv — check explicit config, resolved session config,
-      // and the python runtime state (which applies the default .venv)
-      const hasVenv = state.project?.config?.venv
-        || state.project?.config?.session?.python?.venv
-        || state.session?.config?.venv
-        || state.pythonVenv
-        || state.pythonPort;  // if python runtime is running, venv was found
-      if (!hasVenv && hasSessionConfig && !dismissedHints.has('no-venv')) {
-        hints.push('no-venv');
-      }
-
-      // Show/hide individual hints
-      document.getElementById('hint-no-project').style.display =
-        hints.includes('no-project') ? 'flex' : 'none';
-      document.getElementById('hint-no-venv').style.display =
-        hints.includes('no-venv') ? 'flex' : 'none';
-
-      // Show/hide hints container (for project/venv hints only)
-      hintsEl.style.display = hints.length > 0 ? 'block' : 'none';
-
-      // Update contextual hover trigger based on Python state
-      if (sessionHoverTrigger && hoverText && hoverIcon) {
-        const hasRuntime = state.pythonPort != null;
-        const hasVenvDetected = state.pythonVenv || state.session?.config?.venv;
-
-        if (hasRuntime) {
-          // Python is running - hide the trigger (everything is working)
-          sessionHoverTrigger.classList.remove('visible');
-        } else if (hasVenvDetected) {
-          // Venv exists but not running - show "Start Python"
-          sessionHoverTrigger.classList.add('visible');
-          hoverText.textContent = 'Start Python';
-          hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <polygon points="5,3 13,8 5,13" fill="currentColor"/>
-          </svg>`;
-          hoverBtn.title = 'Start Python runtime';
-        } else if (!hasSessionConfig) {
-          // No config, no venv - show contextual prompt
-          // But only if this looks like a Python-using document
-          const doc = state.editor?.view?.state.doc.toString() || '';
-          const hasPythonCode = /```python|```py/.test(doc);
-
-          if (hasPythonCode) {
-            sessionHoverTrigger.classList.add('visible');
-            hoverText.textContent = 'Setup Python';
-            hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="8" cy="8" r="7"/>
-              <path d="M8 5v4M8 11v1"/>
-            </svg>`;
-            hoverBtn.title = 'Set up Python environment';
-          } else {
-            // No Python code - hide trigger
-            sessionHoverTrigger.classList.remove('visible');
-          }
-        } else {
-          // Has config but no venv detected - venv might be missing
-          sessionHoverTrigger.classList.add('visible');
-          hoverText.textContent = 'Create .venv';
-          hoverIcon.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M8 3v10M3 8h10"/>
-          </svg>`;
-          hoverBtn.title = 'Create Python virtual environment';
-        }
-      }
-    }
-
-    /**
-     * Check if current document has session config in frontmatter
-     * Supports both verbose (session:) and minimal syntax (python:, bash:, etc.)
-     */
-    function checkDocumentHasSessionConfig() {
-      if (!state.editor?.view) return false;
-
-      const doc = state.editor.view.state.doc.toString();
-
-      // Patterns for both verbose and minimal syntax
-      // Verbose: session:
-      // Minimal: python:, bash:, node:, julia:, r:, term:
-      const runtimePatterns = ['session:', 'python:', 'bash:', 'node:', 'julia:', 'r:', 'term:'];
-
-      // Check for frontmatter
-      const frontmatterMatch = doc.match(/^---\n([\s\S]*?)\n---/);
-      if (frontmatterMatch) {
-        const yaml = frontmatterMatch[1];
-        return runtimePatterns.some(p => yaml.includes(p));
-      }
-
-      // Also check for ```yaml config blocks with session
-      if (doc.includes('```yaml')) {
-        return runtimePatterns.some(p => doc.includes(p));
-      }
-
-      return false;
-    }
-
-    /**
-     * Dismiss a hint
-     */
-    function dismissHint(hintId) {
-      dismissedHints.add(hintId);
-      updateSetupHints();
-    }
-
-    /**
-     * Initialize current directory as mrmd project
-     */
-    async function initializeProject() {
-      if (!state.projectDir) {
-        alert('No directory to initialize');
-        return;
-      }
-
-      try {
-        // Get folder name for project name
-        const folderName = state.projectDir.split('/').pop() || 'project';
-
-        // Create mrmd.md with complete config template
-        const mrmdConfig = `# ${folderName}
-
-Project configuration for mrmd.
-
-\`\`\`yaml config
-name: "${folderName}"
-
-session:
-  python:
-    venv: .venv
-    cwd: .
-    name: default
-    auto_start: true
-  bash:
-    cwd: .
-    name: default
-    auto_start: true
-
-assets:
-  directory: _assets
-\`\`\`
-`;
-
-        const mrmdPath = state.projectDir + '/mrmd.md';
-        await electronAPI.file.write(mrmdPath, mrmdConfig);
-
-        console.log('Project initialized:', mrmdPath);
-
-        // Refresh project info
-        const project = await electronAPI.project.get(state.currentFile);
-        state.project = project;
-        updateNavSidebar(project);
-        updateSetupHints();
-      } catch (e) {
-        console.error('Failed to initialize project:', e);
-        alert('Failed to initialize project: ' + e.message);
-      }
-    }
-
-    /**
-     * Handle contextual click on the session hover button.
-     * Action depends on current state:
-     * - If venv exists but not running: start Python
-     * - If no venv: create one
-     * - If no config: show setup prompt
-     */
-    async function handleSessionHoverClick() {
-      const hasRuntime = state.pythonPort != null;
-      const hasVenvDetected = state.pythonVenv || state.session?.config?.venv;
-      const hasSessionConfig = checkDocumentHasSessionConfig();
-
-      if (hasRuntime) {
-        // Already running - nothing to do
-        return;
-      }
-
-      if (hasVenvDetected) {
-        // Venv exists but not running - start it
-        const venvPath = state.pythonVenv?.path || state.session?.config?.venv;
-        if (venvPath) {
-          try {
-            const hoverText = document.getElementById('session-hover-text');
-            if (hoverText) hoverText.textContent = 'Starting...';
-
-            const config = await resolvePythonStartConfig({ venv: venvPath });
-            const startResult = await startPythonRuntimeFromConfig(config, 'hover-start');
-            if (startResult?.port) {
-              updateSessionStatus('connected', startResult.name || config.name || 'Started');
-              updateSetupHints();
-            }
-          } catch (e) {
-            console.error('Failed to start Python:', e);
-          }
-        }
-      } else if (!hasSessionConfig) {
-        // No config, no venv - show inline prompt (same as noRuntime handler)
-        const doc = state.editor?.view?.state.doc.toString() || '';
-        const cell = { language: 'python', code: '' };
-        showNoRuntimePrompt(0, cell, 'python', null);
-      } else {
-        // Has config but no venv - create one
-        await createVenvAndRetry();
-      }
-    }
-
-    /**
-     * Insert session config at the top of the document.
-     * Uses minimal frontmatter syntax: python: .venv
-     */
-    function insertSessionConfig() {
-      if (!state.editor?.view) return;
-
-      const view = state.editor.view;
-      const doc = view.state.doc.toString();
-
-      // Check if document already has frontmatter
-      if (doc.startsWith('---\n')) {
-        // Has frontmatter - add python: .venv line to it
-        const endIndex = doc.indexOf('\n---', 3);
-        if (endIndex !== -1) {
-          // Check if python: already exists
-          const frontmatter = doc.slice(4, endIndex);
-          if (!frontmatter.includes('python:') && !frontmatter.includes('session:')) {
-            // Insert python: .venv before closing ---
-            const insertPos = endIndex;
-            view.dispatch({
-              changes: { from: insertPos, insert: 'python: .venv\n' },
-            });
-          }
-        }
-      } else {
-        // No frontmatter - add minimal frontmatter at the top
-        const minimalFrontmatter = `---
-python: .venv
----
-
-`;
-        view.dispatch({
-          changes: { from: 0, insert: minimalFrontmatter },
-          selection: { anchor: minimalFrontmatter.length },
-        });
-      }
-
-      // Update hints
-      setTimeout(updateSetupHints, 100);
-    }
-
-    // Note: showVenvPicker() is defined earlier in the VENV PICKER section (line ~3488)
-    // It shows the proper venv discovery overlay
 
     // =========================================================================
     // THEME MANAGEMENT
@@ -22865,7 +22095,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       projectRefreshTimeout = setTimeout(async () => {
         if (state.project?.root) {
           console.log('[watch] Refreshing project nav...');
-          const project = await electronAPI.project.get(state.currentFile || state.project.root + '/mrmd.md');
+          const project = await electronAPI.project.get(state.currentFile || state.project.root + '/index.md');
           if (project) {
             state.project = project;
             updateNavSidebar(project, state.currentFile);

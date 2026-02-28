@@ -7,7 +7,7 @@
  * Uses mrmd-project for all computation (pure logic).
  */
 
-import { Project, FSML, Scaffold } from 'mrmd-project';
+import { FSML, Scaffold } from 'mrmd-project';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
@@ -25,6 +25,63 @@ function isDocPath(filePath) {
   return DOC_EXTENSIONS.some(ext => lower.endsWith(ext));
 }
 
+function hasDocsInDir(dir) {
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    return entries.some((entry) => entry.isFile() && isDocPath(entry.name));
+  } catch {
+    return false;
+  }
+}
+
+function findGitRoot(startDir) {
+  let current = path.resolve(startDir || '/');
+  while (true) {
+    try {
+      if (fs.existsSync(path.join(current, '.git'))) return current;
+    } catch {
+      // ignore
+    }
+    const parent = path.dirname(current);
+    if (!parent || parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+function resolveProjectRootFromPath(filePath) {
+  const absolute = path.resolve(String(filePath || '.'));
+  let startDir = absolute;
+  try {
+    const stat = fs.statSync(absolute);
+    if (stat.isFile()) startDir = path.dirname(absolute);
+  } catch {
+    if (path.extname(absolute)) startDir = path.dirname(absolute);
+  }
+
+  const gitRoot = findGitRoot(startDir);
+  if (gitRoot) return gitRoot;
+
+  // Heuristic fallback: bubble up through nearby doc-containing parents
+  // so opening a deep notebook still gets a useful sidebar root.
+  const homeDir = path.resolve(process.env.HOME || '/');
+  let current = startDir;
+  let candidate = startDir;
+
+  for (let i = 0; i < 4; i++) {
+    const parent = path.dirname(current);
+    if (!parent || parent === current || parent === homeDir || parent === '/') break;
+    if (hasDocsInDir(parent)) {
+      candidate = parent;
+      current = parent;
+      continue;
+    }
+    break;
+  }
+
+  return candidate;
+}
+
 class ProjectService {
   constructor() {
     this.cache = new Map(); // projectRoot -> ProjectInfo
@@ -38,34 +95,25 @@ class ProjectService {
    * @returns {Promise<ProjectInfo | null>}
    */
   async getProject(filePath) {
-    // 1. Find project root using mrmd-project
-    const root = Project.findRoot(filePath, (p) => {
-      try {
-        return fs.existsSync(path.join(p, 'mrmd.md'));
-      } catch {
-        return false;
-      }
-    });
+    const root = resolveProjectRootFromPath(filePath);
 
-    if (!root) return null;
-
-    // 2. Check cache
+    // Check cache
     if (this.cache.has(root)) {
       return this.cache.get(root);
     }
 
-    // 3. Load project
-    const mrmdPath = path.join(root, 'mrmd.md');
-    const content = await fsPromises.readFile(mrmdPath, 'utf8');
-    const config = Project.parseConfig(content);
+    // App-owned project metadata (runtime prefs/config is no longer in mrmd.md)
+    const config = {
+      name: path.basename(root) || 'Project',
+    };
 
-    // 4. Scan files
+    // Scan files
     const files = await this.scanFiles(root);
 
-    // 5. Build nav tree using mrmd-project
+    // Build nav tree using mrmd-project FSML utils
     const navTree = FSML.buildNavTree(files);
 
-    // 6. Cache and return
+    // Cache and return
     const info = { root, config, files, navTree };
     this.cache.set(root, info);
     return info;

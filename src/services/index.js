@@ -10,6 +10,7 @@ import RuntimeService from './runtime-service.js';
 import FileService from './file-service.js';
 import AssetService from './asset-service.js';
 import SettingsService from './settings-service.js';
+import RuntimePreferencesService from './runtime-preferences-service.js';
 
 export {
   ProjectService,
@@ -17,4 +18,5 @@ export {
   FileService,
   AssetService,
   SettingsService,
+  RuntimePreferencesService,
 };

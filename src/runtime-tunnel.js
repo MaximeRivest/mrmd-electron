@@ -52,6 +52,7 @@ export class RuntimeTunnel {
     this.userId = opts.userId;
     this.token = opts.token;
     this.runtimeService = opts.runtimeService;
+    this.runtimePreferencesService = opts.runtimePreferencesService;
     this.machineId = opts.machineId || process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInfo().username}`;
     this.machineName = opts.machineName || process.env.MRMD_MACHINE_NAME || os.hostname();
     this.hostname = os.hostname();
@@ -216,16 +217,77 @@ export class RuntimeTunnel {
     }
   }
 
+  async _ensureEffectiveRuntime(documentPath, language, projectRoot) {
+    const l = String(language || '').toLowerCase();
+    const normalized = (l === 'py' || l === 'python3') ? 'python' :
+                       (l === 'sh' || l === 'shell' || l === 'zsh') ? 'bash' :
+                       (l === 'rlang') ? 'r' :
+                       (l === 'jl') ? 'julia' :
+                       (l === 'term' || l === 'terminal') ? 'pty' : l;
+
+    const supported = new Set(this.runtimeService.supportedLanguages?.() || []);
+    if (!supported.has(normalized)) {
+      return {
+        language: normalized,
+        alive: false,
+        available: false,
+        error: `Unsupported runtime language: ${language}`,
+      };
+    }
+
+    let effective = null;
+    let startConfig = null;
+    if (this.runtimePreferencesService) {
+      effective = await this.runtimePreferencesService.getEffectiveForDocument({
+        documentPath,
+        language: normalized,
+        projectRoot,
+        deviceKind: 'desktop', // default to desktop for tunnel provider
+      });
+      startConfig = this.runtimePreferencesService.toRuntimeStartConfig(effective);
+    } else {
+      // Fallback if preferences service isn't available
+      startConfig = {
+        name: `rt:notebook:default:${normalized}`,
+        language: normalized,
+        cwd: projectRoot || '.',
+      };
+      if (normalized === 'python') {
+        startConfig.venv = projectRoot ? `${projectRoot}/.venv` : '.venv';
+      }
+    }
+
+    try {
+      const runtime = await this.runtimeService.start(startConfig);
+      return {
+        ...runtime,
+        id: runtime.name,
+        alive: true,
+        available: true,
+        autoStart: true,
+        effective,
+      };
+    } catch (e) {
+      return {
+        ...startConfig,
+        id: startConfig.name,
+        alive: false,
+        available: true,
+        autoStart: true,
+        error: e.message,
+        effective,
+      };
+    }
+  }
+
   async _handleStartRuntime(msg) {
-    const { id, language, name, cwd, venv, documentPath, projectRoot, projectConfig, frontmatter } = msg;
+    const { id, language, name, cwd, venv, documentPath, projectRoot } = msg;
     try {
       let result;
       if (documentPath) {
         if (language) {
           // Single language for document
-          result = await this.runtimeService.getForDocumentLanguage(
-            language, documentPath, projectConfig, frontmatter, projectRoot
-          );
+          result = await this._ensureEffectiveRuntime(documentPath, language, projectRoot);
           this._send({ t: 'runtime-started', id, runtimes: { [language]: result } });
         } else {
           // All runtimes for document
@@ -236,23 +298,16 @@ export class RuntimeTunnel {
 
           for (const lang of preferred) {
             try {
-              runtimes[lang] = await this.runtimeService.getForDocumentLanguage(
-                lang, documentPath, projectConfig, frontmatter, projectRoot
-              );
+              runtimes[lang] = await this._ensureEffectiveRuntime(documentPath, lang, projectRoot);
             } catch (e) {
               runtimes[lang] = { language: lang, alive: false, available: false, error: e.message };
             }
           }
 
           // Julia is optional in tunnel bootstrap; only start it in the background.
-          // This prevents a 60s timeout or crash from blocking all runtimes.
-          // IMPORTANT: send background status with a dedicated message type.
-          // Mutating the RPC id (e.g. `${id}:julia`) breaks client-side pending maps.
           setTimeout(async () => {
             try {
-              const julia = await this.runtimeService.getForDocumentLanguage(
-                'julia', documentPath, projectConfig, frontmatter, projectRoot
-              );
+              const julia = await this._ensureEffectiveRuntime(documentPath, 'julia', projectRoot);
               this._send({
                 t: 'runtime-update',
                 requestId: id,

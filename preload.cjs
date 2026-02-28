@@ -128,6 +128,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('runtime:forDocumentLanguage', { documentPath, language }),
 
     /**
+     * Resolve preferences + ensure runtime for one language (UI-owned config path).
+     */
+    ensureEffective: (documentPath, language, options = {}) =>
+      ipcRenderer.invoke('runtime:ensureEffective', {
+        documentPath,
+        language,
+        deviceKind: options.deviceKind,
+        projectRoot: options.projectRoot,
+      }),
+
+    /**
+     * Runtime preferences API (stored in app config, not markdown frontmatter)
+     */
+    prefs: {
+      get: (documentPath, projectRoot) =>
+        ipcRenderer.invoke('runtime:prefs:get', { documentPath, projectRoot }),
+      setNotebook: (documentPath, language, patch, projectRoot) =>
+        ipcRenderer.invoke('runtime:prefs:setNotebook', { documentPath, language, patch, projectRoot }),
+      setProject: (projectRoot, language, patch) =>
+        ipcRenderer.invoke('runtime:prefs:setProject', { projectRoot, language, patch }),
+      setDefault: (language, patch) =>
+        ipcRenderer.invoke('runtime:prefs:setDefault', { language, patch }),
+      clearNotebook: (documentPath, language, projectRoot) =>
+        ipcRenderer.invoke('runtime:prefs:clearNotebook', { documentPath, language, projectRoot }),
+    },
+
+    /**
      * Check if a language runtime is available on this system.
      * @param {string} language
      * @returns {Promise<{available: boolean, error?: string}>}

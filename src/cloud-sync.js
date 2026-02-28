@@ -328,6 +328,7 @@ export class CloudSync {
         userId: this.userId,
         token: this.token,
         runtimeService: opts.runtimeService,
+        runtimePreferencesService: opts.runtimePreferencesService,
         onBridgeRequest: ({ project, docPath }) => {
           this._handleBridgeRequest(project, docPath);
         },

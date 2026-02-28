@@ -25,7 +25,7 @@ import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 
 import { CloudSync } from './cloud-sync.js';
-import { RuntimeService, SettingsService } from './services/index.js';
+import { RuntimeService, SettingsService, RuntimePreferencesService, ProjectService } from './services/index.js';
 import { findFreePort, waitForPort } from './utils/index.js';
 import { DIR_HASH_LENGTH, SYNC_SERVER_MEMORY_MB } from './config.js';
 
@@ -43,7 +43,9 @@ const MACHINE_ID = process.env.MRMD_MACHINE_ID || `${os.hostname()}-${os.userInf
 const MACHINE_NAME = process.env.MRMD_MACHINE_NAME || os.hostname();
 
 const settings = new SettingsService();
+const projectService = new ProjectService();
 const runtimeService = new RuntimeService();
+const runtimePreferencesService = new RuntimePreferencesService({ projectService });
 
 /** @type {Map<string, { proc: import('child_process').ChildProcess, port: number, dir: string }>} */
 const syncServers = new Map();
@@ -106,14 +108,37 @@ function discoverDocNames(projectDir) {
   return docs;
 }
 
+function hasDocsInProject(dir) {
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === '.venv' || entry.name === '__pycache__') continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        try {
+          const nested = fs.readdirSync(full, { withFileTypes: true });
+          if (nested.some((n) => n.isFile() && (n.name.endsWith('.md') || n.name.endsWith('.qmd')))) return true;
+        } catch {
+          // ignore
+        }
+      } else if (entry.name.endsWith('.md') || entry.name.endsWith('.qmd')) {
+        return true;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 function discoverProjects() {
   const projects = new Set();
 
   for (const root of ROOTS) {
     if (!fs.existsSync(root)) continue;
 
-    // Root itself may be a project
-    if (fs.existsSync(path.join(root, 'mrmd.md'))) {
+    // Root itself may be a project workspace
+    if (hasDocsInProject(root)) {
       projects.add(path.resolve(root));
     }
 
@@ -127,7 +152,7 @@ function discoverProjects() {
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
       const dir = path.join(root, entry.name);
-      if (fs.existsSync(path.join(dir, 'mrmd.md'))) {
+      if (hasDocsInProject(dir)) {
         projects.add(path.resolve(dir));
       }
     }
@@ -274,6 +299,7 @@ async function start() {
     token,
     userId: user.id,
     runtimeService,
+    runtimePreferencesService,
     log: (...args) => log(...args),
   });
 
