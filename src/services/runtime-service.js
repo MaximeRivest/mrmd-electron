@@ -24,8 +24,9 @@ import { Project } from 'mrmd-project';
 import { spawn, execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
-import { findFreePort, waitForPort, installMrmdPython } from '../utils/index.js';
+import { findFreePort, waitForPort, installMrmdPython, createVenv } from '../utils/index.js';
 import { getVenvExecutable, killProcessTree, isProcessAlive, getDirname, isWin } from '../utils/platform.js';
 import { SESSIONS_DIR, PYTHON_DEPS } from '../config.js';
 
@@ -94,6 +95,7 @@ const LANGUAGE_REGISTRY = {
     aliases: ['python', 'py', 'python3'],
     startupTimeout: 15000,
     needsVenv: true,
+    daemonized: false,
 
     findExecutable(config) {
       if (!config.venv) return null;
@@ -102,10 +104,19 @@ const LANGUAGE_REGISTRY = {
     },
 
     buildArgs(exe, port, config) {
+      // Use --foreground so the process stays attached to RuntimeService.
+      // RuntimeService already spawns with detached:true + unref(), so the
+      // runtime survives app restarts.
+      //
+      // IMPORTANT: do not pass --managed here.
+      // Some published mrmd-python builds do not support that flag yet,
+      // which causes immediate CLI exit and a misleading port timeout.
       return [
         '--id', config.name,
-        '--port', port.toString(),
         '--foreground',
+        '--port', port.toString(),
+        '--venv', config.venv,
+        '--cwd', config.cwd,
       ];
     },
 
@@ -114,6 +125,17 @@ const LANGUAGE_REGISTRY = {
     },
 
     async preStart(config) {
+      // Auto-create venv if it doesn't exist (zero-config experience)
+      const pythonPath = getVenvExecutable(config.venv, 'python');
+      if (!fs.existsSync(pythonPath)) {
+        console.log(`[runtime] Venv not found at ${config.venv}, creating automatically...`);
+        await createVenv(config.venv);
+        if (!fs.existsSync(pythonPath)) {
+          throw new Error(`Failed to create venv at ${config.venv}`);
+        }
+        console.log(`[runtime] Venv created successfully at ${config.venv}`);
+      }
+
       // Auto-install mrmd-python if missing
       const mrmdPythonPath = getVenvExecutable(config.venv, 'mrmd-python');
       if (!fs.existsSync(mrmdPythonPath)) {
@@ -176,8 +198,8 @@ const LANGUAGE_REGISTRY = {
     _packageDir: null,
     _resolved: false,
 
-    _resolve() {
-      if (this._resolved) return;
+    _resolve(force = false) {
+      if (this._resolved && !force) return;
       this._resolved = true;
 
       // Find Rscript
@@ -186,6 +208,13 @@ const LANGUAGE_REGISTRY = {
 
       // Find mrmd-r package
       this._packageDir = getSiblingPath('mrmd-r', 'DESCRIPTION');
+    },
+
+    /** Force re-resolve (e.g. after PATH changes) */
+    invalidate() {
+      this._resolved = false;
+      this._rscriptPath = null;
+      this._packageDir = null;
     },
 
     validate() {
@@ -228,14 +257,23 @@ const LANGUAGE_REGISTRY = {
     _juliaPath: null,
     _packageDir: null,
     _resolved: false,
+    _preparedKey: null,
 
-    _resolve() {
-      if (this._resolved) return;
+    _resolve(force = false) {
+      if (this._resolved && !force) return;
       this._resolved = true;
 
       const jPaths = getPlatformPaths('getJuliaPaths');
       this._juliaPath = findInPath('julia', jPaths);
       this._packageDir = getSiblingPath('mrmd-julia', 'Project.toml');
+    },
+
+    /** Force re-resolve (e.g. after PATH changes) */
+    invalidate() {
+      this._resolved = false;
+      this._juliaPath = null;
+      this._packageDir = null;
+      this._preparedKey = null;
     },
 
     validate() {
@@ -252,6 +290,31 @@ const LANGUAGE_REGISTRY = {
     findExecutable() {
       this._resolve();
       return this._juliaPath;
+    },
+
+    async preStart() {
+      this._resolve();
+      const key = `${this._juliaPath}|${this._packageDir}`;
+      if (this._preparedKey === key) return;
+
+      console.log(`[runtime:julia] Using Julia executable: ${this._juliaPath}`);
+      console.log('[runtime:julia] Preparing Julia environment (resolve/instantiate/precompile)...');
+      try {
+        const cmd = `"${this._juliaPath}" --project="${this._packageDir}" -e "using Pkg; Pkg.resolve(); Pkg.instantiate(); Pkg.precompile()"`;
+        execSync(cmd, {
+          cwd: this._packageDir,
+          env: { ...process.env, JULIA_PROJECT: this._packageDir },
+          stdio: 'pipe',
+          timeout: 300000,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        this._preparedKey = key;
+      } catch (e) {
+        const stderr = e?.stderr ? e.stderr.toString() : '';
+        const stdout = e?.stdout ? e.stdout.toString() : '';
+        const details = (stderr || stdout || e?.message || '').trim();
+        throw new Error(`Julia environment setup failed: ${details.slice(0, 600)}`);
+      }
     },
 
     buildArgs(exe, port, config) {
@@ -330,6 +393,12 @@ class RuntimeService {
     /** @type {Map<string, import('child_process').ChildProcess>} name -> process */
     this.processes = new Map();
 
+    /** @type {Map<string, Promise<Object>>} name -> in-flight start promise */
+    this._startLocks = new Map();
+
+    /** @type {Set<string>} session names currently being explicitly stopped */
+    this._stopping = new Set();
+
     this._loadRegistry();
   }
 
@@ -343,13 +412,22 @@ class RuntimeService {
   list(language) {
     const result = [];
     for (const [name, info] of this.sessions) {
-      if (info.pid && !isProcessAlive(info.pid)) {
+      // For daemonized Python, the PID in our session map may be the
+      // *launcher* PID (which exits immediately) rather than the daemon PID.
+      // Don't prune based on PID alone — let _verifySession handle it via
+      // port reachability, which is done lazily on next use.
+      if (info.daemonized) {
+        // Trust the session entry; reachability is verified on actual use.
+        info.alive = true;
+      } else if (info.pid && !isProcessAlive(info.pid)) {
         info.alive = false;
         this.sessions.delete(name);
         this._removeRegistry(name);
         continue;
+      } else {
+        info.alive = true;
       }
-      info.alive = true;
+
       if (!language || info.language === language) {
         result.push(info);
       }
@@ -368,6 +446,27 @@ class RuntimeService {
    * @returns {Promise<Object>} session info
    */
   async start(config) {
+    const name = config?.name;
+    if (!name) throw new Error('config.name is required');
+
+    if (this._startLocks.has(name)) {
+      console.log(`[runtime] Awaiting in-flight start for "${name}"...`);
+      return this._startLocks.get(name);
+    }
+
+    let startPromise;
+    startPromise = this._startInternal(config)
+      .finally(() => {
+        if (this._startLocks.get(name) === startPromise) {
+          this._startLocks.delete(name);
+        }
+      });
+
+    this._startLocks.set(name, startPromise);
+    return startPromise;
+  }
+
+  async _startInternal(config) {
     const { name, language, cwd, venv } = config;
     if (!name || !language) {
       throw new Error('config.name and config.language are required');
@@ -376,8 +475,16 @@ class RuntimeService {
     // Reuse if already running
     const existing = this.sessions.get(name);
     if (existing?.alive) {
-      if (!existing.pid || isProcessAlive(existing.pid)) {
-        return existing;
+      const pidAlive = !existing.pid || isProcessAlive(existing.pid);
+
+      if (pidAlive) {
+        // If we have a child process handle, trust it. Otherwise verify port.
+        if (this.processes.has(name)) {
+          return existing;
+        }
+        const reachable = await this._verifySession(name);
+        if (reachable) return existing;
+        // Not reachable — fall through to spawn a new one
       }
       this.sessions.delete(name);
       this._removeRegistry(name);
@@ -396,6 +503,19 @@ class RuntimeService {
       await descriptor.preStart(config, this);
     }
 
+    // Clean up any stale legacy daemon entries for this session name.
+    // Previous versions used daemon mode which wrote to ~/.mrmd/runtimes/<name>.json.
+    // We now run in foreground under RuntimeService management, so these
+    // entries are usually stale.
+    // However, if a legacy daemon is genuinely alive AND serving MRP, reuse it.
+    if (language === 'python') {
+      const reused = await this._maybeReuseLegacyPythonRuntime(config);
+      if (reused) {
+        console.log(`[runtime] Reusing existing python runtime PID=${reused.pid} port=${reused.port}`);
+        return reused;
+      }
+    }
+
     // Find port
     const port = await findFreePort();
     const timeout = descriptor.startupTimeout || 10000;
@@ -405,14 +525,24 @@ class RuntimeService {
     // Spawn — two modes:
     //   1. buildSpawnArgs() for uv-based runtimes (bash, pty)
     //   2. findExecutable() + buildArgs() for direct executables (python, r, julia)
+    //
+    // All runtimes use detached: true to get their own process group.
+    // IMPORTANT: use stdio: 'ignore' for detached child stability.
+    // Piped stdio can cause certain runtimes (notably Python/uvicorn foreground)
+    // to exit shortly after startup when no TTY/reader is attached.
+    const usePipedLogs = process.env.MRMD_RUNTIME_PIPE_LOGS === '1';
+    const childStdio = usePipedLogs ? ['pipe', 'pipe', 'pipe'] : 'ignore';
+    console.log(`[runtime] Spawn stdio mode for ${name}: ${usePipedLogs ? 'pipe' : 'ignore'}`);
+
     let proc;
     if (typeof descriptor.buildSpawnArgs === 'function') {
       const spawn_info = descriptor.buildSpawnArgs(port, config);
       proc = spawn(spawn_info.command, spawn_info.args, {
         cwd: spawn_info.cwd || cwd,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: false,
+        stdio: childStdio,
+        detached: true,
       });
+      proc.unref(); // Don't keep electron alive just for this child
     } else {
       const exe = descriptor.findExecutable(config, this);
       if (!exe) {
@@ -423,12 +553,17 @@ class RuntimeService {
       const env = descriptor.buildEnv ? descriptor.buildEnv(config, this) : process.env;
       const spawnCwd = descriptor.spawnCwd ? descriptor.spawnCwd() : cwd;
 
+      if (language === 'python') {
+        console.log(`[runtime] Python spawn: ${exe} ${args.join(' ')}`);
+      }
+
       proc = spawn(exe, args, {
         cwd: spawnCwd,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        detached: false,
+        stdio: childStdio,
+        detached: true,
         env,
       });
+      proc.unref(); // Don't keep electron alive just for this child
     }
 
     // Handle spawn errors (e.g. uv not installed)
@@ -443,16 +578,30 @@ class RuntimeService {
       });
     });
 
-    proc.stdout.on('data', (d) => console.log(`[runtime:${name}]`, d.toString().trim()));
-    proc.stderr.on('data', (d) => console.error(`[runtime:${name}]`, d.toString().trim()));
+    // If the process exits before the port opens, fail fast with a useful
+    // error instead of waiting for the full port timeout.
+    const earlyExit = new Promise((_, reject) => {
+      proc.once('exit', (code, signal) => {
+        reject(new Error(`Runtime process exited before ready (code=${code}, signal=${signal})`));
+      });
+    });
+
+    if (proc.stdout) {
+      proc.stdout.on('data', (d) => console.log(`[runtime:${name}]`, d.toString().trim()));
+    }
+    if (proc.stderr) {
+      proc.stderr.on('data', (d) => console.error(`[runtime:${name}]`, d.toString().trim()));
+    }
 
     // Wait for ready
     await Promise.race([
       waitForPort(port, { timeout }),
       spawnError,
+      earlyExit,
     ]);
 
-    // Build session info
+    // Build session info — all runtimes now run in foreground mode,
+    // so proc.pid IS the runtime PID directly.
     const info = {
       name,
       language,
@@ -461,6 +610,7 @@ class RuntimeService {
       url: `http://127.0.0.1:${port}/mrp/v1`,
       cwd,
       venv: venv || null,
+      daemonized: false,
       startedAt: new Date().toISOString(),
       alive: true,
       ...(descriptor.extraInfo ? descriptor.extraInfo(port, config) : {}),
@@ -472,12 +622,14 @@ class RuntimeService {
 
     // Handle exit
     proc.on('exit', (code, signal) => {
-      console.log(`[runtime:${name}] Exited (code=${code}, signal=${signal})`);
+      const expectedStop = this._stopping.has(name);
+      console.log(`[runtime:${name}] Exited (code=${code}, signal=${signal})${expectedStop ? ' [expected-stop]' : ' [unexpected]'} `);
       const session = this.sessions.get(name);
       if (session) session.alive = false;
       this.sessions.delete(name);
       this.processes.delete(name);
       this._removeRegistry(name);
+      this._stopping.delete(name);
     });
 
     return info;
@@ -492,18 +644,42 @@ class RuntimeService {
     const session = this.sessions.get(sessionName);
     if (!session) return false;
 
-    console.log(`[runtime] Stopping "${sessionName}"...`);
+    this._stopping.add(sessionName);
+    console.log(`[runtime] Stopping "${sessionName}" (PID=${session.pid})...`);
+    if (process.env.MRMD_RUNTIME_DEBUG_STOP === '1') {
+      const stack = new Error().stack?.split('\n').slice(1, 8).join('\n');
+      console.warn(`[runtime] stop stack for "${sessionName}":\n${stack}`);
+    }
     try {
-      if (session.pid) {
+      const hasManagedProcessHandle = this.processes.has(sessionName);
+
+      // Safety: never kill an unverified recovered PID blindly.
+      // PID reuse can target unrelated processes after crashes/reboots.
+      if (session.pid && hasManagedProcessHandle) {
         await killProcessTree(session.pid, 'SIGTERM');
+      } else if (session.pid) {
+        const reachable = await this._verifySession(sessionName);
+        if (reachable) {
+          await killProcessTree(session.pid, 'SIGTERM');
+        } else {
+          console.warn(`[runtime] Skip PID kill for unverified session "${sessionName}" (pid=${session.pid})`);
+        }
       }
     } catch (e) {
       console.error(`[runtime] Error killing ${sessionName}:`, e.message);
     }
 
+    // Also clean any legacy daemon entry for this name
+    try {
+      const runtimesDir = path.join(os.homedir(), '.mrmd', 'runtimes');
+      const legacyPath = path.join(runtimesDir, `${sessionName}.json`);
+      if (fs.existsSync(legacyPath)) fs.unlinkSync(legacyPath);
+    } catch {}
+
     this.sessions.delete(sessionName);
     this.processes.delete(sessionName);
     this._removeRegistry(sessionName);
+    this._stopping.delete(sessionName);
     return true;
   }
 
@@ -513,7 +689,19 @@ class RuntimeService {
    * @returns {Promise<Object>}
    */
   async restart(sessionName) {
-    const session = this.sessions.get(sessionName);
+    let session = this.sessions.get(sessionName);
+
+    // If not in memory, try to recover config from the on-disk registry
+    if (!session) {
+      try {
+        const filename = sessionName.replace(/[:/]/g, '-') + '.json';
+        const filepath = path.join(SESSIONS_DIR, filename);
+        if (fs.existsSync(filepath)) {
+          session = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+        }
+      } catch {}
+    }
+
     if (!session) throw new Error(`Session "${sessionName}" not found`);
 
     const config = {
@@ -536,10 +724,12 @@ class RuntimeService {
   attach(sessionName) {
     const session = this.sessions.get(sessionName);
     if (!session) return null;
+
     if (!session.pid || isProcessAlive(session.pid)) {
       session.alive = true;
       return session;
     }
+
     session.alive = false;
     this.sessions.delete(sessionName);
     this._removeRegistry(sessionName);
@@ -591,7 +781,14 @@ class RuntimeService {
       // Check if already running
       const existing = this.sessions.get(resolved.name);
       if (existing?.alive) {
-        if (!existing.pid || isProcessAlive(existing.pid)) {
+        const pidAlive = !existing.pid || isProcessAlive(existing.pid);
+
+        // For recovered sessions (no child process handle) or uncertain PID,
+        // verify port reachability before trusting.
+        const needsVerify = !this.processes.has(resolved.name) || !pidAlive;
+        const verified = needsVerify ? await this._verifySession(resolved.name) : true;
+
+        if (verified) {
           results[language] = {
             ...existing,
             autoStart: resolved.autoStart,
@@ -599,7 +796,7 @@ class RuntimeService {
           };
           continue;
         }
-        // Dead, clean up
+        // Dead or unreachable, clean up
         this.sessions.delete(resolved.name);
         this._removeRegistry(resolved.name);
       }
@@ -680,8 +877,23 @@ class RuntimeService {
 
     // Check existing
     const existing = this.sessions.get(resolved.name);
-    if (existing?.alive && (!existing.pid || isProcessAlive(existing.pid))) {
-      return { ...existing, autoStart: resolved.autoStart, available: true };
+    if (existing?.alive) {
+      const pidAlive = !existing.pid || isProcessAlive(existing.pid);
+
+      if (pidAlive) {
+        const needsVerify = !this.processes.has(resolved.name);
+        if (needsVerify) {
+          const reachable = await this._verifySession(resolved.name);
+          if (!reachable) {
+            this.sessions.delete(resolved.name);
+            this._removeRegistry(resolved.name);
+          } else {
+            return { ...existing, autoStart: resolved.autoStart, available: true };
+          }
+        } else {
+          return { ...existing, autoStart: resolved.autoStart, available: true };
+        }
+      }
     }
 
     const result = {
@@ -753,6 +965,75 @@ class RuntimeService {
 
   // ── Internal ────────────────────────────────────────────────────────────
 
+  /**
+   * Reuse a legacy mrmd-python daemon entry if it matches this session name.
+   * Legacy daemons are tracked in ~/.mrmd/runtimes/<id>.json.
+   *
+   * @param {{name:string, cwd:string, venv?:string}} config
+   * @returns {Promise<Object|null>} session info if reused
+   */
+  async _maybeReuseLegacyPythonRuntime(config) {
+    const { name, cwd, venv } = config;
+    const runtimesDir = path.join(os.homedir(), '.mrmd', 'runtimes');
+    const legacyPath = path.join(runtimesDir, `${name}.json`);
+
+    if (!fs.existsSync(legacyPath)) return null;
+
+    try {
+      const info = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
+      const pidAlive = info?.pid && isProcessAlive(info.pid);
+      if (!pidAlive) {
+        try { fs.unlinkSync(legacyPath); } catch {}
+        return null;
+      }
+
+      const port = Number(info.port);
+      if (!port) return null;
+
+      // Verify MRP endpoint is reachable
+      let res = null;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2500);
+        res = await fetch(`http://127.0.0.1:${port}/mrp/v1/capabilities`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+      } catch {
+        res = null;
+      }
+
+      // If a legacy daemon PID is alive but not serving MRP, treat it as stale.
+      // Safety: do NOT kill blindly here (PID reuse can target unrelated processes).
+      if (!res?.ok) {
+        console.log(`[runtime:legacy] Ignoring stale legacy entry PID=${info.pid} port=${info.port} for "${name}" (capabilities probe failed)`);
+        try { fs.unlinkSync(legacyPath); } catch {}
+        return null;
+      }
+
+      const sessionInfo = {
+        name,
+        language: 'python',
+        pid: info.pid,
+        port,
+        url: `http://127.0.0.1:${port}/mrp/v1`,
+        cwd: cwd || info.cwd || null,
+        venv: venv || info.venv || null,
+        startedAt: info.created || new Date().toISOString(),
+        alive: true,
+        reusedLegacy: true,
+      };
+
+      this.sessions.set(name, sessionInfo);
+      this._saveRegistry(sessionInfo);
+      console.log(`[runtime] Reusing existing python daemon for "${name}" on port ${port}`);
+      return sessionInfo;
+    } catch (e) {
+      console.warn(`[runtime] Failed to reuse legacy python runtime ${name}:`, e.message);
+      return null;
+    }
+  }
+
   _getDescriptor(language) {
     const lang = language.toLowerCase();
     // Direct match
@@ -774,11 +1055,13 @@ class RuntimeService {
           const info = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, file), 'utf8'));
           if (info.pid && isProcessAlive(info.pid)) {
             info.alive = true;
+            info.recovered = true;
             // Ensure url is present for older registry entries
             if (!info.url && info.port) {
               info.url = `http://127.0.0.1:${info.port}/mrp/v1`;
             }
             this.sessions.set(info.name, info);
+            console.log(`[runtime] Reconnected to surviving process: ${info.name} (PID ${info.pid}, port ${info.port})`);
           } else {
             fs.unlinkSync(path.join(SESSIONS_DIR, file));
           }
@@ -786,8 +1069,42 @@ class RuntimeService {
           console.warn(`[runtime] Skipping invalid registry file ${file}:`, e.message);
         }
       }
+      if (this.sessions.size > 0) {
+        console.log(`[runtime] Loaded ${this.sessions.size} surviving runtime(s) from previous session`);
+      }
     } catch (e) {
       console.error('[runtime] Error loading registry:', e.message);
+    }
+  }
+
+  /**
+   * Verify that a recovered session is actually serving MRP on its port.
+   * Called lazily (first use) rather than at startup to avoid blocking init.
+   *
+   * @param {string} name - session name
+   * @returns {Promise<boolean>} true if reachable
+   */
+  async _verifySession(name) {
+    const session = this.sessions.get(name);
+    if (!session?.port) return false;
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`http://127.0.0.1:${session.port}/mrp/v1/capabilities`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        session.recovered = false;
+      }
+      return res.ok;
+    } catch {
+      // Port not reachable — process may have died or port was reused
+      console.warn(`[runtime] Surviving process ${name} not reachable on port ${session.port}, removing`);
+      this.sessions.delete(name);
+      this._removeRegistry(name);
+      return false;
     }
   }
 

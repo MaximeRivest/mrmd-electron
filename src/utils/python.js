@@ -8,6 +8,7 @@ import { spawn, execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 import { PYTHON_DEPS, getPythonInstallArgs } from '../config.js';
 import { findUv, ensureUv } from './uv-installer.js';
 import {
@@ -16,6 +17,21 @@ import {
   getVenvBinDir,
   getPythonCommand,
 } from './platform.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function resolveSiblingMrmdPythonPath() {
+  try {
+    const sibling = path.resolve(__dirname, '../../../mrmd-python');
+    if (fs.existsSync(path.join(sibling, 'pyproject.toml'))) {
+      return sibling;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
 // Re-export for backwards compatibility
 export { findUv, ensureUv };
@@ -49,6 +65,8 @@ export async function installMrmdPython(venvPath, options = {}) {
     onProgress
   } = options;
 
+  const effectiveLocalDev = localDev || resolveSiblingMrmdPythonPath();
+
   const report = (stage, detail) => {
     console.log(`[python] ${stage}: ${detail}`);
     if (onProgress) onProgress(stage, detail);
@@ -70,10 +88,11 @@ export async function installMrmdPython(venvPath, options = {}) {
   // Build package list from version matrix
   const packages = [];
 
-  if (localDev) {
-    // Development mode: install from local path
-    packages.push('-e', localDev);
-    report('mode', 'local development');
+  if (effectiveLocalDev) {
+    // Development mode: install mrmd-python from local path, keep the rest from PyPI.
+    const installArgs = getPythonInstallArgs().filter((spec) => !spec.startsWith('mrmd-python'));
+    packages.push(...installArgs, '-e', effectiveLocalDev);
+    report('mode', `local mrmd-python + PyPI deps (${effectiveLocalDev})`);
   } else {
     // Production: install from PyPI with version constraints
     const installArgs = getPythonInstallArgs();

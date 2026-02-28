@@ -932,25 +932,6 @@ ipcMain.handle('get-recent', () => {
   return loadRecent();
 });
 
-// Legacy runtime handlers — thin wrappers around RuntimeService for backwards compat.
-// These will be removed once the renderer UI is fully migrated.
-ipcMain.handle('list-runtimes', () => {
-  return { runtimes: runtimeService.list() };
-});
-
-ipcMain.handle('kill-runtime', async (event, { runtimeId }) => {
-  const success = await runtimeService.stop(runtimeId);
-  return { success };
-});
-
-ipcMain.handle('attach-runtime', (event, { runtimeId }) => {
-  const result = runtimeService.attach(runtimeId);
-  if (result) {
-    return { success: true, port: result.port, url: result.url, venv: result.venv };
-  }
-  return { success: false, error: 'Runtime not found or not alive' };
-});
-
 // Scan for files (LEGACY - use file:scan for projects)
 ipcMain.handle('scan-files', (event, { searchDir }) => {
   logDeprecation('scan-files', 'file:scan');
@@ -1092,36 +1073,6 @@ ipcMain.handle('install-mrmd-python', async (event, { venvPath }) => {
   try {
     await installMrmdPython(venvPath);
     return { success: true };
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
-});
-
-ipcMain.handle('start-python', async (event, { venvPath, forceNew }) => {
-  const windowId = BrowserWindow.fromWebContents(event.sender).id;
-  try {
-    // Derive a session name from the venv
-    const venvName = path.basename(venvPath).replace(/^\.+/, '') || 'venv';
-    const projectName = path.basename(path.dirname(venvPath)).replace(/^\.+/, '') || 'project';
-    let name = `${projectName}:${venvName}`.replace(/[^a-zA-Z0-9-:]/g, '-');
-    if (forceNew) name += '-' + Date.now().toString(36).slice(-4);
-
-    const result = await runtimeService.start({
-      name,
-      language: 'python',
-      cwd: path.dirname(venvPath),
-      venv: venvPath,
-    });
-
-    let state = windowStates.get(windowId);
-    if (!state) {
-      state = { python: null, monitors: new Map(), projectDir: null };
-      windowStates.set(windowId, state);
-    }
-    state.python = { port: result.port, runtimeId: name };
-    addRecentVenv(venvPath);
-
-    return { success: true, port: result.port, runtimeId: name };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -1393,6 +1344,13 @@ ipcMain.handle('runtime:start', async (event, { config }) => {
 
 // Stop a runtime
 ipcMain.handle('runtime:stop', async (event, { sessionName }) => {
+  try {
+    const winId = BrowserWindow.fromWebContents(event.sender)?.id;
+    const senderUrl = event.sender?.getURL?.() || 'unknown';
+    const stack = new Error().stack?.split('\n').slice(1, 6).join('\n');
+    console.warn(`[runtime:ipc] stop requested for "${sessionName}" (window=${winId}, url=${senderUrl})\n${stack}`);
+  } catch {}
+
   const success = await runtimeService.stop(sessionName);
   return { success };
 });
@@ -1400,6 +1358,12 @@ ipcMain.handle('runtime:stop', async (event, { sessionName }) => {
 // Restart a runtime
 ipcMain.handle('runtime:restart', async (event, { sessionName }) => {
   try {
+    try {
+      const winId = BrowserWindow.fromWebContents(event.sender)?.id;
+      const senderUrl = event.sender?.getURL?.() || 'unknown';
+      const stack = new Error().stack?.split('\n').slice(1, 6).join('\n');
+      console.warn(`[runtime:ipc] restart requested for "${sessionName}" (window=${winId}, url=${senderUrl})\n${stack}`);
+    } catch {}
     return await runtimeService.restart(sessionName);
   } catch (e) {
     console.error('[runtime:restart] Error:', e.message);
@@ -1413,8 +1377,15 @@ ipcMain.handle('runtime:forDocument', async (event, { documentPath }) => {
     const project = await projectService.getProject(documentPath);
     if (!project) return null;
 
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
+    // Read frontmatter from disk if file exists; for new/unsaved files, proceed without it.
+    let frontmatter = null;
+    try {
+      const content = fs.readFileSync(documentPath, 'utf8');
+      frontmatter = Project.parseFrontmatter(content);
+    } catch (readErr) {
+      if (readErr.code !== 'ENOENT') throw readErr;
+      // File doesn't exist on disk yet (new file from sync) — use project config only
+    }
 
     return await runtimeService.getForDocument(
       documentPath,
@@ -1434,8 +1405,14 @@ ipcMain.handle('runtime:forDocumentLanguage', async (event, { documentPath, lang
     const project = await projectService.getProject(documentPath);
     if (!project) return null;
 
-    const content = fs.readFileSync(documentPath, 'utf8');
-    const frontmatter = Project.parseFrontmatter(content);
+    // Read frontmatter from disk if file exists; for new/unsaved files, proceed without it.
+    let frontmatter = null;
+    try {
+      const content = fs.readFileSync(documentPath, 'utf8');
+      frontmatter = Project.parseFrontmatter(content);
+    } catch (readErr) {
+      if (readErr.code !== 'ENOENT') throw readErr;
+    }
 
     return await runtimeService.getForDocumentLanguage(
       language,

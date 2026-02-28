@@ -2254,6 +2254,30 @@
       opacity: 1;
     }
 
+    .runtime-diagnostics {
+      margin-top: 8px;
+      border-top: 1px solid var(--border);
+      padding: 8px 12px;
+      max-height: 180px;
+      overflow: auto;
+      font-family: var(--font-mono, 'SF Mono', Menlo, monospace);
+      font-size: 10px;
+      color: var(--text-muted);
+      background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    }
+
+    .runtime-diagnostics-item {
+      padding: 4px 0;
+      border-bottom: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .runtime-diagnostics-item:last-child {
+      border-bottom: none;
+    }
+
     /* Inline runtime configuration panel */
     .runtime-config-panel {
       padding: 8px 16px 12px 32px;
@@ -6503,12 +6527,15 @@
       <div class="rail-panel-header">
         <span class="rail-panel-title">Runtimes</span>
         <button class="rail-panel-refresh" id="runtimes-refresh" title="Refresh"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
-        <button class="rail-panel-pin" data-pin-panel="runtimes" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-pin" data-pin-panel="runtimes" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="runtimes">×</button>
+        <button class="rail-panel-btn" id="runtimes-diag-toggle" title="Runtime diagnostics">diag</button>
+        <button class="rail-panel-pin" data-pin-panel="runtimes" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button>
+        <button class="rail-panel-close" data-close-panel="runtimes">×</button>
       </div>
       <div class="rail-panel-content">
         <div id="runtimes-list" class="runtimes-list">
           <div class="runtimes-empty">No running runtimes</div>
         </div>
+        <div id="runtime-diagnostics" class="runtime-diagnostics" style="display:none;"></div>
       </div>
     </div>
 
@@ -7224,6 +7251,9 @@ session:
   <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
   <script src="./node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
 
+  <!-- Runtime orchestration layer (shared by Electron + browser shim) -->
+  <script src="./src/runtime-controller.js"></script>
+
   <script>
     // =========================================================================
     // STATE
@@ -7273,6 +7303,18 @@ session:
       // Multi-session state: tracks ALL runtimes independently
       // sessionName → { language, status, config, info }
       sessions: new Map(),
+      // Runtime warmup state for current document
+      warmedRuntimeLanguages: new Set(),
+      runtimeWarmupTimer: null,
+      // Runtime attachment pinning: `${docPath}::${language}` -> { sessionName, port, generation, reason, at }
+      runtimeAttachments: new Map(),
+      runtimeAttachmentGeneration: 0,
+      // Runtime UX state (simplified start/restart/retry)
+      runtimePending: new Set(),
+      runtimeErrors: new Map(),
+      runtimeDiagnosticsOpen: false,
+      // Lightweight runtime lifecycle telemetry for debugging/stability
+      runtimeEvents: [],
       // Notebook sync state: maps shadow .md path to original .ipynb path
       syncedNotebooks: new Map(),
       // File picker performance state
@@ -9448,7 +9490,8 @@ session:
         pid: s.pid,
         port: s.port,
         venv: s.venv,
-        alive: s.alive
+        alive: s.alive,
+        language: s.language || 'python',
       }));
       filterVenvs(state.venvQuery);
 
@@ -9563,13 +9606,13 @@ session:
 
       return `
         <div class="venv-item ${selected}" data-index="${index}" data-runtime-id="${runtime.id}"
-             onclick="selectVenvItem(${index})" ondblclick="attachToRuntime('${runtime.id}')">
+             onclick="selectVenvItem(${index})" ondblclick="attachToRuntime('${runtime.id}', '${runtime.language || 'python'}')">
           <div class="venv-item-info">
             <div class="venv-item-name">${runtime.id}</div>
             <div class="venv-item-path">${venvDir} • port ${runtime.port}</div>
           </div>
           <span class="venv-item-version">pid ${runtime.pid}</span>
-          <span class="venv-item-badge danger" onclick="event.stopPropagation(); killRuntimeAction('${runtime.id}')"
+          <span class="venv-item-badge danger" onclick="event.stopPropagation(); killRuntimeAction('${runtime.id}', '${runtime.language || 'python'}')"
                 style="cursor:pointer;">stop</span>
         </div>
       `;
@@ -9612,13 +9655,91 @@ session:
       }
     }
 
+    async function resolvePythonStartConfig(overrides = {}) {
+      let resolved = null;
+      const hasExplicitOverrides = Boolean(overrides.name || overrides.cwd || overrides.venv);
+
+      // IMPORTANT: forDocumentLanguage() can auto-start runtimes.
+      // Avoid calling it when the user explicitly selected a venv/name/cwd.
+      if (!hasExplicitOverrides && state.currentFile && electronAPI.runtime?.forDocumentLanguage) {
+        try {
+          resolved = await electronAPI.runtime.forDocumentLanguage(state.currentFile, 'python');
+        } catch {
+          // Best-effort only; we'll synthesize fallback config below.
+        }
+      }
+
+      const fallbackProject = (state.project?.config?.name || state.project?.name || 'project')
+        .replace(/[^a-zA-Z0-9-]/g, '-');
+      const fallbackName = state.session?.config?.name || state.session?.name || `${fallbackProject}:default`;
+      const fallbackCwd = state.session?.config?.cwd
+        || state.project?.root
+        || state.projectDir
+        || (state.currentFile ? state.currentFile.replace(/\/[^/]+$/, '') : '.');
+
+      return {
+        name: overrides.name || resolved?.name || fallbackName,
+        language: 'python',
+        cwd: overrides.cwd || resolved?.cwd || fallbackCwd,
+        venv: overrides.venv || resolved?.venv || state.pythonVenv?.path || state.session?.config?.venv || '.venv',
+      };
+    }
+
+    async function startPythonRuntimeFromConfig(config, reason = 'manual-start') {
+      const result = await electronAPI.runtime.start(config);
+
+      state.pythonPort = result.port;
+      state.pythonVenv = { ...(state.pythonVenv || {}), path: config.venv, runtimeId: result.name || config.name };
+      state.session.info = result;
+      state.session.config = {
+        ...(state.session.config || {}),
+        ...config,
+        language: 'python',
+      };
+      updateSessionStatus('connected', result.name || config.name);
+      pinRuntimeAttachment('python', result, reason);
+      recordRuntimeEvent('runtime:started', 'python', {
+        sessionName: result.name || config.name,
+        port: result.port,
+        reason,
+      });
+
+      if (state.editor && state.currentFile) {
+        const pythonClient = createAutoRestartingClient(
+          result.port,
+          'python',
+          RUNTIME_LANG_CONFIG.python.aliases,
+          (cfg) => {
+            state.pythonPort = cfg.port;
+            state.session.info = cfg;
+            pinRuntimeAttachment('python', cfg, 'auto-recovered');
+            updateSessionStatus('connected', cfg.name || config.name || 'python');
+            if (typeof refreshRuntimes === 'function') refreshRuntimes();
+          },
+          result.name || config.name || null
+        );
+        state.editor.registerRuntime('python', pythonClient);
+        console.log('Registered Python runtime with existing editor');
+      }
+
+      if (window._pendingRuntimeRetry) {
+        console.log('[runtime] Calling pending retry callback');
+        const retryCallback = window._pendingRuntimeRetry;
+        window._pendingRuntimeRetry = null;
+        setTimeout(() => retryCallback(), 100);
+      }
+
+      if (typeof refreshRuntimes === 'function') refreshRuntimes();
+      return result;
+    }
+
     async function selectVenv() {
       const numRuntimes = state.filteredRuntimes.length;
 
       // Check if selected item is a running runtime
       if (state.selectedVenvIndex < numRuntimes) {
         const runtime = state.filteredRuntimes[state.selectedVenvIndex];
-        return attachToRuntime(runtime.id);
+        return attachToRuntime(runtime.id, runtime.language || 'python');
       }
 
       // Otherwise it's a venv
@@ -9652,43 +9773,13 @@ session:
         }
       }
 
-      // Start runtime
+      // Start runtime (unified runtime API)
       updatePythonStatus('loading', 'Starting...');
       try {
-        const result = await electronAPI.startPython(venv.path);
-
-        if (result.success) {
-          state.pythonPort = result.port;
-          state.pythonVenv = { ...venv, runtimeId: result.runtimeId };
-          const statusLabel = result.reused ? `${result.runtimeId} (reused)` : result.runtimeId;
-          updatePythonStatus('ready', statusLabel);
-          console.log(`Python ready: ${result.runtimeId} on port ${result.port}${result.reused ? ' (reused)' : ''}`);
-
-          // Register runtime with existing editor if open
-          if (state.editor && state.currentFile) {
-            const docName = stripDocExtension(state.currentFile.split('/').pop());
-            const pythonClient = new mrmd.MRPClient(
-              `http://127.0.0.1:${result.port}/mrp/v1`,
-              { languages: ['python', 'py', 'python3'] }
-            );
-            state.editor.registerRuntime('python', pythonClient);
-            console.log('Registered Python runtime with existing editor');
-
-            // Call pending retry callback if exists (from noRuntime prompt)
-            if (window._pendingRuntimeRetry) {
-              console.log('[venvPicker] Calling pending retry callback');
-              const retryCallback = window._pendingRuntimeRetry;
-              window._pendingRuntimeRetry = null;
-              setTimeout(() => retryCallback(), 100);
-            }
-          }
-
-          // Refresh runtimes list
-          if (typeof refreshRuntimes === 'function') refreshRuntimes();
-        } else {
-          updatePythonStatus('error', 'Failed');
-          alert('Failed to start Python: ' + result.error);
-        }
+        const config = await resolvePythonStartConfig({ venv: venv.path });
+        const result = await startPythonRuntimeFromConfig(config, 'venv-selected');
+        updatePythonStatus('ready', result.name || config.name);
+        console.log(`Python ready: ${result.name || config.name} on port ${result.port}`);
       } catch (e) {
         updatePythonStatus('error', 'Failed');
         alert('Failed to start Python: ' + e.message);
@@ -9696,76 +9787,97 @@ session:
     }
 
     async function attachToRuntime(runtimeId, language = 'python') {
-      console.log('Attaching to runtime:', runtimeId, 'language:', language);
+      const normalized = normalizeRuntimeLanguage(language);
+      console.log('Attaching to runtime:', runtimeId, 'language:', normalized);
 
-      if (language === 'bash') {
-        // Bash attach - just look up the session info
-        try {
-          const sessions = await electronAPI.runtime.list('bash');
-          const session = sessions.find(s => s.name === runtimeId && s.alive);
-          if (session) {
-            state.bashPort = session.port;
-            state.bashSession = { name: runtimeId, port: session.port, cwd: session.cwd };
-            console.log('Attached to bash runtime on port', session.port);
+      if (!normalized || normalized === 'node') return;
 
-            // Register bash runtime with existing editor if open (using auto-restart wrapper)
-            if (state.editor && state.currentFile) {
-              const bashClient = createAutoRestartingBashClient(session.port, runtimeId);
-              state.editor.registerRuntime('bash', bashClient);
-              console.log('Registered Bash runtime with existing editor');
-            }
-
-            // Update runtimes panel if open
-            if (typeof renderRuntimesPanel === 'function') renderRuntimesPanel();
-          } else {
-            console.error('Bash session not found or not alive:', runtimeId);
-          }
-        } catch (e) {
-          console.error('Failed to attach to bash runtime:', e);
-        }
-        return;
+      if (normalized === 'python') {
+        hideVenvPicker();
+        updatePythonStatus('loading', 'Attaching...');
       }
 
-      // Python attach (existing logic)
-      hideVenvPicker();
-      updatePythonStatus('loading', 'Attaching...');
-
       try {
-        const result = await electronAPI.attachRuntime(runtimeId);
-        if (result.success) {
-          state.pythonPort = result.port;
-          state.pythonVenv = { name: runtimeId, path: result.venv, runtimeId: runtimeId };
-          updatePythonStatus('ready', runtimeId);
-          console.log('Attached to runtime on port', result.port);
-
-          // Register runtime with existing editor if open
-          if (state.editor && state.currentFile) {
-            const docName = stripDocExtension(state.currentFile.split('/').pop());
-            const pythonClient = new mrmd.MRPClient(
-              `http://127.0.0.1:${result.port}/mrp/v1`,
-              { languages: ['python', 'py', 'python3'] }
-            );
-            state.editor.registerRuntime('python', pythonClient);
-            console.log('Registered Python runtime with existing editor');
-
-            // Call pending retry callback if exists (from noRuntime prompt)
-            if (window._pendingRuntimeRetry) {
-              console.log('[attachRuntime] Calling pending retry callback');
-              const retryCallback = window._pendingRuntimeRetry;
-              window._pendingRuntimeRetry = null;
-              setTimeout(() => retryCallback(), 100);
-            }
-          }
-
-          // Update runtimes panel if open
-          if (typeof renderRuntimesPanel === 'function') renderRuntimesPanel();
-        } else {
-          updatePythonStatus('error', 'Failed');
-          alert('Failed to attach: ' + result.error);
+        const sessions = await electronAPI.runtime.list(normalized);
+        const session = (sessions || []).find(s => s.name === runtimeId && s.alive);
+        if (!session?.port) {
+          throw new Error(`${normalized} session not found or not alive: ${runtimeId}`);
         }
+
+        const langCfg = RUNTIME_LANG_CONFIG[normalized] || null;
+        const aliases = langCfg?.aliases || [normalized];
+
+        if (normalized === 'python') {
+          state.pythonPort = session.port;
+          state.pythonVenv = { name: runtimeId, path: session.venv, runtimeId };
+          state.session.info = session;
+          updateSessionStatus('connected', runtimeId);
+        } else if (normalized === 'bash') {
+          state.bashPort = session.port;
+          state.bashSession = session;
+        } else if (normalized === 'r') {
+          state.rPort = session.port;
+          state.rSession = session;
+        } else if (normalized === 'julia') {
+          state.juliaPort = session.port;
+          state.juliaSession = session;
+        }
+
+        pinRuntimeAttachment(normalized, session, 'manual-attach');
+        recordRuntimeEvent('runtime:attached', normalized, {
+          sessionName: session.name,
+          port: session.port,
+          via: 'runtime-list',
+        });
+
+        if (state.editor && state.currentFile) {
+          const client = createAutoRestartingClient(
+            session.port,
+            normalized,
+            aliases,
+            (cfg) => {
+              if (normalized === 'python') {
+                state.pythonPort = cfg.port;
+                state.session.info = cfg;
+              } else if (normalized === 'bash') {
+                state.bashPort = cfg.port;
+                state.bashSession = cfg;
+              } else if (normalized === 'r') {
+                state.rPort = cfg.port;
+                state.rSession = cfg;
+              } else if (normalized === 'julia') {
+                state.juliaPort = cfg.port;
+                state.juliaSession = cfg;
+              }
+              pinRuntimeAttachment(normalized, cfg, 'auto-recovered');
+              if (normalized === 'python') updateSessionStatus('connected', cfg.name || 'python');
+              if (typeof refreshRuntimes === 'function') refreshRuntimes();
+            },
+            runtimeId
+          );
+          state.editor.registerRuntime(normalized, client);
+          console.log(`Registered ${normalized} runtime with existing editor`);
+        }
+
+        if (normalized === 'python') {
+          updatePythonStatus('ready', runtimeId);
+        }
+
+        // Call pending retry callback if exists (from noRuntime prompt)
+        if (window._pendingRuntimeRetry) {
+          console.log('[attachRuntime] Calling pending retry callback');
+          const retryCallback = window._pendingRuntimeRetry;
+          window._pendingRuntimeRetry = null;
+          setTimeout(() => retryCallback(), 100);
+        }
+
+        if (typeof renderRuntimesPanel === 'function') renderRuntimesPanel();
       } catch (e) {
-        updatePythonStatus('error', 'Failed');
-        alert('Failed to attach: ' + e.message);
+        console.error('Failed to attach to runtime:', e);
+        if (normalized === 'python') {
+          updatePythonStatus('error', 'Failed');
+          alert('Failed to attach: ' + e.message);
+        }
       }
     }
 
@@ -9775,39 +9887,16 @@ session:
       updatePythonStatus('loading', 'Starting new...');
 
       try {
-        const result = await electronAPI.startPython(venvPath, true); // forceNew = true
+        const suffix = Date.now().toString(36).slice(-5);
+        const base = await resolvePythonStartConfig({ venv: venvPath });
+        const config = {
+          ...base,
+          name: `${base.name || 'python:default'}-${suffix}`,
+        };
 
-        if (result.success) {
-          state.pythonPort = result.port;
-          state.pythonVenv = { path: venvPath, runtimeId: result.runtimeId };
-          updatePythonStatus('ready', result.runtimeId);
-          console.log(`New Python runtime: ${result.runtimeId} on port ${result.port}`);
-
-          // Register runtime with existing editor if open
-          if (state.editor && state.currentFile) {
-            const docName = stripDocExtension(state.currentFile.split('/').pop());
-            const pythonClient = new mrmd.MRPClient(
-              `http://127.0.0.1:${result.port}/mrp/v1`,
-              { languages: ['python', 'py', 'python3'] }
-            );
-            state.editor.registerRuntime('python', pythonClient);
-            console.log('Registered new Python runtime with editor');
-
-            // Call pending retry callback if exists (from noRuntime prompt)
-            if (window._pendingRuntimeRetry) {
-              console.log('[startNewRuntime] Calling pending retry callback');
-              const retryCallback = window._pendingRuntimeRetry;
-              window._pendingRuntimeRetry = null;
-              setTimeout(() => retryCallback(), 100);
-            }
-          }
-
-          // Refresh runtimes list
-          if (typeof refreshRuntimes === 'function') refreshRuntimes();
-        } else {
-          updatePythonStatus('error', 'Failed');
-          alert('Failed to start Python: ' + result.error);
-        }
+        const result = await startPythonRuntimeFromConfig(config, 'force-new');
+        updatePythonStatus('ready', result.name || config.name);
+        console.log(`New Python runtime: ${result.name || config.name} on port ${result.port}`);
       } catch (e) {
         updatePythonStatus('error', 'Failed');
         alert('Failed to start Python: ' + e.message);
@@ -9815,18 +9904,26 @@ session:
     }
 
     async function killRuntimeAction(runtimeId, language = 'python') {
+      const normalized = normalizeRuntimeLanguage(language) || language;
       // Unified: all languages go through runtime.stop
       let result = await electronAPI.runtime.stop(runtimeId);
       if (result.success) {
+        recordRuntimeEvent('runtime:stopped', normalized, { sessionName: runtimeId, reason: 'user-stop' });
+        clearPinnedRuntimeAttachment(normalized, 'user-stop');
+        setRuntimeError(normalized, null);
+
         // Remove from running runtimes and re-filter
         state.runningRuntimes = state.runningRuntimes.filter(r => r.id !== runtimeId);
         filterVenvs(state.venvQuery);
 
         // If we were using this runtime, clear state AND unregister from editor
-        if (language === 'python' && state.pythonVenv &&
-            (state.pythonVenv.runtimeId === runtimeId || state.pythonVenv.name === runtimeId)) {
+        if (normalized === 'python' && (
+            (state.pythonVenv && (state.pythonVenv.runtimeId === runtimeId || state.pythonVenv.name === runtimeId))
+            || state.session?.info?.name === runtimeId
+          )) {
           state.pythonPort = null;
           state.pythonVenv = null;
+          state.session.info = null;
           updatePythonStatus('', 'python');
 
           // Unregister from editor so it knows there's no runtime
@@ -9834,7 +9931,7 @@ session:
             state.editor.unregisterRuntime('python');
             console.log('[killRuntime] Unregistered Python runtime from editor');
           }
-        } else if (language === 'bash' && state.bashSession?.name === runtimeId) {
+        } else if (normalized === 'bash' && state.bashSession?.name === runtimeId) {
           state.bashPort = null;
           state.bashSession = null;
 
@@ -9842,14 +9939,14 @@ session:
             state.editor.unregisterRuntime('bash');
             console.log('[killRuntime] Unregistered Bash runtime from editor');
           }
-        } else if (language === 'r' && state.rSession?.name === runtimeId) {
+        } else if (normalized === 'r' && state.rSession?.name === runtimeId) {
           state.rSession = null;
 
           if (state.editor?.unregisterRuntime) {
             state.editor.unregisterRuntime('r');
             console.log('[killRuntime] Unregistered R runtime from editor');
           }
-        } else if (language === 'julia' && state.juliaSession?.name === runtimeId) {
+        } else if (normalized === 'julia' && state.juliaSession?.name === runtimeId) {
           state.juliaSession = null;
 
           if (state.editor?.unregisterRuntime) {
@@ -11109,15 +11206,10 @@ session:
         editorOptions.runtimes = { javascript: jsRuntime };
         state.jsRuntime = jsRuntime;
 
-        // Add Python runtime if available
-        if (state.pythonPort) {
-          const runtimeDocName = stripDocExtension(filePath.split('/').pop());
-          const pythonClient = new mrmd.MRPClient(
-            `http://127.0.0.1:${state.pythonPort}/mrp/v1`,
-            { languages: ['python', 'py', 'python3'] }
-          );
-          editorOptions.runtimes.python = pythonClient;
-        }
+        // Reset stale runtime state from previous file.
+        // Runtime will be properly set up by resolveProjectSession() after editor creation.
+        state.pythonPort = null;
+        state.pythonVenv = null;
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
@@ -11215,23 +11307,19 @@ session:
 
         console.log('File opened successfully');
 
+        // Reset runtime warmup tracking for this document
+        state.warmedRuntimeLanguages = new Set();
+
+        // Start only runtimes actually used by code blocks in this document.
+        // Additional runtimes are pre-warmed in the background when new cells/languages appear.
+        await warmupRuntimesForCurrentDocument();
+
         // Check for missing configuration and show hints
         updateSetupHints();
 
-        // Resolve session from project config and auto-start if configured
-        await resolveProjectSession();
-
-        // Register global bash runtime (always available)
-        registerBashWithEditor();
-
-        // Register R runtime if available
-        registerRWithEditor();
-
-        // Register Julia runtime if available
-        registerJuliaWithEditor();
-
-        // Register PTY for terminal blocks (```term)
-        registerPtyWithEditor();
+        // If user adds a new language code block, warm up that runtime in background
+        // before first execution for a smoother experience.
+        setupRuntimeAutoWarmupOnEdit();
 
         // Reconnect full terminal panel for new file
         reconnectFullTerminal();
@@ -12680,6 +12768,122 @@ session:
      * the current document's code blocks. Languages without a running
      * runtime are shown as "Not started" with a Start action.
      */
+    function getPreferredRuntimeForLanguage(language, runtimes, attachedIds) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+      const langRuntimes = (runtimes || []).filter(rt => (rt.language || 'python') === normalized);
+      if (langRuntimes.length === 0) return { runtime: null, count: 0 };
+
+      const pinned = getPinnedRuntimeAttachment(normalized);
+      if (pinned?.sessionName) {
+        const pinnedMatch = langRuntimes.find(rt => rt.id === pinned.sessionName);
+        if (pinnedMatch) return { runtime: pinnedMatch, count: langRuntimes.length };
+      }
+
+      const attachedId = attachedIds?.[normalized] || null;
+      if (attachedId) {
+        const attachedMatch = langRuntimes.find(rt => rt.id === attachedId);
+        if (attachedMatch) return { runtime: attachedMatch, count: langRuntimes.length };
+      }
+
+      return { runtime: langRuntimes[0], count: langRuntimes.length };
+    }
+
+    function getRuntimeRowState(language, runtime) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+      if (runtime) {
+        return {
+          key: 'ready',
+          label: 'Ready',
+          primaryText: 'restart',
+          primaryAction: `restartRuntimeForLanguage('${normalized}')`,
+        };
+      }
+      if (state.runtimePending.has(normalized)) {
+        return {
+          key: 'starting',
+          label: 'Starting…',
+          primaryText: null,
+          primaryAction: null,
+        };
+      }
+      if (state.runtimeErrors.has(normalized)) {
+        return {
+          key: 'error',
+          label: 'Error',
+          primaryText: 'retry',
+          primaryAction: `startRuntimeForLanguage('${normalized}')`,
+          error: state.runtimeErrors.get(normalized),
+        };
+      }
+      return {
+        key: 'not-ready',
+        label: 'Not ready',
+        primaryText: 'start',
+        primaryAction: `startRuntimeForLanguage('${normalized}')`,
+      };
+    }
+
+    function getRuntimeConfigDefaults(language, runtime) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+      const entry = [...state.sessions.values()].find((s) => s?.language === normalized && s?.config) || null;
+      const cfg = entry?.config || {};
+      const projectRoot = state.project?.root || state.projectDir || '.';
+
+      return {
+        cwd: runtime?.cwd || cfg.cwd || projectRoot,
+        venv: normalized === 'python' ? (runtime?.venv || cfg.venv || state.session?.config?.venv || '.venv') : '',
+        auto_start: cfg.autoStart !== false,
+      };
+    }
+
+    function renderRuntimeDiagnostics() {
+      const el = document.getElementById('runtime-diagnostics');
+      if (!el) return;
+
+      if (!state.runtimeDiagnosticsOpen) {
+        el.style.display = 'none';
+        return;
+      }
+
+      el.style.display = 'block';
+      const events = state.runtimeEvents.slice(-40).reverse();
+      if (events.length === 0) {
+        el.innerHTML = '<div class="runtimes-empty" style="padding:8px;">No runtime events yet</div>';
+        return;
+      }
+
+      el.innerHTML = events.map((ev) => {
+        const ts = (ev.ts || '').split('T')[1]?.replace('Z', '') || '';
+        const msg = [
+          ev.type,
+          ev.language,
+          ev.sessionName || '',
+          ev.port ? `:${ev.port}` : '',
+          ev.reason ? `(${ev.reason})` : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+        const title = [ev.documentPath || '', ev.message || '', ev.error || '']
+          .filter(Boolean)
+          .join(' | ')
+          .replace(/"/g, '&quot;');
+        return `<div class="runtime-diagnostics-item" title="${title}">[${ts}] ${msg}</div>`;
+      }).join('');
+    }
+
+    function toggleRuntimeDiagnostics() {
+      state.runtimeDiagnosticsOpen = !state.runtimeDiagnosticsOpen;
+      const btn = document.getElementById('runtimes-diag-toggle');
+      if (btn) btn.classList.toggle('active', state.runtimeDiagnosticsOpen);
+      renderRuntimeDiagnostics();
+    }
+
+    /**
+     * Render the runtimes list in the panel.
+     *
+     * Simplified UX: one row per language used in this document.
+     * Primary action is contextual (start/restart/retry), with optional stop + config.
+     */
     function renderRuntimesPanel() {
       const listEl = document.getElementById('runtimes-list');
       if (!listEl) return;
@@ -12690,6 +12894,7 @@ session:
         bash: state.bashSession?.name,
         r: state.rSession?.name,
         julia: state.juliaSession?.name,
+        pty: state.ptySession?.name,
       };
 
       // --- Detect languages in the current document ---
@@ -12701,6 +12906,7 @@ session:
         bash:   { label: 'BASH',   badge: 'bash' },
         r:      { label: 'R',      badge: 'r' },
         julia:  { label: 'JULIA',  badge: 'julia' },
+        pty:    { label: 'TERM',   badge: 'bash' },
         javascript: { label: 'JS', badge: 'javascript' },
       };
 
@@ -12717,87 +12923,90 @@ session:
         return;
       }
 
-      // Build per-language sections
       let html = '';
-      for (const lang of docLanguages) {
-        const display = LANG_DISPLAY[lang] || { label: lang.toUpperCase(), badge: lang };
-        const langRuntimes = runtimes.filter(rt => (rt.language || 'python') === lang);
-        const attachedId = attachedIds[lang];
+      let renderedRows = 0;
 
-        html += `<div class="runtime-lang-section" data-language="${lang}">`;
+      for (const lang of docLanguages) {
+        const normalized = normalizeRuntimeLanguage(lang) || lang;
+        if (normalized === 'node' || normalized === 'javascript') continue;
+
+        const display = LANG_DISPLAY[normalized] || { label: normalized.toUpperCase(), badge: normalized };
+        const { runtime, count } = getPreferredRuntimeForLanguage(normalized, runtimes, attachedIds);
+        const rowState = getRuntimeRowState(normalized, runtime);
+        const defaults = getRuntimeConfigDefaults(normalized, runtime);
+        const cwdShort = runtime?.cwd ? runtime.cwd.split('/').slice(-2).join('/') : '';
+        const venvShort = runtime?.venv ? runtime.venv.split('/').slice(-2).join('/') : '';
+
+        html += `<div class="runtime-lang-section" data-language="${normalized}">`;
         html += `<div class="runtime-lang-section-header">`;
         html += `  <span class="runtime-lang-badge ${display.badge}">${display.label}</span>`;
         html += `</div>`;
 
-        if (langRuntimes.length === 0) {
-          // No runtime running for this language
-          html += `
-            <div class="runtime-item runtime-item--inactive">
-              <div class="runtime-item-status" style="background: var(--text-dim); opacity: 0.4;"></div>
-              <div class="runtime-item-info">
-                <div class="runtime-item-name" style="color: var(--text-muted);">Not started</div>
-                <div class="runtime-item-meta">Starts on first cell execution</div>
-              </div>
-              <div class="runtime-item-actions" style="opacity: 1;">
-                <button class="runtime-item-btn" onclick="event.stopPropagation(); startRuntimeForLanguage('${lang}')">start</button>
+        html += `
+          <div class="runtime-item ${runtime ? 'attached' : 'runtime-item--inactive'}"
+               data-language="${normalized}"
+               title="${runtime ? `PID ${runtime.pid}${runtime.cwd ? ' · ' + runtime.cwd : ''}` : display.label}">
+            <div class="runtime-item-status" style="${rowState.key === 'error' ? 'background:#ef4444;' : rowState.key === 'starting' ? 'background:#f59e0b;' : rowState.key === 'not-ready' ? 'background: var(--text-dim); opacity:0.45;' : ''}"></div>
+            <div class="runtime-item-info">
+              <div class="runtime-item-name">${rowState.label}${runtime ? '' : ''}</div>
+              <div class="runtime-item-meta">
+                ${runtime
+                  ? `${venvShort ? `${venvShort} · ` : ''}port ${runtime.port}${cwdShort ? `<br>cwd: ${cwdShort}` : ''}${count > 1 ? `<br>${count} sessions running` : ''}`
+                  : (rowState.error ? rowState.error : 'Starts automatically when you run a cell')}
               </div>
             </div>
-          `;
-        } else {
-          for (const rt of langRuntimes) {
-            const isAttached = rt.id === attachedId;
-            const venvShort = rt.venv ? rt.venv.split('/').slice(-2).join('/') : '';
-            const cwdShort = rt.cwd ? rt.cwd.split('/').slice(-2).join('/') : '';
+            <div class="runtime-item-actions">
+              ${rowState.primaryText
+                ? `<button class="runtime-item-btn" onclick="event.stopPropagation(); ${rowState.primaryAction}">${rowState.primaryText}</button>`
+                : `<button class="runtime-item-btn" disabled style="opacity:0.6; cursor:default;">starting</button>`}
+              <button class="runtime-item-btn" onclick="event.stopPropagation(); toggleRuntimeConfig('${normalized}')">⚙</button>
+              ${runtime
+                ? `<button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${runtime.id}', '${normalized}')">stop</button>`
+                : ''}
+            </div>
+          </div>
 
-            html += `
-              <div class="runtime-item ${isAttached ? 'attached' : ''}"
-                   data-runtime-id="${rt.id}"
-                   data-language="${lang}"
-                   title="PID ${rt.pid}${rt.cwd ? ' · ' + rt.cwd : ''}">
-                <div class="runtime-item-status"></div>
-                <div class="runtime-item-info">
-                  <div class="runtime-item-name">${rt.id}</div>
-                  <div class="runtime-item-meta">
-                    ${venvShort ? venvShort + ' · ' : ''}port ${rt.port}
-                    ${cwdShort ? '<br>cwd: ' + cwdShort : ''}
-                  </div>
-                </div>
-                <div class="runtime-item-actions">
-                  ${isAttached ? '' : `<button class="runtime-item-btn" onclick="event.stopPropagation(); attachToRuntime('${rt.id}', '${lang}')">attach</button>`}
-                  <button class="runtime-item-btn" onclick="event.stopPropagation(); toggleRuntimeConfig('${rt.id}', '${lang}')">⚙</button>
-                  <button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')">stop</button>
-                </div>
+          <div class="runtime-config-panel" id="runtime-config-${normalized}" style="display: none;">
+            ${normalized === 'python' ? `
+            <div class="runtime-config-field">
+              <label>Venv</label>
+              <div class="runtime-config-field-row">
+                <input type="text" value="${makeRelativePath(defaults.venv, state.project?.root || state.projectDir) || '.venv'}" data-field="venv" data-language="${normalized}" />
               </div>
-              <div class="runtime-config-panel" id="runtime-config-${rt.id}" style="display: none;">
-                <div class="runtime-config-field">
-                  <label>Session</label>
-                  <input type="text" value="${extractShortSessionName(rt.id, lang)}" data-field="name" data-runtime-id="${rt.id}" data-language="${lang}" />
-                </div>
-                ${lang === 'python' ? `
-                <div class="runtime-config-field">
-                  <label>Venv</label>
-                  <div class="runtime-config-field-row">
-                    <input type="text" value="${makeRelativePath(rt.venv, state.projectRoot) || '.venv'}" data-field="venv" data-runtime-id="${rt.id}" data-language="${lang}" />
-                    <button class="runtime-item-btn" onclick="browseForVenv('${rt.id}', '${lang}')" title="Browse">📂</button>
-                  </div>
-                </div>
-                ` : ''}
-                <div class="runtime-config-field">
-                  <label>CWD</label>
-                  <div class="runtime-config-field-row">
-                    <input type="text" value="${makeRelativePath(rt.cwd, state.projectRoot) || '.'}" data-field="cwd" data-runtime-id="${rt.id}" data-language="${lang}" />
-                    <button class="runtime-item-btn" onclick="browseForCwd('${rt.id}', '${lang}')" title="Browse">📂</button>
-                  </div>
-                </div>
-                <div class="runtime-config-actions">
-                  <button class="runtime-item-btn" onclick="applyRuntimeConfig('${rt.id}', '${lang}')">Apply & Restart</button>
-                </div>
+            </div>
+            ` : ''}
+            <div class="runtime-config-field">
+              <label>CWD</label>
+              <div class="runtime-config-field-row">
+                <input type="text" value="${makeRelativePath(defaults.cwd, state.project?.root || state.projectDir) || '.'}" data-field="cwd" data-language="${normalized}" />
               </div>
-            `;
-          }
-        }
+            </div>
+            <div class="runtime-config-field">
+              <label style="display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" data-field="auto_start" data-language="${normalized}" ${defaults.auto_start ? 'checked' : ''} />
+                Auto-start for this document
+              </label>
+            </div>
+            <div class="runtime-config-actions">
+              <button class="runtime-item-btn" onclick="applyRuntimeConfig('${normalized}')">Apply</button>
+            </div>
+          </div>
+        `;
 
-        html += `</div>`; // close runtime-lang-section
+        html += `</div>`;
+        renderedRows += 1;
+      }
+
+      if (renderedRows === 0) {
+        html += `
+          <div class="runtime-item runtime-item--inactive" style="margin: 8px 16px;">
+            <div class="runtime-item-status" style="background: var(--text-dim); opacity: 0.45;"></div>
+            <div class="runtime-item-info">
+              <div class="runtime-item-name" style="color: var(--text-muted);">JavaScript runtime</div>
+              <div class="runtime-item-meta">Runs in-browser automatically (no external runtime needed)</div>
+            </div>
+          </div>
+        `;
       }
 
       // Link to Home for full runtime management
@@ -12810,17 +13019,7 @@ session:
       `;
 
       listEl.innerHTML = html;
-
-      // Add click handler to attach on row click
-      listEl.querySelectorAll('.runtime-item:not(.runtime-item--inactive)').forEach(el => {
-        el.addEventListener('click', () => {
-          const runtimeId = el.dataset.runtimeId;
-          const language = el.dataset.language || 'python';
-          if (!el.classList.contains('attached')) {
-            attachToRuntime(runtimeId, language);
-          }
-        });
-      });
+      renderRuntimeDiagnostics();
     }
 
     /**
@@ -12850,6 +13049,7 @@ session:
         py: 'python', python3: 'python',
         js: 'javascript', node: 'javascript', ts: 'javascript', typescript: 'javascript',
         jl: 'julia', sh: 'bash', shell: 'bash', zsh: 'bash', rlang: 'r',
+        term: 'pty', pty: 'pty', terminal: 'pty',
       };
 
       // Non-executable languages to skip
@@ -12862,6 +13062,7 @@ session:
       // Known runtime languages
       const RUNTIME_LANGS = new Set([
         'python', 'bash', 'javascript', 'julia', 'r', 'shell', 'node', 'typescript',
+        'term', 'pty', 'terminal',
       ]);
 
       const fenceRegex = /^(`{3,}|~{3,})(\w+)(?:\s+(.*))?$/gm;
@@ -12880,31 +13081,62 @@ session:
       return languages;
     }
 
+    function normalizeDocLanguageToRuntime(language) {
+      const l = String(language || '').toLowerCase();
+      if (l === 'python' || l === 'py' || l === 'python3') return 'python';
+      if (l === 'bash' || l === 'sh' || l === 'shell' || l === 'zsh') return 'bash';
+      if (l === 'r' || l === 'rlang') return 'r';
+      if (l === 'julia' || l === 'jl') return 'julia';
+      if (l === 'pty' || l === 'term' || l === 'terminal') return 'pty';
+      return null;
+    }
+
+    async function warmupRuntimesForCurrentDocument(options = {}) {
+      const languages = options.languages || getDocumentLanguagesFromEditor();
+      const runtimeLangs = new Set();
+      for (const lang of languages) {
+        const normalized = normalizeDocLanguageToRuntime(lang);
+        if (normalized) runtimeLangs.add(normalized);
+      }
+
+      const tasks = [];
+
+      for (const lang of runtimeLangs) {
+        if (state.warmedRuntimeLanguages.has(lang)) continue;
+        state.warmedRuntimeLanguages.add(lang);
+
+        if (lang === 'python') {
+          // Python has special status/session UI handling via resolveProjectSession
+          tasks.push(resolveProjectSession());
+        } else if (lang === 'pty') {
+          // PTY has terminal-specific setup (widgets, keymaps)
+          tasks.push(registerPtyWithEditor());
+        } else {
+          // bash, r, julia — all use the generic path
+          tasks.push(registerRuntimeWithEditor(lang));
+        }
+      }
+
+      if (tasks.length > 0) {
+        await Promise.allSettled(tasks);
+      }
+    }
+
+    function setupRuntimeAutoWarmupOnEdit() {
+      if (!state.editor?.onChange) return;
+      state.editor.onChange(() => {
+        clearTimeout(state.runtimeWarmupTimer);
+        state.runtimeWarmupTimer = setTimeout(() => {
+          warmupRuntimesForCurrentDocument().catch((e) => {
+            console.warn('[runtime-warmup] Background warmup failed:', e?.message || e);
+          });
+        }, 250);
+      });
+    }
+
     /**
      * Toggle the inline configuration panel for a runtime.
      */
-    /**
-     * Extract the short session name from a full resolved session ID.
-     * Full ID format: "{project}:{language}:{name}" → returns "{name}"
-     * E.g.: "mrmddemos:julia:default" → "default"
-     *        "mrmddemos:default" → "default" (Python legacy format)
-     */
-    function extractShortSessionName(fullId, language) {
-      if (!fullId) return 'default';
-      // Try {project}:{language}:{name} format first
-      const langPrefix = `:${language}:`;
-      const langIdx = fullId.indexOf(langPrefix);
-      if (langIdx >= 0) {
-        return fullId.slice(langIdx + langPrefix.length) || 'default';
-      }
-      // Try {project}:{name} format (Python)
-      const colonIdx = fullId.indexOf(':');
-      if (colonIdx >= 0) {
-        return fullId.slice(colonIdx + 1) || 'default';
-      }
-      return fullId;
-    }
-
     /**
      * Make an absolute path relative to a base directory.
      * E.g.: makeRelativePath("/home/user/project/.venv", "/home/user/project") → ".venv"
@@ -12919,8 +13151,8 @@ session:
       return absPath;
     }
 
-    function toggleRuntimeConfig(runtimeId, language) {
-      const panel = document.getElementById(`runtime-config-${runtimeId}`);
+    function toggleRuntimeConfig(language) {
+      const panel = document.getElementById(`runtime-config-${language}`);
       if (!panel) return;
       const isVisible = panel.style.display !== 'none';
       panel.style.display = isVisible ? 'none' : 'block';
@@ -12929,14 +13161,24 @@ session:
     /**
      * Apply runtime configuration changes and persist to frontmatter.
      */
-    async function applyRuntimeConfig(runtimeId, language) {
-      const panel = document.getElementById(`runtime-config-${runtimeId}`);
+    async function applyRuntimeConfig(language) {
+      const panel = document.getElementById(`runtime-config-${language}`);
       if (!panel) return;
 
       const config = {};
       panel.querySelectorAll('input[data-field]').forEach(input => {
-        config[input.dataset.field] = input.value;
+        if (input.type === 'checkbox') {
+          config[input.dataset.field] = input.checked;
+        } else {
+          config[input.dataset.field] = input.value;
+        }
       });
+
+      // Normalize UI keys to config keys used by mrmd frontmatter helpers.
+      if (Object.prototype.hasOwnProperty.call(config, 'auto_start')) {
+        config.autoStart = !!config.auto_start;
+        delete config.auto_start;
+      }
 
       // Persist to frontmatter via custom event
       try {
@@ -12948,96 +13190,83 @@ session:
         console.warn('Failed to update frontmatter:', e);
       }
 
-      // Kill and restart with new config
-      await killRuntimeAction(runtimeId, language);
-
-      // Start new runtime with updated config
+      // If runtime is currently running, restart that language to apply config.
       try {
-        if (language === 'python') {
-          await electronAPI.runtime.start({
-            name: config.name || runtimeId,
-            venv: config.venv,
-            cwd: config.cwd,
-          });
+        const attachedIds = {
+          python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+          bash: state.bashSession?.name,
+          r: state.rSession?.name,
+          julia: state.juliaSession?.name,
+          pty: state.ptySession?.name,
+        };
+        const { runtime } = getPreferredRuntimeForLanguage(language, state.runningRuntimes || [], attachedIds);
+        if (runtime?.id) {
+          await killRuntimeAction(runtime.id, language);
+
+          if (language === 'python') {
+            await startRuntimeForLanguage(language, { config });
+          } else if (['bash', 'r', 'julia', 'pty'].includes(language)) {
+            await electronAPI.runtime.start({
+              name: runtime.id,
+              language,
+              cwd: config.cwd || runtime.cwd || state.project?.root || state.projectDir || '.',
+            });
+
+            if (language === 'pty') {
+              await registerPtyWithEditor();
+            } else {
+              await registerRuntimeWithEditor(language);
+            }
+          } else {
+            await startRuntimeForLanguage(language);
+          }
         }
       } catch (e) {
-        console.error('Failed to restart runtime:', e);
+        console.error('Failed to apply runtime config:', e);
       }
 
       await refreshRuntimes();
+      toggleRuntimeConfig(language);
     }
 
-    /**
-     * Start a runtime for a language that has code blocks but no running session.
-     */
-    async function startRuntimeForLanguage(language) {
-      try {
-        // Use forDocument to get properly resolved config (session name, cwd, etc.)
-        // This goes through mrmd-project's resolveSessionForLanguage which handles defaults.
-        const docPath = state.currentFile;
+    // Runtime controller (extracted to src/runtime-controller.js)
+    const runtimeController = window.createRuntimeController({
+      state,
+      electronAPI,
+      normalizeRuntimeLanguage,
+      getPreferredRuntimeForLanguage,
+      renderRuntimesPanel,
+      resolvePythonStartConfig,
+      startPythonRuntimeFromConfig,
+      registerRuntimeWithEditor,
+      registerPtyWithEditor,
+      refreshRuntimes: () => refreshRuntimes(),
+      killAndRefreshRuntime,
+      applyRuntimeConfig,
+      pinRuntimeAttachment,
+    });
 
-        if (language === 'python') {
-          // Python uses the venv picker / session flow
-          const venv = state.pythonVenv?.path || '.venv';
-          const cwd = state.projectRoot || '.';
-          await electronAPI.runtime.start({ venv, cwd });
-        } else if (['bash', 'r', 'julia'].includes(language) && docPath) {
-          const config = await electronAPI.runtime.forDocumentLanguage(docPath, language);
-          if (!config?.alive) {
-            console.log(`[startRuntime] ${language} could not start (no project or not available)`);
-          }
-        } else if (!docPath) {
-          console.log(`[startRuntime] No document open, cannot start ${language}`);
-        }
-        await refreshRuntimes();
-      } catch (e) {
-        console.error(`Failed to start ${language} runtime:`, e);
-      }
+    function setRuntimePending(language, pending) {
+      return runtimeController.setPending(language, pending);
     }
 
-    /**
-     * Browse for a virtual environment path (updates the config panel input).
-     */
-    async function browseForVenv(runtimeId, language) {
-      try {
-        const result = await electronAPI.dialog?.showOpenDialog?.({
-          properties: ['openDirectory'],
-          title: 'Select Virtual Environment',
-          defaultPath: state.projectRoot || undefined,
-        });
-        if (result && !result.canceled && result.filePaths?.[0]) {
-          const panel = document.getElementById(`runtime-config-${runtimeId}`);
-          if (panel) {
-            const input = panel.querySelector('input[data-field="venv"]');
-            if (input) input.value = result.filePaths[0];
-          }
-        }
-      } catch (e) {
-        console.warn('Browse for venv not available:', e);
-      }
+    function setRuntimeError(language, errorMessage = null) {
+      return runtimeController.setError(language, errorMessage);
     }
 
-    /**
-     * Browse for a working directory (updates the config panel input).
-     */
-    async function browseForCwd(runtimeId, language) {
-      try {
-        const result = await electronAPI.dialog?.showOpenDialog?.({
-          properties: ['openDirectory'],
-          title: 'Select Working Directory',
-          defaultPath: state.projectRoot || undefined,
-        });
-        if (result && !result.canceled && result.filePaths?.[0]) {
-          const panel = document.getElementById(`runtime-config-${runtimeId}`);
-          if (panel) {
-            const input = panel.querySelector('input[data-field="cwd"]');
-            if (input) input.value = result.filePaths[0];
-          }
-        }
-      } catch (e) {
-        console.warn('Browse for CWD not available:', e);
-      }
+    async function startRuntimeForLanguage(language, options = {}) {
+      return runtimeController.start(language, options);
     }
+
+    async function restartRuntimeForLanguage(language) {
+      return runtimeController.restart(language);
+    }
+
+    async function stopRuntimeForLanguage(language) {
+      return runtimeController.stop(language);
+    }
+
+    window.runtimeController = runtimeController;
 
     /**
      * Refresh runtimes list from backend
@@ -13058,6 +13287,23 @@ session:
             alive: s.alive,
             language: s.language || 'python',
           }));
+
+        // Any language with a live runtime should not remain in error state.
+        for (const rt of state.runningRuntimes) {
+          setRuntimeError(rt.language, null);
+        }
+
+        // Keep session map in sync for telemetry/CodeLens status.
+        for (const rt of state.runningRuntimes) {
+          if (rt.id) {
+            setSessionEntry(rt.id, {
+              language: rt.language,
+              status: 'connected',
+              info: { pid: rt.pid, port: rt.port, cwd: rt.cwd, venv: rt.venv },
+            });
+          }
+        }
+
         renderRuntimesPanel();
       } catch (e) {
         console.error('Failed to refresh runtimes:', e);
@@ -13088,6 +13334,10 @@ session:
       // Add refresh button handler
       const refreshBtn = document.getElementById('runtimes-refresh');
       refreshBtn?.addEventListener('click', refreshRuntimes);
+
+      // Runtime diagnostics toggle
+      const diagBtn = document.getElementById('runtimes-diag-toggle');
+      diagBtn?.addEventListener('click', toggleRuntimeDiagnostics);
     }
 
     // Initialize on load
@@ -15797,6 +16047,87 @@ session:
       updateSessionStatus(statusMap[status] || 'none', label);
     }
 
+    const RUNTIME_EVENT_MAX = 300;
+
+    function runtimeAttachmentKey(language, docPath = state.currentFile) {
+      const normalized = normalizeRuntimeLanguage(language) || String(language || '').toLowerCase();
+      return `${docPath || ''}::${normalized}`;
+    }
+
+    function recordRuntimeEvent(type, language, details = {}) {
+      const entry = {
+        ts: new Date().toISOString(),
+        type,
+        language: normalizeRuntimeLanguage(language) || language || 'unknown',
+        documentPath: state.currentFile || null,
+        ...details,
+      };
+      state.runtimeEvents.push(entry);
+      if (state.runtimeEvents.length > RUNTIME_EVENT_MAX) {
+        state.runtimeEvents.splice(0, state.runtimeEvents.length - RUNTIME_EVENT_MAX);
+      }
+      window._runtimeEvents = state.runtimeEvents;
+      if (state.runtimeDiagnosticsOpen) {
+        renderRuntimeDiagnostics();
+      }
+      console.log(`[runtime:event] ${entry.type} ${entry.language}`, entry);
+      return entry;
+    }
+
+    function pinRuntimeAttachment(language, info, reason = 'attach') {
+      const docPath = state.currentFile;
+      if (!docPath || !info?.name || !info?.port) return null;
+
+      const key = runtimeAttachmentKey(language, docPath);
+      const existing = state.runtimeAttachments.get(key);
+      const sameTarget = existing
+        && existing.sessionName === info.name
+        && Number(existing.port) === Number(info.port);
+
+      // De-duplicate noisy re-pins for the same attachment target.
+      if (sameTarget) {
+        existing.reason = reason;
+        existing.at = new Date().toISOString();
+        return existing;
+      }
+
+      state.runtimeAttachmentGeneration += 1;
+      const attachment = {
+        language: normalizeRuntimeLanguage(language) || language,
+        documentPath: docPath,
+        sessionName: info.name,
+        port: info.port,
+        generation: state.runtimeAttachmentGeneration,
+        reason,
+        at: new Date().toISOString(),
+      };
+      state.runtimeAttachments.set(key, attachment);
+      recordRuntimeEvent('attachment:pinned', language, {
+        sessionName: info.name,
+        port: info.port,
+        generation: attachment.generation,
+        reason,
+      });
+      return attachment;
+    }
+
+    function getPinnedRuntimeAttachment(language, docPath = state.currentFile) {
+      return state.runtimeAttachments.get(runtimeAttachmentKey(language, docPath)) || null;
+    }
+
+    function clearPinnedRuntimeAttachment(language, reason = 'clear') {
+      const key = runtimeAttachmentKey(language);
+      const existing = state.runtimeAttachments.get(key);
+      if (!existing) return;
+      state.runtimeAttachments.delete(key);
+      recordRuntimeEvent('attachment:cleared', language, {
+        sessionName: existing.sessionName,
+        port: existing.port,
+        generation: existing.generation,
+        reason,
+      });
+    }
+
     /**
      * Get the correct electronAPI for a runtime language
      * @param {string} language - Runtime language (python, bash, r, julia, node)
@@ -15875,6 +16206,12 @@ session:
         if (result.success || result.pid) {
           setSessionEntry(sessionName, { status: 'connected', info: result });
           updateLegacyState(config.language, result);
+          pinRuntimeAttachment(config.language, result, 'session-start');
+          recordRuntimeEvent('runtime:started', config.language, {
+            sessionName,
+            port: result.port,
+            source: 'startLanguageSession',
+          });
           console.log(`[Session] Started ${config.language} session: ${sessionName} on port ${result.port} (PID ${result.pid})`);
 
           // Register runtime with editor
@@ -15911,6 +16248,11 @@ session:
         if (result.success) {
           updateLegacyState(entry.language, null);
           removeSessionEntry(sessionName);
+          clearPinnedRuntimeAttachment(entry.language, 'session-stop');
+          recordRuntimeEvent('runtime:stopped', entry.language, {
+            sessionName,
+            source: 'stopLanguageSession',
+          });
           console.log(`[Session] Stopped ${entry.language} session: ${sessionName}`);
         } else {
           console.error(`[Session] Failed to stop ${sessionName}:`, result.error);
@@ -15941,6 +16283,12 @@ session:
         if (result.success || result.pid) {
           setSessionEntry(sessionName, { status: 'connected', info: result });
           updateLegacyState(entry.language, result);
+          pinRuntimeAttachment(entry.language, result, 'session-restart');
+          recordRuntimeEvent('runtime:restarted', entry.language, {
+            sessionName,
+            port: result.port,
+            source: 'restartLanguageSession',
+          });
           console.log(`[Session] Restarted ${entry.language} session: ${sessionName} on port ${result.port}`);
 
           // Re-register runtime with editor
@@ -15965,7 +16313,6 @@ session:
     function registerLanguageRuntimeWithEditor(language, port) {
       if (!state.editor || !port) return;
 
-      const docName = stripDocExtension(state.currentFile.split('/').pop());
       const langMap = {
         python: { key: 'python', langs: ['python', 'py', 'python3'] },
         bash: { key: 'bash', langs: ['bash', 'sh', 'shell'] },
@@ -15977,20 +16324,29 @@ session:
       const mapping = langMap[language];
       if (!mapping) return;
 
-      if (language === 'bash') {
-        // Bash uses auto-restarting wrapper
-        const bashClient = createAutoRestartingBashClient(port, docName);
-        state.editor.registerRuntime(mapping.key, bashClient);
-      } else if (language === 'python') {
-        const pythonClient = createAutoRestartingPythonClient(port, docName);
-        state.editor.registerRuntime(mapping.key, pythonClient);
-      } else {
-        const client = new mrmd.MRPClient(
-          `http://127.0.0.1:${port}/mrp/v1`,
-          { languages: mapping.langs }
-        );
-        state.editor.registerRuntime(mapping.key, client);
+      // All languages use the generic auto-restarting client
+      const langCfg = RUNTIME_LANG_CONFIG[language] || { aliases: mapping.langs };
+      const knownSession = [...state.sessions.entries()].find(([_, entry]) =>
+        entry?.language === language && entry?.info?.port === port
+      );
+      const knownSessionName = knownSession?.[0] || null;
+
+      const client = createAutoRestartingClient(port, language, langCfg.aliases || mapping.langs, (cfg) => {
+        if (langCfg.stateKey) state[langCfg.stateKey] = cfg.port;
+        if (langCfg.sessionKey) state[langCfg.sessionKey] = cfg;
+        pinRuntimeAttachment(language, cfg, 'auto-recovered');
+        if (language === 'python') updateSessionStatus('connected', cfg.name || 'python');
+        if (typeof refreshRuntimes === 'function') refreshRuntimes();
+      }, knownSessionName);
+      state.editor.registerRuntime(mapping.key, client);
+      if (knownSessionName) {
+        pinRuntimeAttachment(language, { name: knownSessionName, port }, 'register-language-runtime');
       }
+      recordRuntimeEvent('runtime:registered', language, {
+        sessionName: knownSessionName,
+        port,
+        source: 'registerLanguageRuntimeWithEditor',
+      });
       console.log(`[Session] Registered ${language} runtime with editor on port ${port}`);
     }
 
@@ -16839,6 +17195,12 @@ session:
         if (result.success || result.pid) {
           state.session.info = result;
           state.pythonPort = result.port;
+          pinRuntimeAttachment('python', result, 'start-session');
+          recordRuntimeEvent('runtime:started', 'python', {
+            sessionName: config.name,
+            port: result.port,
+            source: 'startSession',
+          });
           updateSessionStatus('connected', config.name);
           console.log(`Session started: ${config.name} on port ${result.port} (PID ${result.pid})`);
 
@@ -16874,6 +17236,12 @@ session:
         if (result.success || result.pid) {
           state.session.info = result;
           state.pythonPort = result.port;
+          pinRuntimeAttachment('python', result, 'restart-session');
+          recordRuntimeEvent('runtime:restarted', 'python', {
+            sessionName,
+            port: result.port,
+            source: 'restartSession',
+          });
           updateSessionStatus('connected', sessionName);
           console.log(`Session restarted: ${sessionName} on port ${result.port}`);
 
@@ -16908,6 +17276,11 @@ session:
         if (result.success) {
           state.session.info = null;
           state.pythonPort = null;
+          clearPinnedRuntimeAttachment('python', 'stop-session');
+          recordRuntimeEvent('runtime:stopped', 'python', {
+            sessionName,
+            source: 'stopSession',
+          });
           updateSessionStatus('none', null);
           console.log(`Session stopped: ${sessionName}`);
         } else {
@@ -16919,14 +17292,103 @@ session:
     }
 
     /**
-     * Create an auto-recovering Python MRP client wrapper.
-     * If execution fails due to lost runtime (502/connection), request runtime recovery,
-     * refresh session mapping, and retry once.
+     * Register session with editor for code execution.
+     * Now delegates to the generic registerRuntimeWithEditor('python').
+     * The port-based path is kept for backwards compat with explicit startSession().
      */
-    function createAutoRestartingPythonClient(initialPort, sessionName) {
+    function registerSessionWithEditor(port) {
+      if (!state.editor || !port) return;
+
+      const client = createAutoRestartingClient(
+        port, 'python',
+        RUNTIME_LANG_CONFIG.python.aliases,
+        (freshConfig) => {
+          state.pythonPort = freshConfig.port;
+          state.session.info = freshConfig;
+          pinRuntimeAttachment('python', freshConfig, 'auto-recovered');
+          updateSessionStatus('connected', freshConfig.name || state.session?.config?.name || 'python');
+          if (typeof refreshRuntimes === 'function') refreshRuntimes();
+        },
+        state.session?.info?.name || state.session?.config?.name || null
+      );
+      state.editor.registerRuntime('python', client);
+      if (state.session?.info) {
+        pinRuntimeAttachment('python', state.session.info, 'register-session-with-editor');
+      }
+      recordRuntimeEvent('runtime:registered', 'python', {
+        sessionName: state.session?.info?.name || state.session?.config?.name || null,
+        port,
+        source: 'registerSessionWithEditor',
+      });
+      console.log('Registered Python runtime with editor on port', port);
+    }
+
+    // =========================================================================
+    // UNIFIED RUNTIME REGISTRATION
+    // =========================================================================
+
+    /**
+     * Language config table — maps runtime language keys to their aliases and
+     * state storage. Adding a new language is a one-liner here.
+     */
+    const RUNTIME_LANG_CONFIG = {
+      python: {
+        aliases: ['python', 'py', 'python3'],
+        stateKey: 'pythonPort',
+        sessionKey: null,        // Python uses session.info, handled specially
+      },
+      bash: {
+        aliases: ['bash', 'sh', 'shell'],
+        stateKey: 'bashPort',
+        sessionKey: 'bashSession',
+      },
+      r: {
+        aliases: ['r', 'R', 'rlang'],
+        stateKey: 'rPort',
+        sessionKey: 'rSession',
+      },
+      julia: {
+        aliases: ['julia', 'jl'],
+        stateKey: 'juliaPort',
+        sessionKey: 'juliaSession',
+      },
+      // PTY is handled separately because it has terminal-specific setup
+    };
+
+    /**
+     * Generic auto-restarting MRP client wrapper.
+     *
+     * On connection failure:
+     *   1. Probe /capabilities to check if runtime is actually down
+     *   2. If alive → retry (preserves state, avoids unnecessary restart)
+     *   3. If dead → restart via forDocumentLanguage and retry once
+     *
+     * Works for ALL MRP-speaking runtimes (Python, Bash, R, Julia).
+     *
+     * @param {number} initialPort - Port the runtime is listening on
+     * @param {string} runtimeLanguage - Language key ("python", "bash", "r", "julia")
+     * @param {string[]} supportedLanguages - Language aliases the client supports
+     * @param {function} onRestarted - Callback(config) when runtime restarts
+     * @returns {Proxy} Auto-restarting MRP client
+     */
+    function createAutoRestartingClient(initialPort, runtimeLanguage, supportedLanguages, onRestarted, sessionName = null) {
       let currentPort = initialPort;
       let isRecovering = false;
-      const supportedLanguages = ['python', 'py', 'python3'];
+      const normalizedRuntime = normalizeRuntimeLanguage(runtimeLanguage) || runtimeLanguage;
+      const restartHistory = [];
+
+      function canAutoRestartNow() {
+        const now = Date.now();
+        // Keep the last 2 minutes of restart attempts
+        while (restartHistory.length > 0 && (now - restartHistory[0]) > 120000) {
+          restartHistory.shift();
+        }
+        return restartHistory.length < 3;
+      }
+
+      function markAutoRestartAttempt() {
+        restartHistory.push(Date.now());
+      }
 
       let realClient = new mrmd.MRPClient(
         `http://127.0.0.1:${currentPort}/mrp/v1`,
@@ -16939,6 +17401,18 @@ session:
           `http://127.0.0.1:${currentPort}/mrp/v1`,
           { languages: supportedLanguages }
         );
+      }
+
+      function getExpectedSessionName() {
+        const pinned = getPinnedRuntimeAttachment(normalizedRuntime);
+        return pinned?.sessionName || sessionName || null;
+      }
+
+      function matchesExpectedAttachment(session) {
+        if (!session?.alive) return false;
+        const expected = getExpectedSessionName();
+        if (expected) return session.name === expected;
+        return session.port === currentPort;
       }
 
       return new Proxy(realClient, {
@@ -16964,46 +17438,191 @@ session:
 
                 if (!runtimeDown) throw error;
 
+                recordRuntimeEvent('runtime:execute-failed', normalizedRuntime, {
+                  sessionName: getExpectedSessionName(),
+                  port: currentPort,
+                  message: msg,
+                });
+
+                // Probe: is the runtime actually down, or was it a transient failure?
+                // Be conservative here: a too-short probe timeout causes false restarts,
+                // which loses notebook state. We probe twice before deciding to restart.
+                // Probe: is the runtime actually down, or was it a transient failure?
+                // Use the client's endpoint (works through proxy in browser mode).
+                const probeUrl = `http://127.0.0.1:${currentPort}/mrp/v1/capabilities`;
+                for (let probeAttempt = 0; probeAttempt < 3; probeAttempt++) {
+                  let capOk = false;
+                  try {
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 4000);
+                    const cap = await fetch(probeUrl, { signal: controller.signal });
+                    clearTimeout(timer);
+                    capOk = !!cap.ok;
+                  } catch {
+                    capOk = false;
+                  }
+
+                  if (capOk) {
+                    console.log(`[${runtimeLanguage}] Transient failure; runtime still alive (probe ${probeAttempt + 1}). Retrying without restart...`);
+                    recordRuntimeEvent('runtime:transient-retry', normalizedRuntime, {
+                      sessionName: getExpectedSessionName(),
+                      port: currentPort,
+                      source: 'capability-probe',
+                    });
+                    try {
+                      return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+                    } catch (retryErr) {
+                      // If the retry also fails with a network error, keep probing.
+                      // If it fails with a real execution error, throw it.
+                      const retryMsg = String(retryErr?.message || '').toLowerCase();
+                      const retryIsNetwork = retryMsg.includes('failed to fetch') || retryMsg.includes('fetch failed') || retryMsg.includes('execution failed: 502') || retryMsg.includes('econnrefused');
+                      if (retryIsNetwork && probeAttempt < 2) {
+                        console.warn(`[${runtimeLanguage}] Retry hit network error again, continuing probe...`);
+                        await new Promise(r => setTimeout(r, 500));
+                        continue;
+                      }
+
+                      // Runtime is confirmed alive; avoid destructive auto-restart loops.
+                      console.warn(`[${runtimeLanguage}] Retry failed while runtime is alive; preserving session (no auto-restart):`, retryMsg);
+                      recordRuntimeEvent('runtime:alive-retry-failed', normalizedRuntime, {
+                        sessionName: getExpectedSessionName(),
+                        port: currentPort,
+                        message: String(retryErr?.message || ''),
+                        source: 'capability-probe',
+                      });
+                      throw retryErr;
+                    }
+                  }
+
+                  // Small gap before next probe (helps with brief local socket hiccups)
+                  if (probeAttempt < 2) await new Promise(r => setTimeout(r, 500));
+                }
+
+                // Before restarting, ask main process if this runtime is still alive.
+                // If alive, treat as transient client/network issue and retry without restart.
+                let match = null;
+                try {
+                  const sessions = await electronAPI.runtime.list(normalizedRuntime);
+                  match = (sessions || []).find(matchesExpectedAttachment) || null;
+
+                  if (match?.port && match.port !== currentPort) {
+                    const expected = getExpectedSessionName();
+                    if (expected && match.name && match.name !== expected) {
+                      recordRuntimeEvent('attachment:blocked-switch', normalizedRuntime, {
+                        expectedSessionName: expected,
+                        attemptedSessionName: match.name,
+                        port: match.port,
+                        reason: 'list-rebind-mismatch',
+                      });
+                      throw new Error(`${normalizedRuntime} session mismatch (expected ${expected}, got ${match.name})`);
+                    }
+                    console.log(`[${runtimeLanguage}] Found live session on new port ${match.port}; rebinding client`);
+                    updateClient(match.port);
+                    pinRuntimeAttachment(normalizedRuntime, match, 'list-rebind');
+                    onRestarted?.(match);
+                    recordRuntimeEvent('runtime:rebound', normalizedRuntime, {
+                      sessionName: match.name,
+                      port: match.port,
+                      source: 'runtime-list',
+                    });
+                  }
+                } catch (listError) {
+                  if (String(listError?.message || '').includes('session mismatch')) {
+                    throw listError;
+                  }
+                  match = null;
+                  // Ignore list/probe errors; continue to restart path
+                }
+
+                if (match?.port) {
+                  if (match.port === currentPort) {
+                    console.log(`[${runtimeLanguage}] Runtime still alive on port ${currentPort}; retrying without restart`);
+                  }
+
+                  try {
+                    return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
+                  } catch (retryErr) {
+                    const retryMsg = String(retryErr?.message || retryErr || 'retry failed');
+                    console.warn(`[${runtimeLanguage}] Retry failed while runtime is alive; preserving session (no auto-restart):`, retryMsg);
+                    recordRuntimeEvent('runtime:alive-retry-failed', normalizedRuntime, {
+                      sessionName: getExpectedSessionName(),
+                      port: currentPort,
+                      message: retryMsg,
+                      source: 'runtime-list',
+                    });
+                    throw retryErr;
+                  }
+                }
+
                 if (isRecovering) {
-                  onChunk?.('Python runtime is recovering...', 'Python runtime is recovering...', true);
-                  throw new Error('Python runtime is recovering, please retry in a moment');
+                  throw new Error(`${runtimeLanguage} runtime is recovering, please retry in a moment`);
+                }
+
+                if (!canAutoRestartNow()) {
+                  recordRuntimeEvent('runtime:restart-throttled', normalizedRuntime, {
+                    sessionName: getExpectedSessionName(),
+                    port: currentPort,
+                    reason: 'too-many-restarts',
+                  });
+                  throw new Error(`${runtimeLanguage} runtime keeps crashing (auto-restart paused). Please restart manually.`);
                 }
 
                 isRecovering = true;
+                markAutoRestartAttempt();
+                recordRuntimeEvent('runtime:restart-requested', normalizedRuntime, {
+                  sessionName: getExpectedSessionName(),
+                  port: currentPort,
+                  reason: 'runtime-unreachable',
+                });
+
                 try {
-                  const recoverRes = await fetch('/api/runtime/recover', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                  console.log(`[${runtimeLanguage}] Runtime down, restarting...`);
+                  const fresh = await electronAPI.runtime.forDocumentLanguage(
+                    state.currentFile, normalizedRuntime
+                  );
+                  if (!fresh?.alive || !fresh?.port) {
+                    throw new Error(`${runtimeLanguage} runtime restart failed`);
+                  }
+
+                  const expected = getExpectedSessionName();
+                  if (expected && fresh.name && fresh.name !== expected) {
+                    recordRuntimeEvent('attachment:blocked-switch', normalizedRuntime, {
+                      expectedSessionName: expected,
+                      attemptedSessionName: fresh.name,
+                      port: fresh.port,
+                      reason: 'restart-session-mismatch',
+                    });
+                    throw new Error(`${normalizedRuntime} restart resolved a different session (${fresh.name}); refusing silent switch`);
+                  }
+
+                  const isReconnection = fresh.port === currentPort;
+                  updateClient(fresh.port);
+                  pinRuntimeAttachment(normalizedRuntime, fresh, 'auto-restart');
+                  onRestarted?.(fresh);
+                  console.log(`[${runtimeLanguage}] ${isReconnection ? 'Reconnected' : 'Recovered'} on port`, fresh.port);
+                  recordRuntimeEvent(isReconnection ? 'runtime:reconnected' : 'runtime:recovered', normalizedRuntime, {
+                    sessionName: fresh.name,
+                    port: fresh.port,
+                    reason: 'auto-restart',
                   });
 
-                  if (!recoverRes.ok) {
-                    throw new Error(`Recovery failed (${recoverRes.status})`);
+                  // Make restarts visible to users (state may be lost in a fresh process)
+                  if (!isReconnection) {
+                    onChunk?.(
+                      `\n[${runtimeLanguage}] Runtime restarted. Previous in-memory variables may have been lost.\n`,
+                      '',
+                      false,
+                    );
+                  } else {
+                    console.log(`[${runtimeLanguage}] Silent reconnection (port matched); omitting restart warning`);
                   }
 
-                  const recovered = await recoverRes.json();
-                  if (!recovered?.ok) {
-                    throw new Error(recovered?.error || 'Runtime recovery failed');
-                  }
-
-                  await new Promise(r => setTimeout(r, 150));
-                  const runtimeResponse = await electronAPI.runtime.forDocument(state.currentFile);
-                  const fresh = getPythonSessionFromRuntimeResponse(runtimeResponse);
-                  if (!fresh?.alive || !fresh?.port) {
-                    throw new Error('Runtime recovered but session is not ready yet');
-                  }
-
-                  updateClient(fresh.port);
-                  state.pythonPort = fresh.port;
-                  state.session.info = fresh;
-                  console.log('[python] Runtime recovered on port', fresh.port);
-
-                  isRecovering = false;
                   return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
                 } catch (recoverError) {
-                  isRecovering = false;
-                  console.error('[python] Recovery failed:', recoverError);
+                  console.error(`[${runtimeLanguage}] Recovery failed:`, recoverError);
                   throw recoverError;
+                } finally {
+                  isRecovering = false;
                 }
               }
             };
@@ -17018,290 +17637,129 @@ session:
     }
 
     /**
-     * Register session with editor for code execution
+     * Register a runtime with the editor — generic for any MRP-speaking language.
+     *
+     * This is the ONE function that replaces registerBashWithEditor,
+     * registerRWithEditor, registerJuliaWithEditor, and the Python
+     * registration path.  PTY is still handled separately because
+     * it has terminal-specific setup (widgets, keymaps).
+     *
+     * Works identically in Electron and browser mode because it only
+     * calls electronAPI.runtime.forDocumentLanguage() which is shimmed
+     * in mrmd-server's http-shim.js.
+     *
+     * @param {string} language - Runtime language key ("python", "bash", "r", "julia")
+     * @returns {Promise<boolean>} true if runtime was registered
      */
-    function registerSessionWithEditor(port) {
-      if (!state.editor || !port) return;
+    async function registerRuntimeWithEditor(language) {
+      if (!state.editor || !state.currentFile) {
+        console.log(`[${language}] No editor or currentFile, skipping`);
+        return false;
+      }
+      if (!electronAPI.runtime) {
+        console.log(`[${language}] electronAPI.runtime not available`);
+        return false;
+      }
 
-      const docName = stripDocExtension(state.currentFile.split('/').pop());
-      const pythonClient = createAutoRestartingPythonClient(port, docName);
-      state.editor.registerRuntime('python', pythonClient);
-      console.log('Registered Python runtime with editor');
-    }
+      const langConfig = RUNTIME_LANG_CONFIG[language];
+      if (!langConfig) {
+        console.warn(`[${language}] Unknown language, no config in RUNTIME_LANG_CONFIG`);
+        return false;
+      }
 
-    /**
-     * Create an auto-restarting MRP client wrapper.
-     * If execution fails due to connection error, restarts the session and retries.
-     */
-    function createAutoRestartingBashClient(initialPort, sessionName) {
-      let currentPort = initialPort;
-      let isRestarting = false;
-      const supportedLanguages = ['bash', 'sh', 'shell'];
+      try {
+        const config = await electronAPI.runtime.forDocumentLanguage(state.currentFile, language);
 
-      // Create the underlying MRPClient
-      let realClient = new mrmd.MRPClient(
-        `http://127.0.0.1:${currentPort}/mrp/v1`,
-        { languages: supportedLanguages }
-      );
+        if (!config) {
+          console.log(`[${language}] No session config for this document`);
+          return false;
+        }
+        if (config.error) {
+          console.error(`[${language}] Session error:`, config.error);
+          return false;
+        }
+        if (!config.alive || !config.port) {
+          console.log(`[${language}] Not started (auto_start may be false)`);
+          return false;
+        }
 
-      // Helper to recreate client with new port
-      function updateClient(newPort) {
-        currentPort = newPort;
-        realClient = new mrmd.MRPClient(
-          `http://127.0.0.1:${currentPort}/mrp/v1`,
-          { languages: supportedLanguages }
+        // Enforce notebook attachment pinning: do not silently switch sessions.
+        const pinned = getPinnedRuntimeAttachment(language);
+        if (pinned?.sessionName && config.name && pinned.sessionName !== config.name) {
+          recordRuntimeEvent('attachment:blocked-switch', language, {
+            expectedSessionName: pinned.sessionName,
+            attemptedSessionName: config.name,
+            port: config.port,
+            reason: 'register-mismatch',
+          });
+          console.warn(`[${language}] Refusing silent session switch ${pinned.sessionName} -> ${config.name}`);
+          return false;
+        }
+
+        // Update state
+        if (langConfig.stateKey) state[langConfig.stateKey] = config.port;
+        if (langConfig.sessionKey) state[langConfig.sessionKey] = config;
+        if (language === 'python') {
+          state.pythonPort = config.port;
+          state.session.info = config;
+          updateSessionStatus('connected', config.name || state.session?.name || 'python');
+        }
+
+        // Track in multi-session map
+        if (config.name) {
+          setSessionEntry(config.name, {
+            language, status: 'connected',
+            info: { pid: config.pid, port: config.port, cwd: config.cwd },
+          });
+        }
+
+        // Pin current doc attachment for this language
+        pinRuntimeAttachment(language, config, 'register');
+
+        // Create auto-restarting MRP client and register with editor
+        const client = createAutoRestartingClient(
+          config.port,
+          language,
+          langConfig.aliases,
+          (freshConfig) => {
+            if (langConfig.stateKey) state[langConfig.stateKey] = freshConfig.port;
+            if (langConfig.sessionKey) state[langConfig.sessionKey] = freshConfig;
+            if (language === 'python') {
+              state.pythonPort = freshConfig.port;
+              state.session.info = freshConfig;
+              updateSessionStatus('connected', freshConfig.name || config.name || 'python');
+            }
+            pinRuntimeAttachment(language, freshConfig, 'auto-recovered');
+            if (typeof refreshRuntimes === 'function') refreshRuntimes();
+          },
+          config.name || null
         );
-      }
 
-      // Use Proxy to delegate all method calls, intercepting executeStreaming for auto-restart
-      return new Proxy(realClient, {
-        get(target, prop, receiver) {
-          // Always use current realClient (may have been updated)
-          const value = realClient[prop];
+        state.editor.registerRuntime(language, client);
+        recordRuntimeEvent('runtime:registered', language, {
+          sessionName: config.name,
+          port: config.port,
+          source: 'registerRuntimeWithEditor',
+        });
+        console.log(`[${language}] Registered on port ${config.port}`);
+        return true;
 
-          // For supports, use our list (faster, no async)
-          if (prop === 'supports') {
-            return (language) => supportedLanguages.includes(language.toLowerCase());
-          }
-
-          // Intercept executeStreaming to add auto-restart
-          if (prop === 'executeStreaming') {
-            return async function(code, language, onChunk, onStdinRequest, options = {}) {
-              try {
-                return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
-              } catch (error) {
-                // Check if it's a connection error
-                if (error.message?.includes('Failed to fetch') || error.message?.includes('ERR_CONNECTION')) {
-                  console.log('[bash] Connection failed, attempting to restart session...');
-
-                  if (isRestarting) {
-                    onChunk?.('Bash session is restarting...', 'Bash session is restarting...', true);
-                    throw new Error('Bash session is restarting, please try again');
-                  }
-
-                  isRestarting = true;
-                  try {
-                    const newConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "bash");
-                    if (newConfig?.alive && newConfig?.port) {
-                      updateClient(newConfig.port);
-                      state.bashPort = newConfig.port;
-                      state.bashSession = newConfig;
-                      console.log('[bash] Session restarted on port', currentPort);
-
-                      isRestarting = false;
-                      return await realClient.executeStreaming(code, language, onChunk, onStdinRequest, options);
-                    } else {
-                      throw new Error('Failed to restart bash session');
-                    }
-                  } catch (restartError) {
-                    isRestarting = false;
-                    console.error('[bash] Restart failed:', restartError);
-                    throw restartError;
-                  }
-                }
-                throw error;
-              }
-            };
-          }
-
-          // For all other properties, delegate to realClient
-          if (typeof value === 'function') {
-            return value.bind(realClient);
-          }
-          return value;
-        }
-      });
-    }
-
-    /**
-     * Register bash runtime with editor for shell code execution.
-     * Bash runtime is per-project, respects session.bash config in mrmd.md.
-     */
-    async function registerBashWithEditor() {
-      console.log('[bash] registerBashWithEditor called');
-
-      if (!state.editor || !state.currentFile) {
-        console.log('[bash] No editor or currentFile, skipping');
-        return;
-      }
-
-      // Check if electronAPI.bash exists (requires app restart after preload changes)
-      if (!electronAPI.runtime) {
-        console.error('[bash] electronAPI.runtime not available - restart the app!');
-        return;
-      }
-
-      try {
-        console.log('[bash] Calling bash.forDocument for:', state.currentFile);
-        // Get or create bash session for this document
-        const bashConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "bash");
-        console.log('[bash] Got config:', bashConfig);
-
-        if (!bashConfig) {
-          console.log('No bash session config for this document');
-          return;
-        }
-
-        // Check for errors
-        if (bashConfig.error) {
-          console.error('Bash session error:', bashConfig.error);
-          return;
-        }
-
-        // Check if session is alive (auto-started or existing)
-        if (bashConfig.alive && bashConfig.port) {
-          state.bashPort = bashConfig.port;
-          state.bashSession = bashConfig;
-
-          // Track in multi-session map
-          if (bashConfig.name) {
-            setSessionEntry(bashConfig.name, {
-              language: 'bash', status: 'connected',
-              info: { pid: bashConfig.pid, port: bashConfig.port, cwd: bashConfig.cwd },
-            });
-          }
-
-          // Use auto-restarting client wrapper
-          const bashClient = createAutoRestartingBashClient(bashConfig.port, bashConfig.name);
-          state.editor.registerRuntime('bash', bashClient);
-          console.log('Registered Bash runtime with editor on port', bashConfig.port, 'cwd:', bashConfig.cwd);
-        } else {
-          console.log('Bash session not started (auto_start may be false)');
-        }
       } catch (e) {
-        console.error('Error registering bash runtime:', e);
+        console.error(`[${language}] Registration error:`, e);
+        return false;
       }
     }
 
-    /**
-     * Register R runtime with editor for R code execution.
-     * R runtime is per-project, respects session.r config in mrmd.md.
-     */
-    async function registerRWithEditor() {
-      console.log('[r] registerRWithEditor called');
-
-      if (!state.editor || !state.currentFile) {
-        console.log('[r] No editor or currentFile, skipping');
-        return;
-      }
-
-      // Check if electronAPI.r exists (requires app restart after preload changes)
-      if (!electronAPI.runtime) {
-        console.log('[r] electronAPI.runtime not available - R runtime not supported');
-        return;
-      }
-
-      try {
-        console.log('[r] Calling r.forDocument for:', state.currentFile);
-        // Get or create R session for this document
-        const rConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "r");
-        console.log('[r] Got config:', rConfig);
-
-        if (!rConfig) {
-          console.log('[r] No R session config for this document');
-          return;
-        }
-
-        // Check for errors
-        if (rConfig.error) {
-          console.error('[r] R session error:', rConfig.error);
-          return;
-        }
-
-        // Check if session is alive (auto-started or existing)
-        if (rConfig.alive && rConfig.port) {
-          state.rPort = rConfig.port;
-          state.rSession = rConfig;
-
-          // Track in multi-session map
-          if (rConfig.name) {
-            setSessionEntry(rConfig.name, {
-              language: 'r', status: 'connected',
-              info: { pid: rConfig.pid, port: rConfig.port, cwd: rConfig.cwd },
-            });
-          }
-
-          // Create MRP client for R
-          const rClient = new mrmd.MRPClient(
-            `http://127.0.0.1:${rConfig.port}/mrp/v1`,
-            { languages: ['r', 'R', 'rlang'] }
-          );
-          state.editor.registerRuntime('r', rClient);
-          console.log('[r] Registered R runtime with editor on port', rConfig.port, 'cwd:', rConfig.cwd);
-        } else {
-          console.log('[r] R session not started (auto_start may be false)');
-        }
-      } catch (e) {
-        console.error('[r] Error registering R runtime:', e);
-      }
-    }
-
-    /**
-     * Register Julia runtime with editor for Julia code execution.
-     * Julia runtime is per-project, respects session.julia config in mrmd.md.
-     */
-    async function registerJuliaWithEditor() {
-      console.log('[julia] registerJuliaWithEditor called');
-
-      if (!state.editor || !state.currentFile) {
-        console.log('[julia] No editor or currentFile, skipping');
-        return;
-      }
-
-      // Check if electronAPI.julia exists
-      if (!electronAPI.runtime) {
-        console.log('[julia] electronAPI.runtime not available - Julia runtime not supported');
-        return;
-      }
-
-      try {
-        console.log('[julia] Calling julia.forDocument for:', state.currentFile);
-        // Get or create Julia session for this document
-        const juliaConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "julia");
-        console.log('[julia] Got config:', juliaConfig);
-
-        if (!juliaConfig) {
-          console.log('[julia] No Julia session config for this document');
-          return;
-        }
-
-        // Check for errors
-        if (juliaConfig.error) {
-          console.error('[julia] Julia session error:', juliaConfig.error);
-          return;
-        }
-
-        // Check if session is alive (auto-started or existing)
-        if (juliaConfig.alive && juliaConfig.port) {
-          state.juliaPort = juliaConfig.port;
-          state.juliaSession = juliaConfig;
-
-          // Track in multi-session map
-          if (juliaConfig.name) {
-            setSessionEntry(juliaConfig.name, {
-              language: 'julia', status: 'connected',
-              info: { pid: juliaConfig.pid, port: juliaConfig.port, cwd: juliaConfig.cwd },
-            });
-          }
-
-          // Create MRP client for Julia
-          const juliaClient = new mrmd.MRPClient(
-            `http://127.0.0.1:${juliaConfig.port}/mrp/v1`,
-            { languages: ['julia', 'jl'] }
-          );
-          state.editor.registerRuntime('julia', juliaClient);
-          console.log('[julia] Registered Julia runtime with editor on port', juliaConfig.port, 'cwd:', juliaConfig.cwd);
-        } else {
-          console.log('[julia] Julia session not started (auto_start may be false)');
-        }
-      } catch (e) {
-        console.error('[julia] Error registering Julia runtime:', e);
-      }
-    }
+    // Backwards-compatible wrappers — these are called from various places.
+    // They now all delegate to the generic registerRuntimeWithEditor().
+    function registerBashWithEditor()  { return registerRuntimeWithEditor('bash'); }
+    function registerRWithEditor()     { return registerRuntimeWithEditor('r'); }
+    function registerJuliaWithEditor() { return registerRuntimeWithEditor('julia'); }
 
     /**
      * Register PTY session with editor for terminal blocks (```term).
-     * Starts mrmd-pty server and sets up terminal launch callback.
+     * PTY is special: it has terminal widget extensions, keymaps, and
+     * global launch handlers that other runtimes don't need.
      */
     async function registerPtyWithEditor() {
       console.log('[pty] registerPtyWithEditor called');
@@ -17311,9 +17769,8 @@ session:
         return;
       }
 
-      // Check if electronAPI.pty exists
       if (!electronAPI.runtime) {
-        console.error('[pty] electronAPI.runtime not available - restart the app!');
+        console.error('[pty] electronAPI.runtime not available');
         return;
       }
 
@@ -17324,17 +17781,12 @@ session:
       }
 
       try {
-        console.log('[pty] Calling pty.forDocument for:', state.currentFile);
-        // Get or create PTY session for this document
         const ptyConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "pty");
-        console.log('[pty] Got config:', ptyConfig);
 
         if (!ptyConfig) {
           console.log('[pty] No PTY session config for this document');
           return;
         }
-
-        // Check for errors
         if (ptyConfig.error) {
           console.error('[pty] PTY session error:', ptyConfig.error);
           return;
@@ -17342,6 +17794,14 @@ session:
 
         // Store PTY config in state
         state.ptySession = ptyConfig;
+        if (ptyConfig?.alive && ptyConfig?.name && ptyConfig?.port) {
+          pinRuntimeAttachment('pty', ptyConfig, 'register-pty');
+          recordRuntimeEvent('runtime:registered', 'pty', {
+            sessionName: ptyConfig.name,
+            port: ptyConfig.port,
+            source: 'registerPtyWithEditor',
+          });
+        }
 
         // Inject terminal overlay styles
         mrmd.terminal.injectTermWidgetStyles();
@@ -18712,29 +19172,22 @@ session:
 
             // Try to start the runtime
             try {
-              updateSessionStatus('connecting', 'Auto-detected');
-              const startResult = await electronAPI.startPython(venvPath);
+              updateSessionStatus('starting', 'Auto-detected');
+              const config = await resolvePythonStartConfig({ venv: venvPath });
+              const startResult = await startPythonRuntimeFromConfig(config, 'auto-detect');
 
-              if (startResult?.success) {
-                console.log('[auto-detect] Python runtime started on port:', startResult.port);
+              console.log('[auto-detect] Python runtime started on port:', startResult.port);
 
-                state.pythonPort = startResult.port;
-                state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
-                state.session.config = {
-                  name: 'auto-detected',
-                  venv: venvPath,
-                  autoStart: true,
-                };
-                state.session.info = {
-                  alive: true,
-                  port: startResult.port,
-                  venv: venvPath,
-                };
+              state.session.config = {
+                name: config.name,
+                language: 'python',
+                cwd: config.cwd || fileDir,
+                venv: venvPath,
+                autoStart: true,
+              };
 
-                updateSessionStatus('connected', 'Auto-detected');
-                registerSessionWithEditor(startResult.port);
-                return;
-              }
+              updateSessionStatus('connected', config.name || 'Auto-detected');
+              return;
             } catch (e) {
               console.warn('[auto-detect] Failed to start runtime:', e.message);
               // Continue checking other paths
@@ -18752,19 +19205,6 @@ session:
     }
 
     /**
-     * Normalize runtime.forDocument() response shape.
-     * New unified API returns { python, bash, r, julia, pty }.
-     * Legacy paths may return just the Python session object.
-     */
-    function getPythonSessionFromRuntimeResponse(runtimeResponse) {
-      if (!runtimeResponse || typeof runtimeResponse !== 'object') return null;
-      if (runtimeResponse.python && typeof runtimeResponse.python === 'object') {
-        return runtimeResponse.python;
-      }
-      return runtimeResponse;
-    }
-
-    /**
      * Resolve and optionally auto-start session for current project
      * If no project exists, auto-detect common venv locations
      */
@@ -18776,9 +19216,8 @@ session:
       }
 
       try {
-        // Get session config from project
-        const runtimeResponse = await electronAPI.runtime.forDocument(state.currentFile);
-        const sessionConfig = getPythonSessionFromRuntimeResponse(runtimeResponse);
+        // Get ONLY Python session config from project (do not auto-start all runtimes)
+        const sessionConfig = await electronAPI.runtime.forDocumentLanguage(state.currentFile, "python");
 
         if (sessionConfig) {
           state.session.config = sessionConfig;
@@ -18793,9 +19232,33 @@ session:
 
           // Check if already connected (either existing or auto-started)
           if (sessionConfig.alive && sessionConfig.port) {
+            // IMPORTANT: Never silently switch away from an active Python runtime.
+            // Background warmup/resolve may discover another valid session, but
+            // auto-switching ports causes apparent state loss between cells.
+            if (state.pythonPort && state.pythonPort !== sessionConfig.port) {
+              console.log(
+                '[python] Preserving active runtime on port', state.pythonPort,
+                '(resolved alternate:', sessionConfig.port, sessionConfig.name, ')'
+              );
+              recordRuntimeEvent('attachment:blocked-switch', 'python', {
+                expectedPort: state.pythonPort,
+                attemptedPort: sessionConfig.port,
+                attemptedSessionName: sessionConfig.name,
+                reason: 'resolve-preserve-active',
+              });
+              updateSessionStatus('connected', state.session?.config?.name || state.session?.name || sessionConfig.name);
+              return;
+            }
+
             state.session.info = sessionConfig;
             state.pythonPort = sessionConfig.port;
             updateSessionStatus('connected', sessionConfig.name);
+            pinRuntimeAttachment('python', sessionConfig, 'resolve-project-session');
+            recordRuntimeEvent('runtime:resolved', 'python', {
+              sessionName: sessionConfig.name,
+              port: sessionConfig.port,
+              source: 'resolveProjectSession',
+            });
             registerSessionWithEditor(sessionConfig.port);
 
             // Track in multi-session map
@@ -18872,7 +19335,6 @@ session:
         : language.charAt(0).toUpperCase() + language.slice(1);
 
       const isPython = ['python', 'py', 'python3'].includes(language.toLowerCase());
-      const isCloudRuntimeUX = Boolean(window.MRMD_SERVER_URL || (window.location?.pathname || '').includes('/u/'));
 
       prompt.innerHTML = `
         <button class="no-runtime-prompt-dismiss" onclick="hideNoRuntimePrompt()">×</button>
@@ -18888,22 +19350,10 @@ session:
             <button class="no-runtime-prompt-btn primary" onclick="startRuntimeAndRetry()">
               Start Python runtime
             </button>
-            ${isCloudRuntimeUX ? `
-              <button class="no-runtime-prompt-btn" onclick="toggleNoRuntimeAdvanced()">
-                More options...
-              </button>
-              <div id="no-runtime-advanced" style="display:none; width: 100%; margin-top: 8px;">
-                <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
-                  Restart runtimes
-                </button>
-                <button class="no-runtime-prompt-btn" onclick="createVenvAndRetry()">
-                  Create .venv
-                </button>
-                <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
-                  Choose existing...
-                </button>
-              </div>
-            ` : `
+            <button class="no-runtime-prompt-btn" onclick="toggleNoRuntimeAdvanced()">
+              More options...
+            </button>
+            <div id="no-runtime-advanced" style="display:none; width: 100%; margin-top: 8px;">
               <button class="no-runtime-prompt-btn" onclick="restartRuntimesAndRetry()">
                 Restart runtimes
               </button>
@@ -18913,7 +19363,7 @@ session:
               <button class="no-runtime-prompt-btn" onclick="chooseVenvAndRetry()">
                 Choose existing...
               </button>
-            `}
+            </div>
             <button class="no-runtime-prompt-btn" onclick="hideNoRuntimePrompt()">
               Dismiss
             </button>
@@ -19023,22 +19473,10 @@ session:
           `;
         }
 
-        // Start runtime
-        const startResult = await electronAPI.startPython(venvPath);
-
-        if (!startResult?.success) {
-          throw new Error(startResult?.error || 'Failed to start Python');
-        }
-
-        // Register with editor
-        if (state.editor && state.currentFile) {
-          const docName = stripDocExtension(state.currentFile.split('/').pop());
-          const pythonClient = createAutoRestartingPythonClient(startResult.port, docName);
-          state.editor.registerRuntime('python', pythonClient);
-          state.pythonPort = startResult.port;
-          state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
-          console.log('[noRuntime] Python runtime registered');
-        }
+        // Start runtime (unified runtime API)
+        const config = await resolvePythonStartConfig({ venv: venvPath });
+        const startResult = await startPythonRuntimeFromConfig(config, 'no-runtime-create-venv');
+        console.log('[noRuntime] Python runtime registered:', startResult.name || config.name);
 
         // Refresh runtimes panel and update hints
         if (typeof refreshRuntimes === 'function') refreshRuntimes();
@@ -19091,6 +19529,7 @@ session:
       if (['bash', 'sh', 'shell'].includes(raw)) return 'bash';
       if (['r', 'rlang'].includes(raw)) return 'r';
       if (['julia', 'jl'].includes(raw)) return 'julia';
+      if (['pty', 'term', 'terminal'].includes(raw)) return 'pty';
       if (['javascript', 'js', 'node', 'typescript', 'ts'].includes(raw)) return 'node';
       return raw;
     }
@@ -19115,19 +19554,25 @@ session:
       }
 
       try {
-        if (normalized === 'python') {
-          await resolveProjectSession();
-          if (!(state.session?.info?.alive && state.session?.info?.port) && !state.pythonPort) {
+        if (normalized === 'node') {
+          // JS runtime is client-side; just retry.
+        } else if (['python', 'bash', 'r', 'julia', 'pty'].includes(normalized)) {
+          await startRuntimeForLanguage(normalized);
+
+          const attachedIds = {
+            python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+            bash: state.bashSession?.name,
+            r: state.rSession?.name,
+            julia: state.juliaSession?.name,
+            pty: state.ptySession?.name,
+          };
+          const { runtime } = getPreferredRuntimeForLanguage(normalized, state.runningRuntimes || [], attachedIds);
+          if (!runtime && normalized !== 'python') {
+            throw new Error(`${normalized} runtime is still unavailable`);
+          }
+          if (normalized === 'python' && !state.pythonPort && !runtime) {
             throw new Error('Python runtime is still unavailable. Try Create .venv or Choose existing.');
           }
-        } else if (normalized === 'bash') {
-          await registerBashWithEditor();
-        } else if (normalized === 'r') {
-          await registerRWithEditor();
-        } else if (normalized === 'julia') {
-          await registerJuliaWithEditor();
-        } else if (normalized === 'node') {
-          // JS runtime is client-side; just retry.
         } else {
           throw new Error(`Unsupported runtime: ${language}`);
         }
@@ -19173,18 +19618,14 @@ session:
       }
 
       try {
-        const names = [...state.sessions.keys()];
-        for (const name of names) {
-          await restartLanguageSession(name);
-        }
+        // Restart runtimes used in this document only.
+        const langs = [...getDocumentLanguagesFromEditor()]
+          .map(normalizeDocLanguageToRuntime)
+          .filter(Boolean);
 
-        // Re-register language runtimes for current document
-        await Promise.allSettled([
-          resolveProjectSession(),
-          registerBashWithEditor(),
-          registerRWithEditor(),
-          registerJuliaWithEditor(),
-        ]);
+        for (const lang of new Set(langs)) {
+          await restartRuntimeForLanguage(lang);
+        }
 
         hideNoRuntimePrompt();
         await new Promise(r => setTimeout(r, 180));
@@ -19221,31 +19662,29 @@ session:
         console.log('[noRuntime] Event received for', language);
         const normalized = normalizeRuntimeLanguage(language);
 
-        // Fast-path UX: auto-recover stopped runtimes once before showing a prompt.
-        // This makes stopped Python/Bash/R/Julia runtimes feel self-healing.
-        if (!autoRecovering && ['python', 'bash', 'r', 'julia'].includes(normalized)) {
+        // Fast-path: auto-recover stopped runtimes before showing any prompt.
+        // Uses the unified runtime lifecycle for all supported languages.
+        const autoRecoverLangs = ['python', 'bash', 'r', 'julia', 'pty'];
+        if (!autoRecovering && autoRecoverLangs.includes(normalized)) {
           autoRecovering = true;
           try {
-            if (normalized === 'python') await resolveProjectSession();
-            if (normalized === 'bash') await registerBashWithEditor();
-            if (normalized === 'r') await registerRWithEditor();
-            if (normalized === 'julia') await registerJuliaWithEditor();
+            await startRuntimeForLanguage(normalized);
+            const attachedIds = {
+              python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+              bash: state.bashSession?.name,
+              r: state.rSession?.name,
+              julia: state.juliaSession?.name,
+              pty: state.ptySession?.name,
+            };
+            const { runtime } = getPreferredRuntimeForLanguage(normalized, state.runningRuntimes || [], attachedIds);
+            const recovered = normalized === 'python' ? !!state.pythonPort || !!runtime : !!runtime;
 
-            // Only retry if the runtime was actually registered successfully.
-            // Otherwise fall through to show the prompt (avoids infinite retry loop
-            // when there's no project or the runtime can't start).
-            const runtimeRegistered =
-              (normalized === 'python' && state.pythonPort) ||
-              (normalized === 'bash' && state.bashSession?.alive) ||
-              (normalized === 'r' && state.rSession?.alive) ||
-              (normalized === 'julia' && state.juliaSession?.alive);
-            if (runtimeRegistered && typeof retryCallback === 'function') {
+            if (recovered && typeof retryCallback === 'function') {
               await retryCallback();
               autoRecovering = false;
               return;
-            } else {
-              console.log('[noRuntime] Auto-recover did not register runtime for', normalized, '- showing prompt');
             }
+            console.log('[noRuntime] Auto-recover did not register runtime for', normalized, '- showing prompt');
           } catch (e) {
             console.warn('[noRuntime] Auto-recover failed:', e?.message || e);
           }
@@ -19287,8 +19726,13 @@ session:
       // Check for missing session config in document
       const hasSessionConfig = checkDocumentHasSessionConfig();
 
-      // Check for missing venv
-      const hasVenv = state.project?.config?.venv || state.session?.config?.venv;
+      // Check for missing venv — check explicit config, resolved session config,
+      // and the python runtime state (which applies the default .venv)
+      const hasVenv = state.project?.config?.venv
+        || state.project?.config?.session?.python?.venv
+        || state.session?.config?.venv
+        || state.pythonVenv
+        || state.pythonPort;  // if python runtime is running, venv was found
       if (!hasVenv && hasSessionConfig && !dismissedHints.has('no-venv')) {
         hints.push('no-venv');
       }
@@ -19463,12 +19907,10 @@ assets:
             const hoverText = document.getElementById('session-hover-text');
             if (hoverText) hoverText.textContent = 'Starting...';
 
-            const startResult = await electronAPI.startPython(venvPath);
-            if (startResult?.success) {
-              state.pythonPort = startResult.port;
-              state.pythonVenv = { path: venvPath, runtimeId: startResult.runtimeId };
-              updateSessionStatus('connected', 'Started');
-              registerSessionWithEditor(startResult.port);
+            const config = await resolvePythonStartConfig({ venv: venvPath });
+            const startResult = await startPythonRuntimeFromConfig(config, 'hover-start');
+            if (startResult?.port) {
+              updateSessionStatus('connected', startResult.name || config.name || 'Started');
               updateSetupHints();
             }
           } catch (e) {

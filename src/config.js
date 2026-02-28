@@ -238,7 +238,7 @@ export const APP_VERSION = '0.3.1';
  */
 export const PYTHON_DEPS = {
   // Core runtime - required
-  'mrmd-python': '>=0.3.7,<0.4',
+  'mrmd-python': '>=0.3.7,<0.5',
 
   // AI features - required for full experience
   'mrmd-ai': '>=0.1.0,<0.2',

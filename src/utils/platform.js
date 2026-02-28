@@ -222,14 +222,39 @@ export function getJuliaPaths() {
       'julia',  // PATH lookup
     ].filter(Boolean);
   }
-  // Unix paths (unchanged)
+  // Unix paths — scan common install locations including versioned dirs in $HOME
+  const home = os.homedir();
+  const versionedPaths = [];
+  try {
+    // Scan ~/julia-* directories for the latest version (semantic sort)
+    const parseVersion = (name) => {
+      const m = /^julia-(\d+)\.(\d+)\.(\d+)/.exec(name);
+      if (!m) return [0, 0, 0];
+      return [Number(m[1]), Number(m[2]), Number(m[3])];
+    };
+    const entries = fs.readdirSync(home)
+      .filter(e => e.startsWith('julia-'))
+      .sort((a, b) => {
+        const av = parseVersion(a);
+        const bv = parseVersion(b);
+        for (let i = 0; i < 3; i++) {
+          if (av[i] !== bv[i]) return bv[i] - av[i];
+        }
+        return b.localeCompare(a);
+      });
+
+    for (const entry of entries) {
+      versionedPaths.push(path.join(home, entry, 'bin', 'julia'));
+    }
+  } catch {}
   return [
     process.env.JULIA_EXECUTABLE,
+    ...versionedPaths,
     '/usr/bin/julia',
     '/usr/local/bin/julia',
     '/opt/julia/bin/julia',
-    path.join(os.homedir(), '.julia', 'juliaup', 'julia'),
-    path.join(os.homedir(), 'julia', 'bin', 'julia'),
+    path.join(home, '.julia', 'juliaup', 'julia'),
+    path.join(home, 'julia', 'bin', 'julia'),
     'julia',  // PATH lookup
   ].filter(Boolean);
 }
@@ -251,10 +276,12 @@ export async function killProcessTree(pid, signal = 'SIGTERM') {
       proc.on('error', () => resolve()); // Don't fail if process already dead
     });
   } else {
-    // Unix: try process group first, fall back to single process
+    // Unix: Runtimes are spawned with detached:true so each has its own
+    // process group (PGID == PID). Kill the entire group with -pid.
     try {
       process.kill(-pid, signal);
     } catch {
+      // Group kill failed (e.g., not a group leader), try single process
       try {
         process.kill(pid, signal);
       } catch {

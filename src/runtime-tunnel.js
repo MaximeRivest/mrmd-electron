@@ -16,6 +16,8 @@
  *   → {t:"start-runtime", id, language, documentPath, projectRoot, projectConfig, frontmatter}
  *   ← {t:"runtime-started", id, runtimes: {python:{port,...}, bash:{port,...}, ...}}
  *   ← {t:"runtime-error", id, error}
+ *   ← {t:"runtime-update", requestId, language, runtimes: {julia:{port,...}}}
+ *   ← {t:"runtime-update-error", requestId, language, error}
  *   ← {t:"provider-info", capabilities:[...]}
  *
  * ── HTTP proxy (for /proxy/:port/*) ──
@@ -138,7 +140,10 @@ export class RuntimeTunnel {
 
   _handleMessage(msg) {
     switch (msg.t) {
+      case 'list-runtimes':   return this._handleListRuntimes(msg);
       case 'start-runtime':   return this._handleStartRuntime(msg);
+      case 'stop-runtime':    return this._handleStopRuntime(msg);
+      case 'restart-runtime': return this._handleRestartRuntime(msg);
       case 'http-req':        return this._handleHttpReq(msg);
       case 'ws-open':         return this._handleWsOpen(msg);
       case 'ws-msg':          return this._handleWsMsg(msg);
@@ -181,22 +186,98 @@ export class RuntimeTunnel {
 
   // ── Runtime discovery ─────────────────────────────────────────────────
 
+  _handleListRuntimes(msg) {
+    const { id, language } = msg;
+    try {
+      const runtimes = this.runtimeService.list(language);
+      this._send({ t: 'runtimes-list', id, runtimes });
+    } catch (err) {
+      this._send({ t: 'runtime-error', id, error: err.message });
+    }
+  }
+
+  async _handleStopRuntime(msg) {
+    const { id, name } = msg;
+    try {
+      const success = await this.runtimeService.stop(name);
+      this._send({ t: 'runtime-stopped', id, success });
+    } catch (err) {
+      this._send({ t: 'runtime-error', id, error: err.message });
+    }
+  }
+
+  async _handleRestartRuntime(msg) {
+    const { id, name } = msg;
+    try {
+      const result = await this.runtimeService.restart(name);
+      this._send({ t: 'runtime-started', id, runtimes: { [result.language]: result } });
+    } catch (err) {
+      this._send({ t: 'runtime-error', id, error: err.message });
+    }
+  }
+
   async _handleStartRuntime(msg) {
-    const { id, language, documentPath, projectRoot, projectConfig, frontmatter } = msg;
+    const { id, language, name, cwd, venv, documentPath, projectRoot, projectConfig, frontmatter } = msg;
     try {
       let result;
-      if (language) {
-        // Single language
-        result = await this.runtimeService.getForDocumentLanguage(
-          language, documentPath, projectConfig, frontmatter, projectRoot
-        );
+      if (documentPath) {
+        if (language) {
+          // Single language for document
+          result = await this.runtimeService.getForDocumentLanguage(
+            language, documentPath, projectConfig, frontmatter, projectRoot
+          );
+          this._send({ t: 'runtime-started', id, runtimes: { [language]: result } });
+        } else {
+          // All runtimes for document
+          // IMPORTANT: Do NOT block tunnel startup on slow/unstable runtimes (notably Julia).
+          // Start the common runtimes first so browser/phone execution is responsive.
+          const preferred = ['python', 'bash', 'r', 'pty'];
+          const runtimes = {};
+
+          for (const lang of preferred) {
+            try {
+              runtimes[lang] = await this.runtimeService.getForDocumentLanguage(
+                lang, documentPath, projectConfig, frontmatter, projectRoot
+              );
+            } catch (e) {
+              runtimes[lang] = { language: lang, alive: false, available: false, error: e.message };
+            }
+          }
+
+          // Julia is optional in tunnel bootstrap; only start it in the background.
+          // This prevents a 60s timeout or crash from blocking all runtimes.
+          // IMPORTANT: send background status with a dedicated message type.
+          // Mutating the RPC id (e.g. `${id}:julia`) breaks client-side pending maps.
+          setTimeout(async () => {
+            try {
+              const julia = await this.runtimeService.getForDocumentLanguage(
+                'julia', documentPath, projectConfig, frontmatter, projectRoot
+              );
+              this._send({
+                t: 'runtime-update',
+                requestId: id,
+                language: 'julia',
+                runtimes: { julia },
+                projectRoot: projectRoot || null,
+              });
+            } catch (e) {
+              this._send({
+                t: 'runtime-update-error',
+                requestId: id,
+                language: 'julia',
+                error: e.message,
+              });
+            }
+          }, 0);
+
+          this._send({ t: 'runtime-started', id, runtimes });
+        }
+      } else if (name && language) {
+        // Manual start by config
+        result = await this.runtimeService.start({ name, language, cwd, venv });
         this._send({ t: 'runtime-started', id, runtimes: { [language]: result } });
       } else {
-        // All languages
-        result = await this.runtimeService.getForDocument(
-          documentPath, projectConfig, frontmatter, projectRoot
-        );
-        this._send({ t: 'runtime-started', id, runtimes: result });
+        throw new Error('documentPath or (name and language) required');
       }
     } catch (err) {
       this._send({ t: 'runtime-error', id, error: err.message });

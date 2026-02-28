@@ -49,17 +49,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Venv creation (still useful for setup flows)
   createVenv: (venvPath) => ipcRenderer.invoke('create-venv', { venvPath }),
 
-  // Legacy Python setup flow (used by venv picker UI — will be migrated)
+  // Python setup helpers (venv bootstrap flows)
   installMrmdPython: (venvPath) => ipcRenderer.invoke('install-mrmd-python', { venvPath }),
-  startPython: (venvPath, forceNew = false) => ipcRenderer.invoke('start-python', { venvPath, forceNew }),
-  attachRuntime: (runtimeId) => ipcRenderer.invoke('attach-runtime', { runtimeId }),
 
-  // Legacy file open (used by file picker UI — will be migrated)
+  // Legacy file open (still used by file picker UI)
   openFile: (filePath) => ipcRenderer.invoke('open-file', { filePath }),
-
-  // Legacy runtime list (used by runtimes panel)
-  listRuntimes: () => ipcRenderer.invoke('list-runtimes'),
-  killRuntime: (runtimeId) => ipcRenderer.invoke('kill-runtime', { runtimeId }),
 
   // AI server
   getAi: () => ipcRenderer.invoke('get-ai'),
