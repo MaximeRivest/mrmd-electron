@@ -1998,16 +1998,37 @@ function getFileFromArgv(argv) {
 }
 
 // ============================================================================
-// macOS: Handle open-file event
+// Single-instance behavior + macOS open-file handling
 // ============================================================================
-// This event can fire BEFORE app.whenReady(), so we set it up early
-// and queue files if the app isn't ready yet.
+// Keep exactly one app process. A second launch should focus the existing
+// window (and forward file-open requests), not create a second process/window.
 //
-// NOTE: We intentionally do NOT use requestSingleInstanceLock() because
-// MRMD is a single-document app (no tabs). Each file opens in its own
-// window/instance, like opening multiple PDFs in separate viewers.
+// This also fixes duplicate windows when MRMD keeps a background process alive
+// (e.g. machine-hub/cloud mode) and the user launches from the app picker.
 // ============================================================================
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
+app.on('second-instance', (_event, argv) => {
+  const filePath = getFileFromArgv(argv);
+  if (filePath) {
+    sendFileToOpen(filePath);
+  }
+
+  const win = BrowserWindow.getAllWindows()[0];
+  if (win && !win.isDestroyed()) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  } else if (app.isReady()) {
+    createWindow();
+  }
+});
+
+// This event can fire BEFORE app.whenReady(), so we set it up early
+// and queue files if the app isn't ready yet.
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
   console.log(`[open-file] macOS open-file event: ${filePath}`);
