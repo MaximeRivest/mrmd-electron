@@ -47,13 +47,27 @@ import { SESSIONS_DIR, PYTHON_DEPS } from '../config.js';
  */
 
 /**
- * Get sibling package path (development mode)
+ * Resolve runtime package path.
+ *
+ * Resolution order:
+ *  1) Dev sibling checkout (../mrmd-packages/<name>)
+ *  2) Packaged extraResources (<resources>/<name>)
  */
 function getSiblingPath(packageName, markerFile) {
+  // 1) Development mode: sibling package checkout
   const siblingPath = path.resolve(getDirname(import.meta.url), '../../../' + packageName);
   if (fs.existsSync(path.join(siblingPath, markerFile))) {
     return siblingPath;
   }
+
+  // 2) Packaged app: files copied via electron-builder extraResources
+  if (process.resourcesPath) {
+    const resourcePath = path.join(process.resourcesPath, packageName);
+    if (fs.existsSync(path.join(resourcePath, markerFile))) {
+      return resourcePath;
+    }
+  }
+
   return null;
 }
 

@@ -92,6 +92,18 @@ module.exports = {
     {
       from: "bundles/mrmd-monitor.bundle.cjs",
       to: "mrmd-monitor.bundle.cjs"
+    },
+    // Runtime source packages for interpreted runtimes
+    // (RuntimeService resolves these from process.resourcesPath in packaged mode)
+    {
+      from: "../mrmd-r",
+      to: "mrmd-r",
+      filter: ["**/*", "!.git/**"]
+    },
+    {
+      from: "../mrmd-julia",
+      to: "mrmd-julia",
+      filter: ["**/*", "!.git/**", "!.mrmd-assets/**"]
     }
   ],
 
