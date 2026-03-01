@@ -14,6 +14,7 @@ import { createRequire } from 'module';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { WebSocket } from 'ws';
@@ -977,6 +978,39 @@ ipcMain.handle('shell:openPath', async (event, { fullPath }) => {
   return await shell.openPath(fullPath);
 });
 
+// Open a folder as a project in a new window
+ipcMain.handle('window:openProject', async (event, { projectPath }) => {
+  const win = createWindow();
+  // Find an index.md or first .md file in the project to open
+  const indexPath = path.join(projectPath, 'index.md');
+  const mrmdPath = path.join(projectPath, 'mrmd.md');
+  let fileToOpen = null;
+
+  if (fs.existsSync(indexPath)) {
+    fileToOpen = indexPath;
+  } else if (fs.existsSync(mrmdPath)) {
+    fileToOpen = mrmdPath;
+  } else {
+    // Find first .md file
+    try {
+      const entries = fs.readdirSync(projectPath, { withFileTypes: true });
+      const firstMd = entries
+        .filter(e => !e.isDirectory() && e.name.endsWith('.md'))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))[0];
+      if (firstMd) fileToOpen = path.join(projectPath, firstMd.name);
+    } catch (e) { /* ignore */ }
+  }
+
+  // Send the file to the new window once it's loaded
+  if (fileToOpen) {
+    win.webContents.once('did-finish-load', () => {
+      win.webContents.send('open-with-file', { filePath: fileToOpen });
+    });
+  }
+
+  return { success: true };
+});
+
 // Get recent files and venvs
 ipcMain.handle('get-recent', () => {
   return loadRecent();
@@ -1324,6 +1358,59 @@ ipcMain.handle('project:nav', async (event, { projectRoot }) => {
   } catch (e) {
     console.error('[project:nav] Error:', e.message);
     return [];
+  }
+});
+
+// Raw file tree for the file browser view
+ipcMain.handle('project:rawTree', async (event, { root, showSystem, maxDepth }) => {
+  try {
+    return await projectService.getRawTree(root, {
+      showSystem: !!showSystem,
+      ...(Number.isInteger(maxDepth) && maxDepth >= 0 ? { maxDepth } : {}),
+    });
+  } catch (e) {
+    console.error('[project:rawTree] Error:', e.message);
+    return [];
+  }
+});
+
+// Browse a single directory (for navigating above project root)
+ipcMain.handle('file:browse', async (event, { dirPath, showHidden }) => {
+  try {
+    const results = await projectService.browseDirectory(dirPath, { showHidden: !!showHidden });
+    return { success: true, entries: results, path: dirPath, parent: path.dirname(dirPath) };
+  } catch (e) {
+    console.error('[file:browse] Error:', e.message);
+    return { success: false, error: e.message, entries: [] };
+  }
+});
+
+// Write raw bytes to a file (for drag-drop uploads)
+ipcMain.handle('file:writeBytes', async (event, { filePath, bytes }) => {
+  try {
+    await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
+    await fsPromises.writeFile(filePath, Buffer.from(bytes));
+    return { success: true, path: filePath };
+  } catch (e) {
+    console.error('[file:writeBytes] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// Copy a file or directory
+ipcMain.handle('file:copy', async (event, { fromPath, toPath }) => {
+  try {
+    const stat = await fsPromises.stat(fromPath);
+    if (stat.isDirectory()) {
+      await fsPromises.cp(fromPath, toPath, { recursive: true });
+    } else {
+      await fsPromises.mkdir(path.dirname(toPath), { recursive: true });
+      await fsPromises.copyFile(fromPath, toPath);
+    }
+    return { success: true, path: toPath };
+  } catch (e) {
+    console.error('[file:copy] Error:', e.message);
+    return { success: false, error: e.message };
   }
 });
 

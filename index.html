@@ -436,10 +436,157 @@
       color: var(--text);
     }
 
+    .nav-action.active {
+      color: var(--accent);
+    }
+
+    /* Nav mode toggle — sliding switch */
+    .nav-mode-toggle {
+      width: 40px;
+      height: 20px;
+      padding: 2px;
+      border-radius: 6px;
+      background: var(--bg-tertiary, rgba(255,255,255,0.06));
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Sliding thumb */
+    .nav-mode-toggle .toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 16px;
+      border-radius: 4px;
+      background: var(--hover-bg, rgba(255,255,255,0.12));
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 0;
+    }
+
+    .nav-mode-toggle.files .toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    .nav-mode-toggle .toggle-seg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 16px;
+      position: relative;
+      z-index: 1;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+      pointer-events: none;
+    }
+
+    .nav-mode-toggle .toggle-seg.active {
+      color: var(--text);
+    }
+
+    .nav-mode-toggle .toggle-seg svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .nav-mode-toggle:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* Breadcrumb path bar */
+    .nav-breadcrumb {
+      display: none;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      white-space: nowrap;
+      gap: 2px;
+      align-items: center;
+      scrollbar-width: none;
+    }
+
+    .nav-breadcrumb::-webkit-scrollbar { display: none; }
+
+    .nav-breadcrumb.visible { display: flex; }
+
+    .nav-breadcrumb-segment {
+      cursor: pointer;
+      padding: 1px 3px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .nav-breadcrumb-segment:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+    }
+
+    .nav-breadcrumb-sep {
+      opacity: 0.4;
+      flex-shrink: 0;
+    }
+
+    /* Drop zone overlay for external file drops */
+    .nav-drop-zone {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      border: 2px dashed var(--accent);
+      border-radius: 6px;
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    .nav-drop-zone.visible {
+      display: flex;
+    }
+
+    /* Raw view: hidden items dimmed */
+    .nav-item.hidden-item {
+      opacity: 0.55;
+    }
+
+    .nav-item.hidden-item:hover {
+      opacity: 0.85;
+    }
+
+    /* Raw view: file type icons */
+    .nav-item-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.55;
+      margin-right: 2px;
+    }
+
+    .nav-item-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .nav-item:hover .nav-item-icon {
+      opacity: 0.8;
+    }
+
     .nav-tree {
       flex: 1;
       overflow-y: auto;
       padding: 12px 0;
+      position: relative;
     }
 
     /* Documentation-style navigation */
@@ -897,6 +1044,11 @@
        SIDE RAIL SYSTEM
        A floating toggle button that expands into a side rail with tool panels
        ========================================================================= */
+
+    /* Terminal "Rail" button — hidden by default, only shown on mobile */
+    .terminal-show-rail-btn {
+      display: none;
+    }
 
     /* Side rail - the vertical bar with icons */
     .side-rail {
@@ -2350,6 +2502,84 @@
       filter: brightness(1.1);
     }
 
+    /* Scope badge in runtime section header */
+    .runtime-scope-badge {
+      font-size: 9px;
+      font-weight: 500;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+    }
+
+    .runtime-scope-badge--notebook {
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent);
+    }
+
+    .runtime-scope-badge--project {
+      background: rgba(63, 185, 80, 0.12);
+      color: var(--success);
+    }
+
+    .runtime-scope-badge--global {
+      background: rgba(210, 153, 34, 0.12);
+      color: var(--warning);
+    }
+
+    /* "Other notebook" badge for runtimes running from another notebook */
+    .runtime-from-other-badge {
+      font-size: 9px;
+      font-weight: 400;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: rgba(139, 148, 158, 0.12);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* Attach-to-existing runtime picker */
+    .runtime-attach-picker {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .runtime-attach-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      margin: 2px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-muted);
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .runtime-attach-option:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .runtime-attach-option--active {
+      color: var(--text);
+    }
+
+    .runtime-attach-option-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .runtime-attach-option-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* =========================================================================
        HOME VIEW
        ========================================================================= */
@@ -2469,11 +2699,18 @@
     }
 
     .home-item-icon {
-      font-size: 14px;
       width: 20px;
-      text-align: center;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
       color: var(--text-dim);
+    }
+
+    .home-item-icon svg {
+      width: 16px;
+      height: 16px;
     }
 
     .home-item-info {
@@ -2830,10 +3067,6 @@
       opacity: 0.5;
     }
 
-    /* Setup hints banner */
-    .setup-hint:last-child {
-      margin-bottom: 0;
-    }
     /* Inline "no runtime" prompt - appears below code cells */
     .no-runtime-prompt {
       position: fixed;
@@ -6242,11 +6475,18 @@
       <div id="nav-sidebar" class="nav-sidebar">
         <button class="sidebar-toggle nav-toggle" id="nav-toggle" title="Collapse">‹</button>
         <div class="nav-header">
-          <span class="nav-title" id="nav-title" title="Click to open project config">No Project</span>
+          <span class="nav-title" id="nav-title" title="Click to open project root">No Project</span>
+          <div class="nav-mode-toggle" id="nav-mode-btn" title="Toggle Docs/Files view">
+            <div class="toggle-thumb"></div>
+            <span class="toggle-seg" data-mode="docs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4h10M3 8h7M3 12h9"/></svg></span>
+            <span class="toggle-seg" data-mode="files"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5a1 1 0 011-1h3.5l1.5 1.5H13a1 1 0 011 1V12a1 1 0 01-1 1H3a1 1 0 01-1-1z"/></svg></span>
+          </div>
           <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
         </div>
+        <div class="nav-breadcrumb" id="nav-breadcrumb"></div>
         <div class="nav-tree" id="nav-tree">
           <!-- Nav tree renders here -->
+          <div class="nav-drop-zone" id="nav-drop-zone">Drop files here</div>
         </div>
       </div>
       <!-- Floating toggle when nav is collapsed -->
@@ -6254,24 +6494,25 @@
 
       <!-- Nav Context Menu -->
       <div class="nav-context-menu" id="nav-context-menu">
+        <div class="nav-context-item" data-action="open-project">Open as Project</div>
+        <div class="nav-context-separator" data-for="open-project"></div>
         <div class="nav-context-item" data-action="new-file">New File</div>
         <div class="nav-context-item" data-action="new-folder">New Folder</div>
         <div class="nav-context-separator"></div>
         <div class="nav-context-item" data-action="rename">Rename</div>
+        <div class="nav-context-item" data-action="copy-item">Duplicate</div>
+        <div class="nav-context-separator"></div>
+        <div class="nav-context-item" data-action="copy-path">Copy Path</div>
+        <div class="nav-context-item" data-action="copy-relative-path">Copy Relative Path</div>
         <div class="nav-context-item" data-action="reveal">Reveal in File Manager</div>
+        <div class="nav-context-separator"></div>
+        <div class="nav-context-item" data-action="open-as-text">Open as Text</div>
+        <div class="nav-context-item" data-action="open-as-markdown">Open as Markdown</div>
         <div class="nav-context-separator"></div>
         <div class="nav-context-item danger" data-action="delete">Delete</div>
       </div>
 
       <div id="editor-container">
-        <!-- Contextual Python status trigger (replaces old "Add notebook config" button) -->
-        <div class="setup-hint" id="hint-no-venv">
-            <span class="hint-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12M12 2v12M4 8h8"/></svg></span>
-            <span class="hint-text">No virtual environment found</span>
-            <button class="hint-action" onclick="showVenvPicker()">Select venv</button>
-            <button class="hint-dismiss" onclick="dismissHint('no-venv')">×</button>
-          </div>
-        </div>
         <div id="editor"></div>
       </div>
 
@@ -9398,13 +9639,6 @@ session:
       document.getElementById('venv-picker-overlay').classList.remove('visible');
     }
 
-    function dismissHint(id) {
-      const key = String(id || '').trim();
-      if (!key) return;
-      const el = document.getElementById(`hint-${key}`);
-      if (el) el.style.display = 'none';
-    }
-
     function filterVenvs(query) {
       state.venvQuery = query;
       const q = query.toLowerCase();
@@ -9873,6 +10107,10 @@ session:
       dragging: null,        // Path being dragged
       renaming: null,        // Path being renamed
       contextTarget: null,   // Path for context menu
+      mode: localStorage.getItem('mrmd-nav-mode') || 'docs',  // 'docs' | 'files'
+      rawTree: null,         // Cached raw tree for files mode
+      rawTreeDirty: false,   // Marks files cache stale without forcing immediate reload in docs mode
+      browseRoot: null,      // Current root for file browser (can navigate above project)
     };
 
     const titleSyncState = {
@@ -10189,6 +10427,16 @@ session:
           if (childContainer) toRemove.push(childContainer);
         }
       }
+
+      // Also remove orphan elements without a dataset.path (e.g. ".." from files mode)
+      for (let i = 0; i < container.children.length; i++) {
+        const child = container.children[i];
+        if (child.id === 'nav-drop-zone') continue; // keep drop zone
+        if (child.classList.contains('nav-item') && !child.dataset?.path) {
+          toRemove.push(child);
+        }
+      }
+
       for (const el of toRemove) el.remove();
     }
 
@@ -10553,6 +10801,49 @@ session:
       navState.contextTarget = { path, isFolder };
 
       const menu = document.getElementById('nav-context-menu');
+      const isEmptySpace = !path; // Right-clicked on empty area (root level)
+
+      // Show/hide items based on context
+      const ext = (path.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+      const isMd = ext === 'md' || ext === 'qmd';
+
+      // "Open as Project" — only for folders (not empty space, not files)
+      const showOpenProject = isFolder && !isEmptySpace;
+      menu.querySelector('[data-action="open-project"]').style.display = showOpenProject ? '' : 'none';
+      menu.querySelector('.nav-context-separator[data-for="open-project"]').style.display = showOpenProject ? '' : 'none';
+
+      if (isEmptySpace) {
+        // Empty space: only show New File / New Folder
+        menu.querySelector('[data-action="open-as-text"]').style.display = 'none';
+        menu.querySelector('[data-action="open-as-markdown"]').style.display = 'none';
+        menu.querySelector('[data-action="copy-path"]').style.display = 'none';
+        menu.querySelector('[data-action="copy-relative-path"]').style.display = 'none';
+        menu.querySelector('[data-action="copy-item"]').style.display = 'none';
+        menu.querySelector('[data-action="rename"]').style.display = 'none';
+        menu.querySelector('[data-action="reveal"]').style.display = 'none';
+        menu.querySelector('[data-action="delete"]').style.display = 'none';
+      } else {
+        // Item context: show relevant actions
+        menu.querySelector('[data-action="open-as-text"]').style.display = (!isFolder) ? '' : 'none';
+        menu.querySelector('[data-action="open-as-markdown"]').style.display = (!isFolder && !isMd) ? '' : 'none';
+        menu.querySelector('[data-action="copy-path"]').style.display = '';
+        menu.querySelector('[data-action="copy-relative-path"]').style.display = '';
+        menu.querySelector('[data-action="copy-item"]').style.display = '';
+        menu.querySelector('[data-action="rename"]').style.display = '';
+        menu.querySelector('[data-action="reveal"]').style.display = '';
+        menu.querySelector('[data-action="delete"]').style.display = '';
+      }
+
+      // Reset all separators, then hide for empty space
+      menu.querySelectorAll('.nav-context-separator:not([data-for])').forEach(sep => {
+        sep.style.display = '';
+      });
+      if (isEmptySpace) {
+        menu.querySelectorAll('.nav-context-separator:not([data-for])').forEach(sep => {
+          sep.style.display = 'none';
+        });
+      }
+
       menu.style.left = x + 'px';
       menu.style.top = y + 'px';
       menu.classList.add('visible');
@@ -10582,9 +10873,17 @@ session:
       const target = navState.contextTarget;
       hideNavContextMenu();
 
-      if (!target || !state.project?.root) return;
+      if (!target) return;
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) return;
+      const fullPath = joinFsPath(root, target.path);
 
       switch (action) {
+        case 'open-project':
+          if (target.isFolder && electronAPI?.window?.openProject) {
+            await electronAPI.window.openProject(fullPath);
+          }
+          break;
         case 'new-file':
           await createNavFile(target.isFolder ? target.path : getParentPath(target.path));
           break;
@@ -10593,10 +10892,50 @@ session:
           break;
         case 'rename':
           startRename(target.path);
+          if (navState.mode === 'files') renderRawTreeToDOM();
+          break;
+        case 'copy-item': {
+          // Duplicate: copy to same dir with " copy" suffix
+          const name = target.path.split('/').pop();
+          const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
+          const baseName = ext ? name.slice(0, -ext.length) : name;
+          const parentDir = getParentPath(target.path);
+          const newName = baseName + ' copy' + ext;
+          const newRelPath = parentDir ? parentDir + '/' + newName : newName;
+          try {
+            if (electronAPI?.file?.copy) {
+              await electronAPI.file.copy(fullPath, joinFsPath(root, newRelPath));
+            } else {
+              await fetch('/api/file/copy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fromPath: fullPath, toPath: joinFsPath(root, newRelPath) }),
+              });
+            }
+            navState.rawTree = null;
+            if (navState.mode === 'files') await loadAndRenderRawTree();
+            else await refreshProjectAfterNavMutation();
+          } catch (e) {
+            console.error('Duplicate failed:', e);
+          }
+          break;
+        }
+        case 'copy-path':
+          navigator.clipboard.writeText(fullPath).catch(() => {});
+          break;
+        case 'copy-relative-path':
+          navigator.clipboard.writeText(target.path).catch(() => {});
           break;
         case 'reveal':
-          const fullPath = state.project.root + '/' + target.path;
-          electronAPI.shell.showItemInFolder(fullPath);
+          if (electronAPI?.shell?.showItemInFolder) {
+            electronAPI.shell.showItemInFolder(fullPath);
+          }
+          break;
+        case 'open-as-text':
+          await openPlainTextFile(fullPath);
+          break;
+        case 'open-as-markdown':
+          await openFile(fullPath);
           break;
         case 'delete':
           await deleteNavItem(target.path);
@@ -10686,28 +11025,37 @@ session:
     /**
      * Delete nav item
      */
-    async function deleteNavItem(path) {
-      const isFolder = !path.includes('.') || path.endsWith('/');
+    async function deleteNavItem(relPath) {
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) return;
+
+      const name = relPath.split('/').pop();
+      const isFolder = !name.includes('.');
       const confirmMsg = isFolder
-        ? `Delete folder "${path}" and all its contents?`
-        : `Delete "${path}"?`;
+        ? `Delete folder "${name}" and all its contents?`
+        : `Delete "${name}"?`;
 
       if (!confirm(confirmMsg)) return;
 
       try {
-        const fullPath = state.project.root + '/' + path;
+        const fullPath = joinFsPath(root, relPath);
         await electronAPI.file.delete(fullPath);
 
         // If we deleted the current file, clear it
         if (state.currentFile && state.currentFile.startsWith(fullPath)) {
-          // Try to open another file or just clear
           state.currentFile = null;
         }
 
-        // Refresh
-        const project = await electronAPI.project.get(state.project.root + '/index.md');
-        state.project = project;
-        renderNavTreeFull();
+        // Refresh both views
+        navState.rawTree = null;
+        if (navState.mode === 'files') {
+          await loadAndRenderRawTree();
+        }
+        if (state.project?.root) {
+          const project = await electronAPI.project.get(state.project.root + '/index.md');
+          state.project = project;
+          if (navState.mode === 'docs') renderNavTreeFull();
+        }
       } catch (e) {
         console.error('Delete failed:', e);
         alert('Failed to delete: ' + e.message);
@@ -10722,9 +11070,772 @@ session:
      */
     function renderNavTreeFull() {
       const tree = document.getElementById('nav-tree');
-      if (!tree || !state.project?.navTree) return;
+      if (!tree) return;
 
+      if (navState.mode === 'files') {
+        renderRawTreeFull();
+        return;
+      }
+
+      if (!state.project?.navTree) return;
       renderNavTree(state.project.navTree, tree, 0);
+    }
+
+    // =========================================================================
+    // RAW FILE BROWSER (Files mode)
+    // =========================================================================
+
+    /** SVG icon templates (16×16 stroke-based, matches app design) */
+    const NAV_ICONS = {
+      folder: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3.5a1 1 0 011-1h4l1.5 2h5.5a1 1 0 011 1v7a1 1 0 01-1 1h-11a1 1 0 01-1-1v-9z"/></svg>',
+      file: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/></svg>',
+      fileText: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M5.5 8h5M5.5 10.5h3"/></svg>',
+      fileCode: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M6.5 8L5 9.5 6.5 11M9.5 8l1.5 1.5-1.5 1.5"/></svg>',
+      fileImage: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><circle cx="5.5" cy="5.5" r="1.2"/><path d="M14 11l-3.5-3.5L3 14"/></svg>',
+      fileData: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M5.5 8h5M5.5 10h2M9.5 10h1M5.5 12h5"/></svg>',
+      fileArchive: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><rect x="7" y="8" width="2" height="2.5" rx="0.5"/></svg>',
+      fileNotebook: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M5.5 8h5"/><path d="M5.5 10.5h5"/></svg>',
+      filePdf: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M5.5 9.5a1 1 0 010-2h1a1 1 0 010 2h-1v2"/></svg>',
+      fileTerminal: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M5.5 8.5l2 1.5-2 1.5M8.5 11.5h2"/></svg>',
+      arrowUp: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg>',
+    };
+
+    /** File extension → SVG icon mapping */
+    function fileIcon(name) {
+      if (!name) return NAV_ICONS.file;
+      const ext = (name.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+      const map = {
+        md: NAV_ICONS.fileText, qmd: NAV_ICONS.fileText, ipynb: NAV_ICONS.fileNotebook,
+        py: NAV_ICONS.fileCode, js: NAV_ICONS.fileCode, ts: NAV_ICONS.fileCode,
+        jsx: NAV_ICONS.fileCode, tsx: NAV_ICONS.fileCode, mjs: NAV_ICONS.fileCode,
+        cjs: NAV_ICONS.fileCode, r: NAV_ICONS.fileCode, jl: NAV_ICONS.fileCode,
+        sh: NAV_ICONS.fileTerminal, bash: NAV_ICONS.fileTerminal, zsh: NAV_ICONS.fileTerminal,
+        json: NAV_ICONS.fileData, yaml: NAV_ICONS.fileData, yml: NAV_ICONS.fileData,
+        toml: NAV_ICONS.fileData, xml: NAV_ICONS.fileData,
+        csv: NAV_ICONS.fileData, tsv: NAV_ICONS.fileData, parquet: NAV_ICONS.fileData,
+        png: NAV_ICONS.fileImage, jpg: NAV_ICONS.fileImage, jpeg: NAV_ICONS.fileImage,
+        gif: NAV_ICONS.fileImage, svg: NAV_ICONS.fileImage, webp: NAV_ICONS.fileImage,
+        ico: NAV_ICONS.fileImage, bmp: NAV_ICONS.fileImage,
+        pdf: NAV_ICONS.filePdf,
+        html: NAV_ICONS.fileCode, htm: NAV_ICONS.fileCode, css: NAV_ICONS.fileCode,
+        txt: NAV_ICONS.fileText, log: NAV_ICONS.fileText, env: NAV_ICONS.file,
+        zip: NAV_ICONS.fileArchive, tar: NAV_ICONS.fileArchive,
+        gz: NAV_ICONS.fileArchive, bz2: NAV_ICONS.fileArchive,
+      };
+      return map[ext] || NAV_ICONS.file;
+    }
+
+    function folderIcon(name) {
+      return NAV_ICONS.folder;
+    }
+
+    /** Toggle between docs and files mode */
+    function toggleNavMode() {
+      const wasFiles = navState.mode === 'files';
+      navState.mode = navState.mode === 'docs' ? 'files' : 'docs';
+      localStorage.setItem('mrmd-nav-mode', navState.mode);
+
+      // When switching back to docs, reset browse root to project root
+      // and clear the nav tree so raw-mode elements (like "..") don't leak
+      if (wasFiles && navState.mode === 'docs') {
+        navState.browseRoot = state.project?.root || null;
+        const tree = document.getElementById('nav-tree');
+        if (tree) tree.innerHTML = '';
+      }
+
+      updateNavModeUI();
+      renderNavTreeFull();
+    }
+
+    function updateNavModeUI() {
+      const toggle = document.getElementById('nav-mode-btn');
+      const breadcrumb = document.getElementById('nav-breadcrumb');
+      // Slide the thumb
+      toggle.classList.toggle('files', navState.mode === 'files');
+      // Highlight active icon
+      toggle.querySelectorAll('.toggle-seg').forEach(seg => {
+        seg.classList.toggle('active', seg.dataset.mode === navState.mode);
+      });
+      if (navState.mode === 'files') {
+        breadcrumb.classList.add('visible');
+        updateBreadcrumb();
+      } else {
+        breadcrumb.classList.remove('visible');
+      }
+    }
+
+    function updateBreadcrumb() {
+      const bc = document.getElementById('nav-breadcrumb');
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) { bc.innerHTML = ''; return; }
+
+      const home = (typeof electronAPI !== 'undefined' ? '' : '') || '/home';
+      const segments = root.split('/').filter(Boolean);
+      bc.innerHTML = '';
+
+      // Root /
+      const rootSeg = document.createElement('span');
+      rootSeg.className = 'nav-breadcrumb-segment';
+      rootSeg.textContent = '/';
+      rootSeg.onclick = () => navigateRawBrowser('/');
+      bc.appendChild(rootSeg);
+
+      let builtPath = '';
+      for (let i = 0; i < segments.length; i++) {
+        builtPath += '/' + segments[i];
+        const sep = document.createElement('span');
+        sep.className = 'nav-breadcrumb-sep';
+        sep.textContent = '›';
+        bc.appendChild(sep);
+
+        const seg = document.createElement('span');
+        seg.className = 'nav-breadcrumb-segment';
+        seg.textContent = segments[i];
+        const pathCopy = builtPath;
+        if (i < segments.length - 1) {
+          seg.onclick = () => navigateRawBrowser(pathCopy);
+        }
+        bc.appendChild(seg);
+      }
+
+      // Scroll to end
+      bc.scrollLeft = bc.scrollWidth;
+    }
+
+    let rawTreeRequestToken = 0;
+
+    function normalizeFsPath(input) {
+      const path = String(input || '').replace(/\\/g, '/').replace(/\/+/g, '/');
+      if (!path) return '/';
+      if (path === '/') return '/';
+      return path.replace(/\/+$/, '') || '/';
+    }
+
+    function joinFsPath(basePath, relPath) {
+      const base = normalizeFsPath(basePath);
+      const rel = String(relPath || '').replace(/\\/g, '/').replace(/^\/+/, '');
+      if (!rel) return base;
+      if (base === '/') return `/${rel}`;
+      return `${base}/${rel}`;
+    }
+
+    function buildRawNodesFromBrowseEntries(entries, parentRelPath = '') {
+      const parent = String(parentRelPath || '').replace(/^\/+|\/+$/g, '');
+      const nodes = (Array.isArray(entries) ? entries : []).map((entry) => {
+        const name = entry?.name || '';
+        const isFolder = entry?.isFolder ?? entry?.isDirectory ?? entry?.type === 'directory';
+        const relPath = parent ? `${parent}/${name}` : name;
+        const node = {
+          name,
+          path: relPath,
+          isFolder: !!isFolder,
+          isHidden: typeof entry?.isHidden === 'boolean' ? entry.isHidden : name.startsWith('_'),
+          isSystem: name.startsWith('.'),
+        };
+
+        if (node.isFolder) {
+          node.children = null;
+          node.childrenLoaded = false;
+          node.childrenLoading = false;
+        }
+
+        return node;
+      });
+
+      nodes.sort((a, b) => {
+        if (a.isFolder && !b.isFolder) return -1;
+        if (!a.isFolder && b.isFolder) return 1;
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      return nodes;
+    }
+
+    function findRawNodeByPath(nodes, targetPath) {
+      if (!Array.isArray(nodes) || !targetPath) return null;
+      for (const node of nodes) {
+        if (node.path === targetPath) return node;
+        if (node.isFolder && Array.isArray(node.children)) {
+          const found = findRawNodeByPath(node.children, targetPath);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    async function loadRawDirectoryNodes(absDirPath, parentRelPath = '') {
+      const showHidden = false;
+
+      // Electron + browser shim path (preferred, auth-aware in browser mode).
+      if (electronAPI?.file?.browse) {
+        const resp = await electronAPI.file.browse(absDirPath, showHidden);
+        if (resp?.success === false) {
+          throw new Error(resp?.error || `Failed to browse ${absDirPath}`);
+        }
+        if (!Array.isArray(resp?.entries)) {
+          throw new Error(`Invalid browse response for ${absDirPath}`);
+        }
+        return buildRawNodesFromBrowseEntries(resp.entries, parentRelPath);
+      }
+
+      // Hard fallback (should rarely happen)
+      const resp = await fetch(`/api/file/browse?path=${encodeURIComponent(absDirPath)}&type=all`);
+      if (!resp.ok) {
+        throw new Error(`Browse request failed for ${absDirPath}: HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      return buildRawNodesFromBrowseEntries(data?.entries || [], parentRelPath);
+    }
+
+    async function ensureRawFolderLoaded(folderPath) {
+      const node = findRawNodeByPath(navState.rawTree, folderPath);
+      if (!node || !node.isFolder || node.childrenLoaded || node.childrenLoading) return;
+
+      node.childrenLoading = true;
+      renderRawTreeToDOM();
+
+      const root = navState.browseRoot || state.project?.root;
+      const absFolderPath = joinFsPath(root, folderPath);
+
+      try {
+        node.children = await loadRawDirectoryNodes(absFolderPath, folderPath);
+        node.childrenLoaded = true;
+      } catch (e) {
+        console.error('[raw-tree] Failed to load folder:', folderPath, e);
+        node.children = [];
+        node.childrenLoaded = true;
+      } finally {
+        node.childrenLoading = false;
+        renderRawTreeToDOM();
+      }
+    }
+
+    async function toggleRawFolder(folderPath) {
+      if (navState.expandedFolders.has(folderPath)) {
+        navState.expandedFolders.delete(folderPath);
+        renderRawTreeToDOM();
+        return;
+      }
+
+      navState.expandedFolders.add(folderPath);
+      renderRawTreeToDOM();
+
+      await ensureRawFolderLoaded(folderPath);
+
+      const node = findRawNodeByPath(navState.rawTree, folderPath);
+      if (node?.childrenLoaded && Array.isArray(node.children) && node.children.length === 0) {
+        navState.expandedFolders.delete(folderPath);
+        renderRawTreeToDOM();
+      }
+    }
+
+    /** Navigate the raw browser to a different root directory */
+    async function navigateRawBrowser(newRoot) {
+      navState.browseRoot = normalizeFsPath(newRoot);
+      navState.rawTree = null;
+      navState.rawTreeDirty = false;
+      navState.expandedFolders.clear();
+      updateBreadcrumb();
+      await loadAndRenderRawTree();
+    }
+
+    /** Load raw tree data and render it */
+    async function loadAndRenderRawTree() {
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) return;
+
+      const requestToken = ++rawTreeRequestToken;
+
+      try {
+        navState.expandedFolders.clear();
+        navState.rawTree = await loadRawDirectoryNodes(root, '');
+        navState.rawTreeDirty = false;
+      } catch (e) {
+        console.error('[raw-tree] Failed to load:', e);
+        navState.rawTree = [];
+        navState.rawTreeDirty = false;
+      }
+
+      if (requestToken !== rawTreeRequestToken) return;
+      renderRawTreeToDOM();
+    }
+
+    /** Render the raw tree into the nav container */
+    function renderRawTreeFull() {
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) return;
+      navState.browseRoot = normalizeFsPath(root);
+      updateBreadcrumb();
+
+      if (navState.rawTree && !navState.rawTreeDirty) {
+        renderRawTreeToDOM();
+      } else {
+        loadAndRenderRawTree();
+      }
+    }
+
+    function renderRawTreeToDOM() {
+      const container = document.getElementById('nav-tree');
+      if (!container || !navState.rawTree) return;
+
+      // Clear existing content (except the drop zone)
+      const dropZone = document.getElementById('nav-drop-zone');
+      container.innerHTML = '';
+      if (dropZone) container.appendChild(dropZone);
+
+      // ".." entry to go up
+      const root = navState.browseRoot || state.project?.root || '/';
+      if (root !== '/') {
+        const upItem = document.createElement('div');
+        upItem.className = 'nav-item';
+        upItem.style.paddingLeft = '8px';
+        upItem.innerHTML = '<span class="nav-expand hidden">›</span><span class="nav-item-icon">' + NAV_ICONS.arrowUp + '</span><span class="nav-item-label">..</span>';
+        upItem.onclick = () => {
+          const parent = root.replace(/\/[^/]+\/?$/, '') || '/';
+          navigateRawBrowser(parent);
+        };
+        container.appendChild(upItem);
+      }
+
+      renderRawNodes(navState.rawTree, container, 0);
+    }
+
+    function renderRawNodes(nodes, container, depth) {
+      const root = navState.browseRoot || state.project?.root || '/';
+      const currentRelPath = getCurrentRelativePath();
+
+      for (const node of nodes) {
+        const isExpanded = navState.expandedFolders.has(node.path);
+        const isSelected = node.path === currentRelPath;
+        const isRenaming = node.path === navState.renaming;
+        const hasChildren = node.isFolder && (
+          node.childrenLoading
+          || !node.childrenLoaded
+          || (Array.isArray(node.children) && node.children.length > 0)
+        );
+
+        const item = document.createElement('div');
+        item._navNode = node;
+        item._rawMode = true;
+        item.className = 'nav-item' + (node.isFolder ? ' folder' : '') +
+          (isSelected ? ' selected' : '') +
+          (node.isHidden ? ' hidden-item' : '');
+        item.dataset.path = node.path;
+        item.dataset.isFolder = node.isFolder ? 'true' : 'false';
+        item.style.paddingLeft = (8 + depth * 16) + 'px';
+        item.draggable = !isRenaming;
+
+        // Expand arrow
+        const expand = document.createElement('span');
+        const showExpand = node.isFolder && hasChildren;
+        expand.className = 'nav-expand' + (isExpanded ? ' expanded' : '') + (!showExpand ? ' hidden' : '');
+        expand.textContent = '›';
+        if (showExpand) {
+          expand.onclick = async (e) => {
+            e.stopPropagation();
+            await toggleRawFolder(item._navNode.path);
+          };
+        }
+        item.appendChild(expand);
+
+        // Icon
+        const icon = document.createElement('span');
+        icon.className = 'nav-item-icon';
+        icon.innerHTML = node.isFolder ? folderIcon(node.name) : fileIcon(node.name);
+        item.appendChild(icon);
+
+        // Label
+        if (isRenaming) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'nav-rename-input';
+          input.value = node.name;
+          input.dataset.path = node.path;
+          input.onclick = (e) => e.stopPropagation();
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter') finishRawRename(node.path, input.value);
+            else if (e.key === 'Escape') cancelRename();
+          };
+          input.onblur = () => {
+            setTimeout(() => {
+              if (navState.renaming === node.path) finishRawRename(node.path, input.value);
+            }, 100);
+          };
+          item.appendChild(input);
+          setTimeout(() => { input.focus(); input.select(); }, 0);
+        } else {
+          const label = document.createElement('span');
+          label.className = 'nav-item-label';
+          label.textContent = node.name;
+          item.appendChild(label);
+        }
+
+        // Click handler (Ctrl+click on folder = open as project in new window)
+        item.onclick = async (e) => {
+          if (e.target.classList.contains('nav-expand')) return;
+          const n = item._navNode;
+          if (n.isFolder && (e.ctrlKey || e.metaKey) && electronAPI?.window?.openProject) {
+            e.preventDefault();
+            const folderFullPath = joinFsPath(root, n.path);
+            await electronAPI.window.openProject(folderFullPath);
+            return;
+          }
+          if (n.isFolder) {
+            await toggleRawFolder(n.path);
+          } else {
+            const fullPath = joinFsPath(root, n.path);
+            openFileFromRawBrowser(fullPath, n.name);
+          }
+        };
+
+        // Double-click to rename
+        item.ondblclick = (e) => {
+          if (e.target.classList.contains('nav-expand')) return;
+          e.preventDefault();
+          startRename(item._navNode.path);
+          renderRawTreeToDOM();
+        };
+
+        // Context menu
+        item.oncontextmenu = (e) => {
+          e.preventDefault();
+          const n = item._navNode;
+          showNavContextMenu(e.clientX, e.clientY, n.path, n.isFolder);
+        };
+
+        // Drag handlers (internal reorder)
+        item.ondragstart = (e) => {
+          navState.dragging = item._navNode.path;
+          item.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', item._navNode.path);
+        };
+
+        item.ondragend = () => {
+          navState.dragging = null;
+          clearDropTargets();
+        };
+
+        item.ondragover = (e) => {
+          e.preventDefault();
+          // External file drop
+          if (e.dataTransfer.types.includes('Files')) {
+            clearDropTargets();
+            const n = item._navNode;
+            if (n.isFolder) {
+              item.classList.add('drop-target');
+            }
+            e.dataTransfer.dropEffect = 'copy';
+            return;
+          }
+          // Internal reorder
+          if (navState.dragging === item._navNode.path) return;
+          clearDropTargets();
+          const rect = item.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const height = rect.height;
+          const n = item._navNode;
+          if (n.isFolder && y > height * 0.25 && y < height * 0.75) {
+            item.classList.add('drop-target');
+          } else if (y < height * 0.5) {
+            item.classList.add('drop-above');
+          } else {
+            item.classList.add('drop-below');
+          }
+          e.dataTransfer.dropEffect = 'move';
+        };
+
+        item.ondragleave = () => {
+          item.classList.remove('drop-target', 'drop-above', 'drop-below');
+        };
+
+        item.ondrop = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          clearDropTargets();
+
+          // External file drop
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const n = item._navNode;
+            const targetDir = n.isFolder
+              ? joinFsPath(root, n.path)
+              : joinFsPath(root, n.path.includes('/') ? n.path.replace(/\/[^/]+$/, '') : '');
+            await handleExternalFileDrop(e.dataTransfer.files, targetDir);
+            return;
+          }
+
+          // Internal reorder
+          const fromPath = navState.dragging;
+          const n = item._navNode;
+          if (!fromPath || fromPath === n.path) return;
+
+          const rect = item.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const height = rect.height;
+          let dropType = 'below';
+          if (n.isFolder && y > height * 0.25 && y < height * 0.75) {
+            dropType = 'into';
+          } else if (y < height * 0.5) {
+            dropType = 'above';
+          }
+          navState.dragging = null;
+          await handleRawNavDrop(fromPath, n.path, dropType, n.isFolder);
+        };
+
+        container.appendChild(item);
+
+        // Render children if expanded
+        if (node.isFolder && isExpanded) {
+          const childContainer = document.createElement('div');
+          childContainer.className = 'nav-children';
+          childContainer.dataset.parent = node.path;
+
+          if (node.childrenLoading) {
+            const loading = document.createElement('div');
+            loading.className = 'nav-item';
+            loading.style.paddingLeft = (8 + (depth + 1) * 16) + 'px';
+            loading.innerHTML = '<span class="nav-expand hidden">›</span><span class="nav-item-icon">' + NAV_ICONS.file + '</span><span class="nav-item-label">Loading…</span>';
+            childContainer.appendChild(loading);
+          } else if (Array.isArray(node.children) && node.children.length > 0) {
+            renderRawNodes(node.children, childContainer, depth + 1);
+          }
+
+          container.appendChild(childContainer);
+        }
+      }
+    }
+
+    /** Open a file from the raw browser - decides between markdown and plain text */
+    async function openFileFromRawBrowser(fullPath, fileName) {
+      const ext = (fileName.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+      const mdExts = new Set(['md', 'qmd']);
+
+      if (mdExts.has(ext) || fileName.endsWith('.ipynb')) {
+        // Open in the normal mrmd editor
+        await openFile(fullPath);
+      } else {
+        // Open as plain text in CM6
+        await openPlainTextFile(fullPath);
+      }
+    }
+
+    /** Open any file as plain text in a minimal CM6 editor */
+    async function openPlainTextFile(fullPath) {
+      console.log('[raw-browser] Opening as plain text:', fullPath);
+
+      try {
+        let content;
+        if (electronAPI?.file?.read) {
+          content = await electronAPI.file.read(fullPath);
+        } else {
+          const resp = await fetch(`/api/file/read?path=${encodeURIComponent(fullPath)}`);
+          const data = await resp.json();
+          content = data.content;
+        }
+
+        // Destroy existing editor
+        if (state.editor) {
+          state.variablesCellCompleteUnsub?.();
+          state.variablesCellCompleteUnsub = null;
+          state.variablesCellErrorUnsub?.();
+          state.variablesCellErrorUnsub = null;
+          if (state.editor.awareness) {
+            state.editor.awareness.setLocalStateField('cursor', null);
+          }
+          detachSyncStatusHandlers();
+          state.editor.destroy?.();
+          state.editor = null;
+          document.getElementById('editor').innerHTML = '';
+        }
+
+        if (state.drive) { state.drive.destroy?.(); state.drive = null; }
+
+        state.currentFile = fullPath;
+
+        // Create a plain CM6 editor
+        const editorEl = document.getElementById('editor');
+        const { EditorState } = mrmd.codemirror.state;
+        const { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine,
+                highlightActiveLineGutter, rectangularSelection, crosshairCursor,
+                highlightSpecialChars } = mrmd.codemirror.view;
+        const { defaultKeymap, history, historyKeymap, indentWithTab } = mrmd.codemirror.commands;
+        const { bracketMatching, foldGutter, indentOnInput } = mrmd.codemirror.language;
+
+        // Detect language for syntax highlighting
+        const fileName = fullPath.split('/').pop();
+        const ext = (fileName.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+        const langExtensions = [];
+
+        // Try to get language support from CM6
+        if (['js', 'jsx', 'mjs', 'cjs'].includes(ext)) {
+          try { const { javascript } = await import('https://esm.sh/@codemirror/lang-javascript@6'); langExtensions.push(javascript()); } catch {}
+        } else if (['ts', 'tsx'].includes(ext)) {
+          try { const { javascript } = await import('https://esm.sh/@codemirror/lang-javascript@6'); langExtensions.push(javascript({ typescript: true })); } catch {}
+        } else if (['json'].includes(ext)) {
+          try { const { json } = await import('https://esm.sh/@codemirror/lang-json@6'); langExtensions.push(json()); } catch {}
+        } else if (['py'].includes(ext)) {
+          try { const { python } = await import('https://esm.sh/@codemirror/lang-python@6'); langExtensions.push(python()); } catch {}
+        } else if (['html', 'htm'].includes(ext)) {
+          try { const { html } = await import('https://esm.sh/@codemirror/lang-html@6'); langExtensions.push(html()); } catch {}
+        } else if (['css'].includes(ext)) {
+          try { const { css } = await import('https://esm.sh/@codemirror/lang-css@6'); langExtensions.push(css()); } catch {}
+        }
+
+        const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
+        const isDark = !currentTheme.includes('light');
+
+        const plainState = EditorState.create({
+          doc: content,
+          extensions: [
+            lineNumbers(),
+            highlightActiveLineGutter(),
+            highlightSpecialChars(),
+            history(),
+            foldGutter(),
+            drawSelection(),
+            EditorState.allowMultipleSelections.of(true),
+            indentOnInput(),
+            bracketMatching(),
+            rectangularSelection(),
+            crosshairCursor(),
+            highlightActiveLine(),
+            keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+            ...langExtensions,
+            EditorView.theme({}, { dark: isDark }),
+            // Save handler
+            keymap.of([{
+              key: 'Mod-s',
+              run: (view) => {
+                const text = view.state.doc.toString();
+                if (electronAPI?.file?.write) {
+                  electronAPI.file.write(fullPath, text);
+                } else {
+                  fetch('/api/file/write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filePath: fullPath, content: text }),
+                  });
+                }
+                return true;
+              },
+            }]),
+          ],
+        });
+
+        const view = new EditorView({
+          state: plainState,
+          parent: editorEl,
+        });
+
+        // Store a minimal editor-like object so the rest of the app doesn't crash
+        state.editor = { view, destroy: () => view.destroy() };
+
+        // Update titlebar
+        document.getElementById('titlebar-title').textContent = fileName;
+
+        // Update nav selection
+        renderNavTreeFull();
+      } catch (e) {
+        console.error('[plain-text] Failed to open:', e);
+        alert('Failed to open file: ' + e.message);
+      }
+    }
+
+    /** Handle external files dropped from OS into the nav tree */
+    async function handleExternalFileDrop(fileList, targetDir) {
+      console.log(`[raw-browser] Dropping ${fileList.length} files into ${targetDir}`);
+
+      for (const file of fileList) {
+        const targetPath = joinFsPath(targetDir, file.name);
+        try {
+          const bytes = await file.arrayBuffer();
+          if (electronAPI?.file?.writeBytes) {
+            await electronAPI.file.writeBytes(targetPath, new Uint8Array(bytes));
+          } else {
+            await fetch('/api/file/write-bytes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filePath: targetPath,
+                bytes: Array.from(new Uint8Array(bytes)),
+              }),
+            });
+          }
+        } catch (e) {
+          console.error(`[raw-browser] Failed to upload ${file.name}:`, e);
+        }
+      }
+
+      // Refresh
+      navState.rawTree = null;
+      await loadAndRenderRawTree();
+    }
+
+    /** Handle internal drag-drop in raw mode */
+    async function handleRawNavDrop(fromPath, toPath, dropType, toIsFolder) {
+      const root = navState.browseRoot || state.project?.root;
+      if (!root) return;
+
+      // Build new path
+      const fromName = fromPath.split('/').pop();
+      let newRelPath;
+
+      if (dropType === 'into' && toIsFolder) {
+        newRelPath = toPath + '/' + fromName;
+      } else {
+        const toDir = toPath.includes('/') ? toPath.replace(/\/[^/]+$/, '') : '';
+        newRelPath = toDir ? toDir + '/' + fromName : fromName;
+      }
+
+      if (fromPath === newRelPath) return;
+
+      try {
+        if (electronAPI?.file?.move) {
+          await electronAPI.file.move(root, fromPath, newRelPath);
+        } else {
+          await fetch('/api/file/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectRoot: root, fromPath, toPath: newRelPath }),
+          });
+        }
+
+        navState.rawTree = null;
+        await loadAndRenderRawTree();
+      } catch (e) {
+        console.error('[raw-browser] Move failed:', e);
+      }
+    }
+
+    /** Rename in raw mode — preserves full filename */
+    async function finishRawRename(oldRelPath, newName) {
+      if (!navState.renaming) { navState.renaming = null; return; }
+      navState.renaming = null;
+      const root = navState.browseRoot || state.project?.root;
+      if (!root || !newName.trim()) { renderRawTreeToDOM(); return; }
+
+      const dir = oldRelPath.includes('/') ? oldRelPath.replace(/\/[^/]+$/, '') : '';
+      const newRelPath = dir ? dir + '/' + newName.trim() : newName.trim();
+
+      if (newRelPath === oldRelPath) { renderRawTreeToDOM(); return; }
+
+      try {
+        if (electronAPI?.file?.move) {
+          await electronAPI.file.move(root, oldRelPath, newRelPath);
+        } else {
+          await fetch('/api/file/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectRoot: root, fromPath: oldRelPath, toPath: newRelPath }),
+          });
+        }
+
+        navState.rawTree = null;
+        await loadAndRenderRawTree();
+      } catch (e) {
+        console.error('[raw-browser] Rename failed:', e);
+        renderRawTreeToDOM();
+      }
     }
 
     /**
@@ -10745,19 +11856,67 @@ session:
       const folderName = project.root.split('/').pop() || 'Project';
       title.textContent = project.config?.name || folderName;
 
+      // Set browse root for files mode
+      if (!navState.browseRoot) {
+        navState.browseRoot = project.root;
+      }
+
       // Auto-expand to current file
       if (currentFilePath) {
         const relativePath = currentFilePath.replace(project.root + '/', '');
         expandToPath(relativePath);
       }
 
-      // Render tree
+      // Update mode UI and render tree
+      updateNavModeUI();
       renderNavTreeFull();
 
-      console.log('Nav sidebar updated:', project.navTree.length, 'top-level items');
+      console.log('Nav sidebar updated:', project.navTree?.length || 0, 'top-level items');
     }
 
-    // Context menu click handler
+    // Nav mode toggle — click anywhere to flip the switch
+    document.getElementById('nav-mode-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleNavMode();
+    });
+
+    // Initialize nav mode UI on load
+    updateNavModeUI();
+
+    // External file drag-drop on the nav tree
+    {
+      const navTree = document.getElementById('nav-tree');
+      const dropZone = document.getElementById('nav-drop-zone');
+
+      navTree.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          dropZone.classList.add('visible');
+        }
+      });
+
+      navTree.addEventListener('dragleave', (e) => {
+        // Only hide if we actually left the nav tree
+        if (!navTree.contains(e.relatedTarget)) {
+          dropZone.classList.remove('visible');
+        }
+      });
+
+      navTree.addEventListener('drop', async (e) => {
+        dropZone.classList.remove('visible');
+        if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Determine target directory
+        const root = navState.browseRoot || state.project?.root;
+        if (!root) return;
+        const targetDir = root;
+        await handleExternalFileDrop(e.dataTransfer.files, targetDir);
+      });
+    }
+
     document.getElementById('nav-context-menu').addEventListener('click', (e) => {
       const item = e.target.closest('.nav-context-item');
       if (item) {
@@ -10765,9 +11924,20 @@ session:
       }
     });
 
-    // Make project title clickable to open root index.md
+    // Right-click on empty space in nav tree → New File / New Folder at root
+    document.getElementById('nav-tree').addEventListener('contextmenu', (e) => {
+      // Only handle clicks on empty space, not on items (items have their own handler)
+      if (e.target.closest('.nav-item')) return;
+      e.preventDefault();
+      // Set target to root (empty path, folder)
+      showNavContextMenu(e.clientX, e.clientY, '', true);
+    });
+
+    // Make project title clickable to open root index.md or navigate in files mode
     document.getElementById('nav-title').addEventListener('click', () => {
-      if (state.project?.root) {
+      if (navState.mode === 'files' && state.project?.root) {
+        navigateRawBrowser(state.project.root);
+      } else if (state.project?.root) {
         openFile(state.project.root + '/index.md');
       }
     });
@@ -11144,8 +12314,7 @@ session:
         }
         syncFrontmatterTitleToCurrentFilename();
 
-        // Add runtime CodeLens extensions for yaml config blocks
-        addRuntimeCodeLensToEditor(state.editor);
+        // Runtime CodeLens removed (Phase 2: runtime config is app-owned, not frontmatter-driven)
 
         // Setup handler for "no runtime" event (shows inline prompt)
         setupNoRuntimeHandler(state.editor);
@@ -12853,8 +14022,11 @@ session:
     /**
      * Render the runtimes list in the panel.
      *
-     * Simplified UX: one row per language used in this document.
-     * Primary action is contextual (start/restart/retry), with optional stop + config.
+     * Shows:
+     * 1. One row per language used in this document (from code blocks)
+     * 2. Other running runtimes (for languages NOT in this doc) — so you can attach
+     * 3. Attachment indicator showing which runtime/port this notebook uses
+     * 4. "Attach to existing" option for project/global-scoped runtimes
      */
     function renderRuntimesPanel() {
       const listEl = document.getElementById('runtimes-list');
@@ -12882,8 +14054,25 @@ session:
         javascript: { label: 'JS', badge: 'javascript' },
       };
 
-      // If no code blocks found, show helpful empty state
-      if (docLanguages.size === 0) {
+      // --- Also find running runtime languages NOT in the document ---
+      const runningLanguages = new Set();
+      for (const rt of runtimes) {
+        const lang = normalizeRuntimeLanguage(rt.language) || rt.language || 'python';
+        if (lang !== 'node' && lang !== 'javascript') {
+          runningLanguages.add(lang);
+        }
+      }
+
+      // Languages in document get primary treatment; running-but-not-in-doc get secondary
+      const otherRunningLanguages = new Set();
+      for (const lang of runningLanguages) {
+        if (!docLanguages.has(lang)) {
+          otherRunningLanguages.add(lang);
+        }
+      }
+
+      // If no code blocks and no running runtimes, show helpful empty state
+      if (docLanguages.size === 0 && otherRunningLanguages.size === 0) {
         listEl.innerHTML = `
           <div class="runtimes-empty">
             <div style="margin-bottom: 8px;">No code blocks in this document</div>
@@ -12898,10 +14087,8 @@ session:
       let html = '';
       let renderedRows = 0;
 
-      for (const lang of docLanguages) {
-        const normalized = normalizeRuntimeLanguage(lang) || lang;
-        if (normalized === 'node' || normalized === 'javascript') continue;
-
+      // --- Helper to render a single language runtime row ---
+      function renderLanguageRow(normalized, { isFromDoc = true } = {}) {
         const display = LANG_DISPLAY[normalized] || { label: normalized.toUpperCase(), badge: normalized };
         const { runtime, count } = getPreferredRuntimeForLanguage(normalized, runtimes, attachedIds);
         const rowState = getRuntimeRowState(normalized, runtime);
@@ -12909,21 +14096,37 @@ session:
         const cwdShort = runtime?.cwd ? runtime.cwd.split('/').slice(-2).join('/') : '';
         const venvShort = runtime?.venv ? runtime.venv.split('/').slice(-2).join('/') : '';
 
-        html += `<div class="runtime-lang-section" data-language="${normalized}">`;
-        html += `<div class="runtime-lang-section-header">`;
-        html += `  <span class="runtime-lang-badge ${display.badge}">${display.label}</span>`;
-        html += `</div>`;
+        // Determine the scope indicator for attached runtimes
+        const pref = state.runtimePrefsByLanguage.get(normalized);
+        const scopeLabel = pref?.scope || defaults.scope || 'notebook';
+        const scopeBadge = runtime ? `<span class="runtime-scope-badge runtime-scope-badge--${scopeLabel}" title="Scope: ${scopeLabel}">${scopeLabel}</span>` : '';
 
-        html += `
+        // Show all available sessions for this language (for "attach to existing" picker)
+        const langRuntimes = runtimes.filter(rt => (normalizeRuntimeLanguage(rt.language) || rt.language || 'python') === normalized);
+        const hasMultipleSessions = langRuntimes.length > 1;
+        const pinnedAttachment = getPinnedRuntimeAttachment(normalized);
+        const attachedSessionName = pinnedAttachment?.sessionName || '';
+
+        let rowHtml = '';
+        rowHtml += `<div class="runtime-lang-section" data-language="${normalized}">`;
+        rowHtml += `<div class="runtime-lang-section-header">`;
+        rowHtml += `  <span class="runtime-lang-badge ${display.badge}">${display.label}</span>`;
+        rowHtml += `  ${scopeBadge}`;
+        if (!isFromDoc && runtime) {
+          rowHtml += `  <span class="runtime-from-other-badge" title="No ${display.label.toLowerCase()} code blocks in this document — runtime is running from another notebook">other notebook</span>`;
+        }
+        rowHtml += `</div>`;
+
+        rowHtml += `
           <div class="runtime-item ${runtime ? 'attached' : 'runtime-item--inactive'}"
                data-language="${normalized}"
                title="${runtime ? `PID ${runtime.pid}${runtime.cwd ? ' · ' + runtime.cwd : ''}` : display.label}">
             <div class="runtime-item-status" style="${rowState.key === 'error' ? 'background:#ef4444;' : rowState.key === 'starting' ? 'background:#f59e0b;' : rowState.key === 'not-ready' ? 'background: var(--text-dim); opacity:0.45;' : ''}"></div>
             <div class="runtime-item-info">
-              <div class="runtime-item-name">${rowState.label}${runtime ? '' : ''}</div>
+              <div class="runtime-item-name">${rowState.label}</div>
               <div class="runtime-item-meta">
                 ${runtime
-                  ? `${venvShort ? `${venvShort} · ` : ''}port ${runtime.port}${cwdShort ? `<br>cwd: ${cwdShort}` : ''}${count > 1 ? `<br>${count} sessions running` : ''}`
+                  ? `${venvShort ? `${venvShort} · ` : ''}port ${runtime.port}${cwdShort ? `<br>cwd: ${cwdShort}` : ''}${attachedSessionName ? `<br><span style="color: var(--text-dim);">session: ${attachedSessionName.split(':').slice(-1)[0]}</span>` : ''}${count > 1 ? `<br>${count} sessions available` : ''}`
                   : (rowState.error ? rowState.error : 'Starts automatically when you run a cell')}
               </div>
             </div>
@@ -12937,7 +14140,30 @@ session:
                 : ''}
             </div>
           </div>
+        `;
 
+        // --- "Attach to existing runtime" picker (shown when multiple sessions exist) ---
+        if (hasMultipleSessions) {
+          rowHtml += `<div class="runtime-attach-picker" style="padding: 4px 16px 4px 32px;">`;
+          rowHtml += `<div style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;">Attach to:</div>`;
+          for (const rt of langRuntimes) {
+            const isAttached = rt.id === attachedSessionName || rt.id === runtime?.id;
+            const rtVenv = rt.venv ? rt.venv.split('/').slice(-2).join('/') : '';
+            rowHtml += `
+              <div class="runtime-attach-option ${isAttached ? 'runtime-attach-option--active' : ''}"
+                   onclick="attachToExistingRuntime('${normalized}', '${rt.id}')"
+                   title="${rt.id} — port ${rt.port}${rt.cwd ? ' — ' + rt.cwd : ''}">
+                <span class="runtime-attach-option-dot" style="background: ${isAttached ? 'var(--accent)' : 'var(--text-dim)'}"></span>
+                <span class="runtime-attach-option-label">${rtVenv || rt.id} · port ${rt.port}</span>
+                ${isAttached ? '<span style="font-size: 10px; color: var(--accent);">attached</span>' : ''}
+              </div>
+            `;
+          }
+          rowHtml += `</div>`;
+        }
+
+        // --- Configuration panel ---
+        rowHtml += `
           <div class="runtime-config-panel" id="runtime-config-${normalized}" style="display: none;">
             ${normalized === 'python' ? `
             <div class="runtime-config-field">
@@ -12979,8 +14205,29 @@ session:
           </div>
         `;
 
-        html += `</div>`;
+        rowHtml += `</div>`;
+        return rowHtml;
+      }
+
+      // --- Render rows for languages in the current document ---
+      for (const lang of docLanguages) {
+        const normalized = normalizeRuntimeLanguage(lang) || lang;
+        if (normalized === 'node' || normalized === 'javascript') continue;
+        html += renderLanguageRow(normalized, { isFromDoc: true });
         renderedRows += 1;
+      }
+
+      // --- Render rows for running runtimes NOT in the current document ---
+      if (otherRunningLanguages.size > 0) {
+        html += `
+          <div style="padding: 8px 16px 4px; border-top: 1px solid var(--border); margin-top: 4px;">
+            <div style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px;">Other running runtimes</div>
+          </div>
+        `;
+        for (const lang of otherRunningLanguages) {
+          html += renderLanguageRow(lang, { isFromDoc: false });
+          renderedRows += 1;
+        }
       }
 
       if (renderedRows === 0) {
@@ -13142,6 +14389,41 @@ session:
       if (!panel) return;
       const isVisible = panel.style.display !== 'none';
       panel.style.display = isVisible ? 'none' : 'block';
+    }
+
+    /**
+     * Attach the current notebook to an existing runtime session.
+     * Allows using a runtime started from another notebook.
+     */
+    async function attachToExistingRuntime(language, sessionId) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+      const runtimes = state.runningRuntimes || [];
+      const target = runtimes.find(rt => rt.id === sessionId);
+      if (!target) {
+        console.warn(`[attachToExisting] Runtime session not found: ${sessionId}`);
+        return;
+      }
+
+      // Pin the attachment for this document + language
+      pinRuntimeAttachment(normalized, {
+        name: target.id,
+        port: target.port,
+      }, 'manual-attach-existing');
+
+      // Re-register the runtime with the editor so it uses the new session
+      try {
+        if (normalized === 'python') {
+          await registerRuntimeWithEditor('python');
+        } else if (['bash', 'r', 'julia'].includes(normalized)) {
+          await registerRuntimeWithEditor(normalized);
+        } else if (normalized === 'pty') {
+          await registerPtyWithEditor();
+        }
+      } catch (e) {
+        console.warn(`[attachToExisting] Failed to re-register ${normalized} with editor:`, e?.message || e);
+      }
+
+      await refreshRuntimes();
     }
 
     /**
@@ -13445,7 +14727,7 @@ session:
 
         return `
           <div class="home-file-item" onclick="openFileFromHome('${escapeAttr(file.path)}')" title="${escapeAttr(file.path)}">
-            <span class="home-item-icon">📄</span>
+            <span class="home-item-icon">${NAV_ICONS.fileText}</span>
             <div class="home-item-info">
               <div class="home-item-name">${escapeHtml(displayName)}</div>
               <div class="home-item-meta">${escapeHtml(timeAgo)}</div>
@@ -13480,7 +14762,7 @@ session:
 
         return `
           <div class="home-project-item" onclick="openProjectFromHome('${escapeAttr(project.path)}')" title="${escapeAttr(project.path)}">
-            <span class="home-item-icon">📁</span>
+            <span class="home-item-icon">${NAV_ICONS.folder}</span>
             <div class="home-item-info">
               <div class="home-item-name">${escapeHtml(name)}</div>
               <div class="home-item-meta">${escapeHtml(displayPath)}</div>
@@ -17158,93 +18440,7 @@ session:
      * Shows inline controls above yaml config blocks and frontmatter
      * @param {Object} editor - The mrmd editor instance
      */
-    function addRuntimeCodeLensToEditor(editor) {
-      if (!editor?.view) return;
-
-      const projectName = state.project?.config?.name || 'default';
-
-      // Create CodeLens extensions with callbacks
-      const codeLensExtensions = mrmd.runtimeCodeLens.createExtensions({
-        projectName,
-
-        // Get session status by name (e.g., "thesis:default")
-        getSessionStatus: (sessionName) => {
-          // Check multi-session map first
-          const entry = state.sessions.get(sessionName);
-          if (entry && entry.status !== 'none') {
-            return {
-              alive: entry.status === 'connected',
-              pid: entry.info?.pid,
-              port: entry.info?.port,
-              error: entry.status === 'error' ? 'Session failed' : undefined,
-            };
-          }
-          // Fallback to legacy single session
-          if (state.session.name === sessionName && state.session.status !== 'none') {
-            return {
-              alive: state.session.status === 'connected',
-              pid: state.session.info?.pid,
-              port: state.session.info?.port,
-              error: state.session.status === 'error' ? 'Session failed' : undefined,
-            };
-          }
-          return null;
-        },
-
-        // Start a runtime (receives full runtime config from yaml)
-        onStart: async (runtime) => {
-          console.log('[CodeLens] Start runtime:', runtime);
-          const projectRoot = state.project?.root || '';
-
-          // Resolve relative paths to absolute
-          const resolvePath = (p) => {
-            if (!p) return projectRoot;
-            if (p.startsWith('/')) return p;
-            return projectRoot ? `${projectRoot}/${p}`.replace(/\/+/g, '/') : p;
-          };
-
-          const config = {
-            name: runtime.name,
-            language: runtime.language,
-            venv: resolvePath(runtime.venv),
-            cwd: resolvePath(runtime.cwd),
-            projectRoot,
-          };
-          console.log('[CodeLens] Resolved config:', config);
-
-          const sessionName = `${projectName}:${runtime.name || 'default'}`;
-          await startLanguageSession(config, sessionName);
-        },
-
-        // Stop a runtime by name
-        onStop: async (sessionName) => {
-          console.log('[CodeLens] Stop session:', sessionName);
-          await stopLanguageSession(sessionName);
-        },
-
-        // Restart a runtime by name
-        onRestart: async (sessionName) => {
-          console.log('[CodeLens] Restart session:', sessionName);
-          await restartLanguageSession(sessionName);
-        },
-
-        // Restart all runtimes (for multi-runtime configs)
-        onRestartAll: async () => {
-          console.log('[CodeLens] Restart all runtimes');
-          const sessionNames = [...state.sessions.keys()];
-          for (const name of sessionNames) {
-            await restartLanguageSession(name);
-          }
-        },
-      });
-
-      // Add extensions to the editor dynamically
-      editor.view.dispatch({
-        effects: mrmd.codemirror.StateEffect.appendConfig.of(codeLensExtensions),
-      });
-
-      console.log('[CodeLens] Runtime CodeLens extensions added to editor');
-    }
+    // addRuntimeCodeLensToEditor removed (Phase 2: runtime config is app-owned)
 
     /**
      * Rebuild CodeLens decorations in the editor
@@ -17252,14 +18448,7 @@ session:
      * Uses requestAnimationFrame to avoid "update during update" errors
      */
     function rebuildEditorCodeLens() {
-      if (state.editor?.view) {
-        // Defer to avoid calling dispatch during an update cycle
-        requestAnimationFrame(() => {
-          if (state.editor?.view) {
-            mrmd.runtimeCodeLens.rebuild(state.editor.view);
-          }
-        });
-      }
+      // No-op: runtime CodeLens removed (Phase 2)
     }
 
     /**
@@ -22095,6 +23284,11 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       projectRefreshTimeout = setTimeout(async () => {
         if (state.project?.root) {
           console.log('[watch] Refreshing project nav...');
+          // Mark files cache stale; defer expensive refresh until files mode is visible.
+          navState.rawTreeDirty = true;
+          if (navState.mode === 'files') {
+            navState.rawTree = null;
+          }
           const project = await electronAPI.project.get(state.currentFile || state.project.root + '/index.md');
           if (project) {
             state.project = project;

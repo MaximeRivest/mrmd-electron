@@ -24,6 +24,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openPath: (fullPath) => ipcRenderer.invoke('shell:openPath', { fullPath }),
   },
 
+  // Window management
+  window: {
+    openProject: (projectPath) => ipcRenderer.invoke('window:openProject', { projectPath }),
+  },
+
   // Recent files/venvs
   getRecent: () => ipcRenderer.invoke('get-recent'),
 
@@ -66,6 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     get: (filePath) => ipcRenderer.invoke('project:get', { filePath }),
     create: (targetPath) => ipcRenderer.invoke('project:create', { targetPath }),
     nav: (projectRoot) => ipcRenderer.invoke('project:nav', { projectRoot }),
+    rawTree: (root, showSystem, maxDepth) => ipcRenderer.invoke('project:rawTree', { root, showSystem, maxDepth }),
     invalidate: (projectRoot) => ipcRenderer.invoke('project:invalidate', { projectRoot }),
     watch: (projectRoot) => ipcRenderer.invoke('project:watch', { projectRoot }),
     unwatch: () => ipcRenderer.invoke('project:unwatch'),
@@ -184,16 +190,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   file: {
     scan: (root, options) => ipcRenderer.invoke('file:scan', { root, options }),
+    browse: (dirPath, showHidden) => ipcRenderer.invoke('file:browse', { dirPath, showHidden }),
     create: (filePath, content) => ipcRenderer.invoke('file:create', { filePath, content }),
     createInProject: (projectRoot, relativePath, content) =>
       ipcRenderer.invoke('file:createInProject', { projectRoot, relativePath, content }),
     move: (projectRoot, fromPath, toPath) =>
       ipcRenderer.invoke('file:move', { projectRoot, fromPath, toPath }),
+    copy: (fromPath, toPath) => ipcRenderer.invoke('file:copy', { fromPath, toPath }),
     reorder: (projectRoot, sourcePath, targetPath, position) =>
       ipcRenderer.invoke('file:reorder', { projectRoot, sourcePath, targetPath, position }),
     delete: (filePath) => ipcRenderer.invoke('file:delete', { filePath }),
     read: (filePath) => ipcRenderer.invoke('file:read', { filePath }),
     write: (filePath, content) => ipcRenderer.invoke('file:write', { filePath, content }),
+    writeBytes: (filePath, bytes) => ipcRenderer.invoke('file:writeBytes', { filePath, bytes }),
   },
 
   // ==========================================================================
