@@ -980,8 +980,7 @@ ipcMain.handle('shell:openPath', async (event, { fullPath }) => {
 
 // Open a folder as a project in a new window
 ipcMain.handle('window:openProject', async (event, { projectPath }) => {
-  const win = createWindow();
-  // Find an index.md or first .md file in the project to open
+  // Find a sensible initial markdown file to open.
   const indexPath = path.join(projectPath, 'index.md');
   const mrmdPath = path.join(projectPath, 'mrmd.md');
   let fileToOpen = null;
@@ -991,24 +990,51 @@ ipcMain.handle('window:openProject', async (event, { projectPath }) => {
   } else if (fs.existsSync(mrmdPath)) {
     fileToOpen = mrmdPath;
   } else {
-    // Find first .md file
-    try {
-      const entries = fs.readdirSync(projectPath, { withFileTypes: true });
-      const firstMd = entries
-        .filter(e => !e.isDirectory() && e.name.endsWith('.md'))
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))[0];
-      if (firstMd) fileToOpen = path.join(projectPath, firstMd.name);
-    } catch (e) { /* ignore */ }
+    // Recursive fallback: first markdown file in tree (bounded depth)
+    const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', '__pycache__', 'dist', 'build']);
+    const findFirstMarkdown = (dir, depth = 0, maxDepth = 4) => {
+      if (depth > maxDepth) return null;
+      let entries = [];
+      try {
+        entries = fs.readdirSync(dir, { withFileTypes: true });
+      } catch {
+        return null;
+      }
+
+      // Files first (stable alphabetical)
+      const files = entries
+        .filter(e => !e.isDirectory())
+        .map(e => e.name)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      const md = files.find(name => name.toLowerCase().endsWith('.md'));
+      if (md) return path.join(dir, md);
+
+      const dirs = entries
+        .filter(e => e.isDirectory())
+        .map(e => e.name)
+        .filter(name => !SKIP_DIRS.has(name) && !name.startsWith('.'))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+      for (const name of dirs) {
+        const found = findFirstMarkdown(path.join(dir, name), depth + 1, maxDepth);
+        if (found) return found;
+      }
+      return null;
+    };
+
+    fileToOpen = findFirstMarkdown(projectPath);
   }
 
-  // Send the file to the new window once it's loaded
-  if (fileToOpen) {
-    win.webContents.once('did-finish-load', () => {
-      win.webContents.send('open-with-file', { filePath: fileToOpen });
-    });
-  }
+  // Pass root + file path in query string.
+  // Renderer will never restore previous session for openProject windows.
+  const query = {
+    openProject: '1',
+    projectRoot: projectPath,
+  };
+  if (fileToOpen) query.openFile = fileToOpen;
+  createWindow({ query });
 
-  return { success: true };
+  return { success: true, fileToOpen };
 });
 
 // Get recent files and venvs
@@ -2254,7 +2280,7 @@ app.on('open-file', (event, filePath) => {
 // WINDOW MANAGEMENT
 // ============================================================================
 
-function createWindow() {
+function createWindow(options = {}) {
   const win = new BrowserWindow({
     width: DEFAULT_WINDOW_WIDTH,
     height: DEFAULT_WINDOW_HEIGHT,
@@ -2275,7 +2301,11 @@ function createWindow() {
     cleanupWindow(win.id);
   });
 
-  win.loadFile('index.html');
+  if (options.query) {
+    win.loadFile('index.html', { query: options.query });
+  } else {
+    win.loadFile('index.html');
+  }
   return win;
 }
 

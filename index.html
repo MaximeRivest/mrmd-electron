@@ -2386,6 +2386,11 @@
       color: #e8d44d;
     }
 
+    .runtime-lang-badge.term {
+      background: rgba(120, 120, 120, 0.18);
+      color: var(--text-muted);
+    }
+
     /* Runtime language section in notebook-scoped panel */
     .runtime-lang-section {
       margin-bottom: 4px;
@@ -2502,53 +2507,166 @@
       filter: brightness(1.1);
     }
 
-    /* Scope badge in runtime section header */
-    .runtime-scope-badge {
-      font-size: 9px;
-      font-weight: 500;
-      padding: 1px 5px;
-      border-radius: 3px;
-      text-transform: lowercase;
-      letter-spacing: 0.02em;
+    /* ── Accordion runtime rows ── */
+    .runtime-accordion {
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
     }
 
-    .runtime-scope-badge--notebook {
-      background: rgba(88, 166, 255, 0.12);
-      color: var(--accent);
+    .runtime-accordion:last-of-type {
+      border-bottom: none;
     }
 
-    .runtime-scope-badge--project {
-      background: rgba(63, 185, 80, 0.12);
-      color: var(--success);
-    }
-
-    .runtime-scope-badge--global {
-      background: rgba(210, 153, 34, 0.12);
-      color: var(--warning);
-    }
-
-    /* "Other notebook" badge for runtimes running from another notebook */
-    .runtime-from-other-badge {
-      font-size: 9px;
-      font-weight: 400;
-      padding: 1px 5px;
-      border-radius: 3px;
-      background: rgba(139, 148, 158, 0.12);
-      color: var(--text-dim);
-      font-style: italic;
-    }
-
-    /* Attach-to-existing runtime picker */
-    .runtime-attach-picker {
-      border-bottom: 1px solid var(--border);
-    }
-
-    .runtime-attach-option {
+    .runtime-accordion-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 8px;
-      margin: 2px 0;
+      padding: 8px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s;
+    }
+
+    .runtime-accordion-header:hover {
+      background: var(--hover-bg);
+    }
+
+    .runtime-accordion-arrow {
+      font-size: 10px;
+      color: var(--text-dim);
+      width: 12px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .runtime-accordion-summary {
+      font-size: 11px;
+      color: var(--text-dim);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* Expanded body */
+    .runtime-accordion-body {
+      padding: 4px 16px 12px 36px;
+    }
+
+    .runtime-accordion-body.collapsed {
+      display: none;
+    }
+
+    .runtime-expanded-section {
+      margin-bottom: 10px;
+    }
+
+    .runtime-expanded-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .runtime-expanded-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+
+    .runtime-expanded-details {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .runtime-expanded-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* Start / attach action buttons inside expanded body */
+    .runtime-scope-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .runtime-scope-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-muted);
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      text-align: left;
+      width: 100%;
+    }
+
+    .runtime-scope-action-btn:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
+
+    .runtime-scope-action-btn .scope-action-label {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .runtime-scope-action-btn .scope-action-meta {
+      font-size: 10px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    /* "Attach" variant — has a green-ish left border */
+    .runtime-scope-action-btn.attach-btn {
+      border-left: 2px solid var(--success);
+    }
+
+    .runtime-scope-action-btn.attach-btn:hover {
+      border-left-color: var(--success);
+    }
+
+    /* "Use another notebook's runtime" sub-section */
+    .runtime-other-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--text-dim);
+      user-select: none;
+      transition: color 0.1s;
+    }
+
+    .runtime-other-toggle:hover {
+      color: var(--text-muted);
+    }
+
+    .runtime-other-list {
+      padding: 2px 0 2px 20px;
+    }
+
+    .runtime-other-list.collapsed {
+      display: none;
+    }
+
+    .runtime-other-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      margin: 1px -8px;
       border-radius: 4px;
       cursor: pointer;
       font-size: 11px;
@@ -2556,28 +2674,130 @@
       transition: background 0.1s, color 0.1s;
     }
 
-    .runtime-attach-option:hover {
+    .runtime-other-item:hover {
       background: var(--hover-bg);
       color: var(--text);
     }
 
-    .runtime-attach-option--active {
+    .runtime-other-item--self {
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
       color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
     }
 
-    .runtime-attach-option-dot {
+    .runtime-other-self-tag {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 9px;
+      line-height: 1.2;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      border-radius: 10px;
+      padding: 1px 6px;
+      vertical-align: middle;
+    }
+
+    .runtime-other-dot {
       width: 5px;
       height: 5px;
       border-radius: 50%;
+      background: var(--text-dim);
       flex-shrink: 0;
     }
 
-    .runtime-attach-option-label {
+    /* Scope tag colors */
+    .runtime-scope-tag {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .runtime-scope-tag.scope-notebook {
+      background: rgba(88, 166, 255, 0.10);
+      color: color-mix(in srgb, var(--accent) 80%, var(--text));
+    }
+
+    .runtime-scope-tag.scope-project {
+      background: rgba(63, 185, 80, 0.10);
+      color: var(--success);
+    }
+
+    .runtime-scope-tag.scope-global {
+      background: rgba(210, 153, 34, 0.10);
+      color: var(--warning);
+    }
+
+    /* Separator line */
+    .runtime-expanded-sep {
+      height: 1px;
+      background: color-mix(in srgb, var(--border) 50%, transparent);
+      margin: 8px 0;
+    }
+
+    /* ── Scope row (Notebook / Project / Global) ── */
+    .runtime-scope-row {
+      margin-bottom: 1px;
+    }
+
+    .runtime-scope-row--attached {
+      border-left: 2px solid var(--accent);
+      padding-left: 2px;
+    }
+
+    .runtime-scope-row-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      min-height: 28px;
+    }
+
+    .runtime-scope-row-label {
       flex: 1;
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      padding: 2px 4px;
+      margin: -2px -4px;
+      border-radius: 3px;
+      transition: background 0.1s;
+    }
+
+    .runtime-scope-row-label:hover {
+      background: var(--hover-bg);
+    }
+
+    .runtime-scope-row-port {
+      font-size: 11px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .runtime-scope-row-actions {
+      display: flex;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .runtime-scope-row-actions .runtime-item-btn {
+      padding: 1px 6px;
+      font-size: 10px;
+    }
+
+    /* Inline detail pane below a scope row */
+    .runtime-scope-detail {
+      padding: 4px 0 6px 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .runtime-scope-detail.collapsed {
+      display: none;
     }
 
     /* =========================================================================
@@ -7348,6 +7568,8 @@ session:
   <script src="./node_modules/xterm/lib/xterm.js"></script>
   <script src="./node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
   <script src="./node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js"></script>
+  <script src="./node_modules/xterm-addon-canvas/lib/xterm-addon-canvas.js"></script>
+  <script src="./node_modules/xterm-addon-webgl/lib/xterm-addon-webgl.js"></script>
 
   <!-- Runtime orchestration layer (shared by Electron + browser shim) -->
   <script src="./src/runtime-controller.js"></script>
@@ -7407,11 +7629,20 @@ session:
       // Runtime attachment pinning: `${docPath}::${language}` -> { sessionName, port, generation, reason, at }
       runtimeAttachments: new Map(),
       runtimeAttachmentGeneration: 0,
+      // Last-known notebook-scoped runtime per doc+language (for easy "back to this notebook" attach)
+      // key: `${docPath}::${language}` -> sessionName
+      notebookOwnedRuntimeSessions: new Map(),
       // Runtime UX state (simplified start/restart/retry)
       runtimePending: new Set(),
       runtimeErrors: new Map(),
       // language -> effective runtime preference snapshot from backend
       runtimePrefsByLanguage: new Map(),
+      // Current document identity for notebook-runtime ownership checks
+      runtimeDocIdentity: {
+        projectId: null,
+        docRelPath: null,
+        docHash: null,
+      },
       runtimeDiagnosticsOpen: false,
       // Lightweight runtime lifecycle telemetry for debugging/stability
       runtimeEvents: [],
@@ -7475,12 +7706,15 @@ session:
       reconnectAttempts: 0,
       baseUrl: null,
       resizeFitTimer: null,
+      resyncTimers: [],
+      resyncRaf: null,
       tabs: [],
       activeTabId: null,
       nextTabId: 1,
       modifiers: { ctrl: false, alt: false, super: false, shift: false },
       fontSize: 14,
       focusMode: false,
+      pendingPtyEnsure: false,
     };
 
     const NOTEBOOK_SYNC_STATE_KEY = 'mrmd-notebook-sync-map';
@@ -10895,12 +11129,12 @@ session:
           if (navState.mode === 'files') renderRawTreeToDOM();
           break;
         case 'copy-item': {
-          // Duplicate: copy to same dir with " copy" suffix
+          // Duplicate: copy to same dir with "-copy" suffix (FSML/sync-safe)
           const name = target.path.split('/').pop();
           const ext = name.includes('.') ? '.' + name.split('.').pop() : '';
           const baseName = ext ? name.slice(0, -ext.length) : name;
           const parentDir = getParentPath(target.path);
-          const newName = baseName + ' copy' + ext;
+          const newName = baseName + '-copy' + ext;
           const newRelPath = parentDir ? parentDir + '/' + newName : newName;
           try {
             if (electronAPI?.file?.copy) {
@@ -12273,15 +12507,28 @@ session:
         state.jsRuntime = jsRuntime;
 
         // Reset stale runtime state from previous file.
-        // Runtime will be properly set up by resolveProjectSession() after editor creation.
+        // Runtime will be properly set up by warmup/register flows for this document.
         state.pythonPort = null;
         state.pythonVenv = null;
+        state.bashPort = null;
+        state.bashSession = null;
+        state.rSession = null;
+        state.juliaSession = null;
+        state.ptySession = null;
         state.runtimePrefsByLanguage.clear();
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
+
+        // Refresh runtimes immediately when file changes so panel reflects
+        // the new document context without manual refresh.
+        if (typeof refreshRuntimes === 'function') {
+          refreshRuntimes().catch((e) => {
+            console.warn('[runtime] refresh after file switch failed:', e?.message || e);
+          });
+        }
 
         // Place cursor on first empty line (after frontmatter) for a clean first impression.
         // Without this, cursor lands at position 0, showing raw YAML frontmatter source.
@@ -12389,6 +12636,13 @@ session:
 
         // Reconnect full terminal panel for new file
         reconnectFullTerminal();
+
+        // Final runtime refresh after warmup/registration settles.
+        if (typeof refreshRuntimes === 'function') {
+          refreshRuntimes().catch((e) => {
+            console.warn('[runtime] final refresh after file open failed:', e?.message || e);
+          });
+        }
 
       } catch (e) {
         console.error('Error opening file:', e);
@@ -13932,7 +14186,15 @@ session:
         const notebook = snapshot.notebook || {};
         const project = snapshot.project || {};
         const defaults = snapshot.defaults || {};
-        const projectRoot = snapshot.context?.projectRoot || state.project?.root || state.projectDir || '.';
+        const context = snapshot.context || {};
+        const projectRoot = context.projectRoot || state.project?.root || state.projectDir || '.';
+
+        // Cache current-doc identity for reliable "this notebook runtime" detection.
+        state.runtimeDocIdentity.projectId = context.projectId || null;
+        state.runtimeDocIdentity.docRelPath = context.docRelPath || null;
+        state.runtimeDocIdentity.docHash = context.docRelPath
+          ? await sha256HexPrefix(context.docRelPath, 10)
+          : null;
 
         const langs = ['python', 'bash', 'r', 'julia', 'pty'];
         for (const lang of langs) {
@@ -14019,232 +14281,223 @@ session:
       renderRuntimeDiagnostics();
     }
 
+    // --- Accordion state for runtimes panel ---
+    let _expandedRuntimeLangs = new Set();
+    let _attachSubPanelOpen = {};
+
+    function toggleRuntimeAccordion(language) {
+      if (_expandedRuntimeLangs.has(language)) {
+        _expandedRuntimeLangs.delete(language);
+        delete _attachSubPanelOpen[language];
+      } else {
+        _expandedRuntimeLangs.add(language);
+      }
+
+      // Toggle DOM directly — no full re-render, no flicker
+      const accordion = document.querySelector(`.runtime-accordion[data-language="${language}"]`);
+      if (!accordion) return;
+
+      const body = accordion.querySelector('.runtime-accordion-body');
+      const arrow = accordion.querySelector('.runtime-accordion-arrow');
+      const isExpanded = _expandedRuntimeLangs.has(language);
+
+      if (body) body.classList.toggle('collapsed', !isExpanded);
+      if (arrow) arrow.textContent = isExpanded ? '▾' : '▸';
+    }
+
+    function toggleAttachSubPanel(language) {
+      _attachSubPanelOpen[language] = !_attachSubPanelOpen[language];
+
+      // Toggle DOM directly
+      const section = document.querySelector(`.runtime-accordion[data-language="${language}"] .runtime-other-list`);
+      const toggle = document.querySelector(`.runtime-accordion[data-language="${language}"] .runtime-other-toggle span`);
+      if (section) section.classList.toggle('collapsed', !_attachSubPanelOpen[language]);
+      if (toggle) toggle.textContent = _attachSubPanelOpen[language] ? '▾' : '▸';
+    }
+
+    /** Determine scope from a session name. */
+    function getScopeFromSessionName(sessionName) {
+      if (!sessionName) return 'unknown';
+      if (sessionName.startsWith('rt:global:')) return 'global';
+      if (sessionName.startsWith('rt:project:')) return 'project';
+      if (sessionName.startsWith('rt:notebook:')) return 'notebook';
+      return 'unknown';
+    }
+
+    /** Parse encoded runtime session names. */
+    function parseRuntimeSessionName(sessionName) {
+      const parts = String(sessionName || '').split(':');
+      if (parts[0] !== 'rt') return null;
+
+      const scope = parts[1];
+      if (scope === 'notebook' && parts.length >= 6) {
+        return {
+          scope,
+          projectId: parts[2],
+          docHash: parts[3],
+          language: normalizeRuntimeLanguage(parts[4]) || parts[4],
+          profileHash: parts[5],
+        };
+      }
+      if (scope === 'project' && parts.length >= 5) {
+        return {
+          scope,
+          projectId: parts[2],
+          language: normalizeRuntimeLanguage(parts[3]) || parts[3],
+          profileHash: parts[4],
+        };
+      }
+      if (scope === 'global' && parts.length >= 4) {
+        return {
+          scope,
+          language: normalizeRuntimeLanguage(parts[2]) || parts[2],
+          profileHash: parts[3],
+        };
+      }
+      return null;
+    }
+
+    /** Compute SHA-256 hex prefix (used to match notebook docHash in session names). */
+    async function sha256HexPrefix(input, len = 10) {
+      try {
+        const text = String(input || '');
+        const bytes = new TextEncoder().encode(text);
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const hex = Array.from(new Uint8Array(digest))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+        return hex.slice(0, len);
+      } catch {
+        return null;
+      }
+    }
+
+    /** Check if a notebook-scoped session belongs to the current document. */
+    function isCurrentDocumentNotebookSession(sessionName, language = null) {
+      const parsed = parseRuntimeSessionName(sessionName);
+      if (!parsed || parsed.scope !== 'notebook') return false;
+      const ident = state.runtimeDocIdentity || {};
+      if (!ident.projectId || !ident.docHash) return false;
+      if (parsed.projectId !== ident.projectId) return false;
+      if (parsed.docHash !== ident.docHash) return false;
+      if (language) {
+        const normalized = normalizeRuntimeLanguage(language) || language;
+        if ((parsed.language || '') !== normalized) return false;
+      }
+      return true;
+    }
+
     /**
-     * Render the runtimes list in the panel.
+     * Reverse-lookup: which document owns this runtime session?
+     * Returns a display-friendly name (not full path).
+     */
+    function getDocumentDisplayForRuntime(sessionName, runtime) {
+      // 0. Best case: this is the current notebook's own runtime.
+      if (isCurrentDocumentNotebookSession(sessionName)) {
+        return 'This notebook runtime';
+      }
+
+      // 1. Try the in-memory attachment map
+      for (const [, attachment] of state.runtimeAttachments) {
+        if (attachment.sessionName === sessionName && attachment.documentPath) {
+          return attachment.documentPath.split('/').pop().replace(/\.md$/, '');
+        }
+      }
+
+      // 2. Fallback: use the runtime's CWD or venv to give some context
+      if (runtime) {
+        const parts = [];
+        if (runtime.venv) parts.push(runtime.venv.split('/').pop());
+        if (runtime.cwd) {
+          const cwdName = runtime.cwd.split('/').pop();
+          if (cwdName && (!parts.length || parts[0] !== cwdName)) {
+            parts.push(cwdName);
+          }
+        }
+        if (parts.length > 0) return parts.join(' · ');
+      }
+
+      // 3. Last resort: extract something readable from session name
+      // Session format: rt:notebook:projectId:docHash:language:profileHash
+      const segments = sessionName.split(':');
+      if (segments.length >= 4) {
+        return 'notebook ' + segments[3].slice(0, 6);
+      }
+      return 'notebook';
+    }
+
+    /**
+     * Render the runtimes panel — Expandable Accordion design.
      *
-     * Shows:
-     * 1. One row per language used in this document (from code blocks)
-     * 2. Other running runtimes (for languages NOT in this doc) — so you can attach
-     * 3. Attachment indicator showing which runtime/port this notebook uses
-     * 4. "Attach to existing" option for project/global-scoped runtimes
+     * All supported languages are always listed.
+     * Collapsed: arrow + dot + LANG + summary.
+     * Expanded: current attachment, actions, start options, attach-to-other.
      */
     function renderRuntimesPanel() {
       const listEl = document.getElementById('runtimes-list');
       if (!listEl) return;
 
-      const runtimes = state.runningRuntimes || [];
-      const attachedIds = {
-        python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
-        bash: state.bashSession?.name,
-        r: state.rSession?.name,
-        julia: state.juliaSession?.name,
-        pty: state.ptySession?.name,
-      };
-
-      // --- Detect languages in the current document ---
-      const docLanguages = getDocumentLanguagesFromEditor();
-
-      // Language display config
+      const ALL_LANGUAGES = ['python', 'r', 'julia', 'bash', 'pty'];
       const LANG_DISPLAY = {
         python: { label: 'PYTHON', badge: 'python' },
         bash:   { label: 'BASH',   badge: 'bash' },
         r:      { label: 'R',      badge: 'r' },
         julia:  { label: 'JULIA',  badge: 'julia' },
-        pty:    { label: 'TERM',   badge: 'bash' },
-        javascript: { label: 'JS', badge: 'javascript' },
+        pty:    { label: 'TERM',   badge: 'term' },
       };
 
-      // --- Also find running runtime languages NOT in the document ---
-      const runningLanguages = new Set();
-      for (const rt of runtimes) {
-        const lang = normalizeRuntimeLanguage(rt.language) || rt.language || 'python';
-        if (lang !== 'node' && lang !== 'javascript') {
-          runningLanguages.add(lang);
-        }
-      }
-
-      // Languages in document get primary treatment; running-but-not-in-doc get secondary
-      const otherRunningLanguages = new Set();
-      for (const lang of runningLanguages) {
-        if (!docLanguages.has(lang)) {
-          otherRunningLanguages.add(lang);
-        }
-      }
-
-      // If no code blocks and no running runtimes, show helpful empty state
-      if (docLanguages.size === 0 && otherRunningLanguages.size === 0) {
-        listEl.innerHTML = `
-          <div class="runtimes-empty">
-            <div style="margin-bottom: 8px;">No code blocks in this document</div>
-            <div style="font-size: 11px; color: var(--text-dim);">
-              Add a code block (e.g. \`\`\`python) to see its runtime here.
-            </div>
-          </div>
-        `;
-        return;
-      }
+      const runtimes = state.runningRuntimes || [];
+      // Prefer explicit per-document attachment pins.
+      // Fallback to legacy per-language session state for compatibility.
+      const attachedIds = {
+        python: getPinnedRuntimeAttachment('python')?.sessionName || state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+        bash: getPinnedRuntimeAttachment('bash')?.sessionName || state.bashSession?.name,
+        r: getPinnedRuntimeAttachment('r')?.sessionName || state.rSession?.name,
+        julia: getPinnedRuntimeAttachment('julia')?.sessionName || state.juliaSession?.name,
+        pty: getPinnedRuntimeAttachment('pty')?.sessionName || state.ptySession?.name,
+      };
 
       let html = '';
-      let renderedRows = 0;
 
-      // --- Helper to render a single language runtime row ---
-      function renderLanguageRow(normalized, { isFromDoc = true } = {}) {
-        const display = LANG_DISPLAY[normalized] || { label: normalized.toUpperCase(), badge: normalized };
-        const { runtime, count } = getPreferredRuntimeForLanguage(normalized, runtimes, attachedIds);
-        const rowState = getRuntimeRowState(normalized, runtime);
-        const defaults = getRuntimeConfigDefaults(normalized, runtime);
-        const cwdShort = runtime?.cwd ? runtime.cwd.split('/').slice(-2).join('/') : '';
-        const venvShort = runtime?.venv ? runtime.venv.split('/').slice(-2).join('/') : '';
+      for (const lang of ALL_LANGUAGES) {
+        const display = LANG_DISPLAY[lang];
+        const { runtime } = getPreferredRuntimeForLanguage(lang, runtimes, attachedIds);
+        const rowState = getRuntimeRowState(lang, runtime);
+        const isExpanded = _expandedRuntimeLangs.has(lang);
 
-        // Determine the scope indicator for attached runtimes
-        const pref = state.runtimePrefsByLanguage.get(normalized);
-        const scopeLabel = pref?.scope || defaults.scope || 'notebook';
-        const scopeBadge = runtime ? `<span class="runtime-scope-badge runtime-scope-badge--${scopeLabel}" title="Scope: ${scopeLabel}">${scopeLabel}</span>` : '';
+        // Collapsed summary text
+        const venvShort = runtime?.venv ? runtime.venv.split('/').pop() : '';
+        const portStr = runtime?.port ? `:${runtime.port}` : '';
+        const summary = runtime
+          ? `${venvShort ? venvShort + ' · ' : ''}${portStr}`
+          : (rowState.key === 'starting' ? 'starting…' : (rowState.key === 'error' ? 'error' : ''));
 
-        // Show all available sessions for this language (for "attach to existing" picker)
-        const langRuntimes = runtimes.filter(rt => (normalizeRuntimeLanguage(rt.language) || rt.language || 'python') === normalized);
-        const hasMultipleSessions = langRuntimes.length > 1;
-        const pinnedAttachment = getPinnedRuntimeAttachment(normalized);
-        const attachedSessionName = pinnedAttachment?.sessionName || '';
+        // Dot color
+        const dotStyle = rowState.key === 'ready' ? ''
+          : rowState.key === 'error' ? 'background:#ef4444;'
+          : rowState.key === 'starting' ? 'background:#f59e0b;'
+          : 'background: var(--text-dim); opacity:0.4;';
 
-        let rowHtml = '';
-        rowHtml += `<div class="runtime-lang-section" data-language="${normalized}">`;
-        rowHtml += `<div class="runtime-lang-section-header">`;
-        rowHtml += `  <span class="runtime-lang-badge ${display.badge}">${display.label}</span>`;
-        rowHtml += `  ${scopeBadge}`;
-        if (!isFromDoc && runtime) {
-          rowHtml += `  <span class="runtime-from-other-badge" title="No ${display.label.toLowerCase()} code blocks in this document — runtime is running from another notebook">other notebook</span>`;
-        }
-        rowHtml += `</div>`;
-
-        rowHtml += `
-          <div class="runtime-item ${runtime ? 'attached' : 'runtime-item--inactive'}"
-               data-language="${normalized}"
-               title="${runtime ? `PID ${runtime.pid}${runtime.cwd ? ' · ' + runtime.cwd : ''}` : display.label}">
-            <div class="runtime-item-status" style="${rowState.key === 'error' ? 'background:#ef4444;' : rowState.key === 'starting' ? 'background:#f59e0b;' : rowState.key === 'not-ready' ? 'background: var(--text-dim); opacity:0.45;' : ''}"></div>
-            <div class="runtime-item-info">
-              <div class="runtime-item-name">${rowState.label}</div>
-              <div class="runtime-item-meta">
-                ${runtime
-                  ? `${venvShort ? `${venvShort} · ` : ''}port ${runtime.port}${cwdShort ? `<br>cwd: ${cwdShort}` : ''}${attachedSessionName ? `<br><span style="color: var(--text-dim);">session: ${attachedSessionName.split(':').slice(-1)[0]}</span>` : ''}${count > 1 ? `<br>${count} sessions available` : ''}`
-                  : (rowState.error ? rowState.error : 'Starts automatically when you run a cell')}
-              </div>
-            </div>
-            <div class="runtime-item-actions">
-              ${rowState.primaryText
-                ? `<button class="runtime-item-btn" onclick="event.stopPropagation(); ${rowState.primaryAction}">${rowState.primaryText}</button>`
-                : `<button class="runtime-item-btn" disabled style="opacity:0.6; cursor:default;">starting</button>`}
-              <button class="runtime-item-btn" onclick="event.stopPropagation(); toggleRuntimeConfig('${normalized}')">⚙</button>
-              ${runtime
-                ? `<button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${runtime.id}', '${normalized}')">stop</button>`
-                : ''}
-            </div>
-          </div>
-        `;
-
-        // --- "Attach to existing runtime" picker (shown when multiple sessions exist) ---
-        if (hasMultipleSessions) {
-          rowHtml += `<div class="runtime-attach-picker" style="padding: 4px 16px 4px 32px;">`;
-          rowHtml += `<div style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px;">Attach to:</div>`;
-          for (const rt of langRuntimes) {
-            const isAttached = rt.id === attachedSessionName || rt.id === runtime?.id;
-            const rtVenv = rt.venv ? rt.venv.split('/').slice(-2).join('/') : '';
-            rowHtml += `
-              <div class="runtime-attach-option ${isAttached ? 'runtime-attach-option--active' : ''}"
-                   onclick="attachToExistingRuntime('${normalized}', '${rt.id}')"
-                   title="${rt.id} — port ${rt.port}${rt.cwd ? ' — ' + rt.cwd : ''}">
-                <span class="runtime-attach-option-dot" style="background: ${isAttached ? 'var(--accent)' : 'var(--text-dim)'}"></span>
-                <span class="runtime-attach-option-label">${rtVenv || rt.id} · port ${rt.port}</span>
-                ${isAttached ? '<span style="font-size: 10px; color: var(--accent);">attached</span>' : ''}
-              </div>
-            `;
-          }
-          rowHtml += `</div>`;
-        }
-
-        // --- Configuration panel ---
-        rowHtml += `
-          <div class="runtime-config-panel" id="runtime-config-${normalized}" style="display: none;">
-            ${normalized === 'python' ? `
-            <div class="runtime-config-field">
-              <label>Venv</label>
-              <div class="runtime-config-field-row">
-                <input type="text" value="${makeRelativePath(defaults.venv, state.project?.root || state.projectDir) || '.venv'}" data-field="venv" data-language="${normalized}" />
-              </div>
-            </div>
-            ` : ''}
-            <div class="runtime-config-field">
-              <label>CWD</label>
-              <div class="runtime-config-field-row">
-                <input type="text" value="${makeRelativePath(defaults.cwd, state.project?.root || state.projectDir) || '.'}" data-field="cwd" data-language="${normalized}" />
-              </div>
-            </div>
-            <div class="runtime-config-field">
-              <label>Scope</label>
-              <div class="runtime-config-field-row">
-                <select data-field="scope" data-language="${normalized}">
-                  <option value="notebook" ${defaults.scope === 'notebook' ? 'selected' : ''}>Notebook</option>
-                  <option value="project" ${defaults.scope === 'project' ? 'selected' : ''}>Project</option>
-                  <option value="global" ${defaults.scope === 'global' ? 'selected' : ''}>Global</option>
-                </select>
-              </div>
-            </div>
-            <div class="runtime-config-field">
-              <label>CWD Mode</label>
-              <div class="runtime-config-field-row">
-                <select data-field="cwd_mode" data-language="${normalized}">
-                  <option value="project-root" ${defaults.cwd_mode === 'project-root' ? 'selected' : ''}>Project root</option>
-                  <option value="notebook-dir" ${defaults.cwd_mode === 'notebook-dir' ? 'selected' : ''}>Notebook directory</option>
-                  <option value="custom" ${defaults.cwd_mode === 'custom' ? 'selected' : ''}>Custom path</option>
-                </select>
-              </div>
-            </div>
-            <div class="runtime-config-actions">
-              <button class="runtime-item-btn" onclick="applyRuntimeConfig('${normalized}')">Apply</button>
-            </div>
-          </div>
-        `;
-
-        rowHtml += `</div>`;
-        return rowHtml;
-      }
-
-      // --- Render rows for languages in the current document ---
-      for (const lang of docLanguages) {
-        const normalized = normalizeRuntimeLanguage(lang) || lang;
-        if (normalized === 'node' || normalized === 'javascript') continue;
-        html += renderLanguageRow(normalized, { isFromDoc: true });
-        renderedRows += 1;
-      }
-
-      // --- Render rows for running runtimes NOT in the current document ---
-      if (otherRunningLanguages.size > 0) {
+        html += `<div class="runtime-accordion" data-language="${lang}">`;
         html += `
-          <div style="padding: 8px 16px 4px; border-top: 1px solid var(--border); margin-top: 4px;">
-            <div style="font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px;">Other running runtimes</div>
+          <div class="runtime-accordion-header" onclick="toggleRuntimeAccordion('${lang}')">
+            <span class="runtime-accordion-arrow">${isExpanded ? '▾' : '▸'}</span>
+            <span class="runtime-item-status" style="${dotStyle}"></span>
+            <span class="runtime-lang-badge ${display.badge}">${display.label}</span>
+            <span class="runtime-accordion-summary">${summary}</span>
           </div>
         `;
-        for (const lang of otherRunningLanguages) {
-          html += renderLanguageRow(lang, { isFromDoc: false });
-          renderedRows += 1;
-        }
+
+        // Always render the body; use .collapsed class to hide when not expanded.
+        // This avoids DOM teardown/rebuild flicker when toggling.
+        html += renderRuntimeAccordionBody(lang, runtime, rowState, runtimes, attachedIds, isExpanded);
+
+        html += `</div>`;
       }
 
-      if (renderedRows === 0) {
-        html += `
-          <div class="runtime-item runtime-item--inactive" style="margin: 8px 16px;">
-            <div class="runtime-item-status" style="background: var(--text-dim); opacity: 0.45;"></div>
-            <div class="runtime-item-info">
-              <div class="runtime-item-name" style="color: var(--text-muted);">JavaScript runtime</div>
-              <div class="runtime-item-meta">Runs in-browser automatically (no external runtime needed)</div>
-            </div>
-          </div>
-        `;
-      }
-
-      // Link to Home for full runtime management
+      // Footer
       html += `
-        <div style="padding: 12px 16px; border-top: 1px solid var(--border); margin-top: 8px;">
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border); margin-top: 4px;">
           <button class="runtime-item-btn" onclick="showHomeView()" style="width: 100%; text-align: center; padding: 6px;">
             All runtimes →
           </button>
@@ -14253,6 +14506,210 @@ session:
 
       listEl.innerHTML = html;
       renderRuntimeDiagnostics();
+    }
+
+    /**
+     * Render the expanded body for one language in the accordion.
+     * Always produces HTML; uses .collapsed class to hide when not expanded.
+     *
+     * Layout: four scope rows (Notebook / Project / Global / Other notebooks),
+     * each with contextual action buttons. Clicking a row label toggles
+     * an inline detail pane (port, cwd, venv, ⚙ config).
+     */
+    function renderRuntimeAccordionBody(lang, runtime, rowState, allRuntimes, attachedIds, isExpanded) {
+      const defaults = getRuntimeConfigDefaults(lang, runtime);
+      const langRuntimes = allRuntimes.filter(
+        rt => (normalizeRuntimeLanguage(rt.language) || rt.language || 'python') === lang
+      );
+      const pinnedAttachment = getPinnedRuntimeAttachment(lang);
+      const currentSessionName = pinnedAttachment?.sessionName || runtime?.id || '';
+
+      // Categorise running runtimes by scope
+      const notebookRuntimes = langRuntimes.filter(rt => getScopeFromSessionName(rt.id) === 'notebook');
+      const projectRuntime = langRuntimes.find(rt => getScopeFromSessionName(rt.id) === 'project');
+      const globalRuntime = langRuntimes.find(rt => getScopeFromSessionName(rt.id) === 'global');
+
+      const docLangKey = runtimeAttachmentKey(lang, state.currentFile);
+      const rememberedOwnNotebookSession = state.notebookOwnedRuntimeSessions.get(docLangKey) || null;
+
+      // This document's own notebook-scoped runtime
+      const myNotebookRt = notebookRuntimes.find(rt => {
+        if (rememberedOwnNotebookSession && rt.id === rememberedOwnNotebookSession) return true;
+        for (const [, att] of state.runtimeAttachments) {
+          if (att.sessionName === rt.id && att.documentPath === state.currentFile) return true;
+        }
+        return rt.id === currentSessionName && getScopeFromSessionName(currentSessionName) === 'notebook';
+      });
+
+      // Backfill remembered own-session mapping whenever we can infer it.
+      if (myNotebookRt?.id) {
+        state.notebookOwnedRuntimeSessions.set(docLangKey, myNotebookRt.id);
+      }
+
+      // Notebook runtimes that can be attached to from this document.
+      // Include this notebook's own runtime when currently attached elsewhere,
+      // so user can clearly switch back.
+      const attachNotebookRuntimes = notebookRuntimes.filter(rt => rt.id !== currentSessionName);
+
+      function isCurrentNotebookRuntime(rt) {
+        if (!rt) return false;
+        if (isCurrentDocumentNotebookSession(rt.id, lang)) return true;
+        if (myNotebookRt && rt.id === myNotebookRt.id) return true;
+        if (rememberedOwnNotebookSession && rt.id === rememberedOwnNotebookSession) return true;
+        for (const [, att] of state.runtimeAttachments) {
+          if (att.sessionName === rt.id && att.documentPath === state.currentFile) return true;
+        }
+        return false;
+      }
+
+      let html = `<div class="runtime-accordion-body${isExpanded ? '' : ' collapsed'}">`;
+
+      // ── Config panel (shared, toggled by ⚙ in any detail pane) ──
+      html += `
+        <div class="runtime-config-panel" id="runtime-config-${lang}" style="display: none;">
+          ${lang === 'python' ? `
+          <div class="runtime-config-field">
+            <label>Venv</label>
+            <div class="runtime-config-field-row">
+              <input type="text" value="${makeRelativePath(defaults.venv, state.project?.root || state.projectDir) || '.venv'}" data-field="venv" data-language="${lang}" />
+            </div>
+          </div>` : ''}
+          <div class="runtime-config-field">
+            <label>CWD</label>
+            <div class="runtime-config-field-row">
+              <input type="text" value="${makeRelativePath(defaults.cwd, state.project?.root || state.projectDir) || '.'}" data-field="cwd" data-language="${lang}" />
+            </div>
+          </div>
+          <div class="runtime-config-field">
+            <label>CWD Mode</label>
+            <div class="runtime-config-field-row">
+              <select data-field="cwd_mode" data-language="${lang}">
+                <option value="project-root" ${defaults.cwd_mode === 'project-root' ? 'selected' : ''}>Project root</option>
+                <option value="notebook-dir" ${defaults.cwd_mode === 'notebook-dir' ? 'selected' : ''}>Notebook directory</option>
+                <option value="custom" ${defaults.cwd_mode === 'custom' ? 'selected' : ''}>Custom path</option>
+              </select>
+            </div>
+          </div>
+          <div class="runtime-config-actions">
+            <button class="runtime-item-btn" onclick="applyRuntimeConfig('${lang}')">Apply</button>
+          </div>
+        </div>
+      `;
+
+      // ── Helper to render one scope row ──
+      function scopeRow(scope, rt, isAttached) {
+        const running = !!rt;
+        const dot = running ? '●' : '○';
+        const venvShort = rt?.venv ? rt.venv.split('/').pop() : '';
+        const portStr = rt?.port ? `:${rt.port}` : '';
+        const cwdShort = rt?.cwd ? rt.cwd.split('/').slice(-2).join('/') : '';
+        const attachedLabel = isAttached ? ' (attached)' : '';
+        const scopeLabel = scope.charAt(0).toUpperCase() + scope.slice(1);
+        const detailId = `runtime-detail-${lang}-${scope}`;
+
+        let row = `<div class="runtime-scope-row ${isAttached ? 'runtime-scope-row--attached' : ''}" data-scope="${scope}">`;
+
+        // ── Row header: label + port + actions ──
+        row += `<div class="runtime-scope-row-header">`;
+        row += `  <span class="runtime-scope-row-label" onclick="event.stopPropagation(); toggleScopeDetail('${detailId}')">`;
+        row += `    <span style="color:${running ? 'var(--success)' : 'var(--text-dim)'}">${dot}</span> ${scopeLabel}`;
+        row += `    ${venvShort && running ? `<span style="color:var(--text-dim);font-weight:400"> · ${venvShort}</span>` : ''}`;
+        row += `    ${isAttached ? '<span style="color:var(--accent);font-size:10px;font-weight:400"> attached</span>' : ''}`;
+        row += `  </span>`;
+        row += `  <span class="runtime-scope-row-port">${portStr}</span>`;
+        row += `  <span class="runtime-scope-row-actions">`;
+
+        if (running && lang === 'pty') {
+          row += `<button class="runtime-item-btn" onclick="event.stopPropagation(); showSplitTerminal()" title="Open terminal">open</button>`;
+        }
+
+        if (running && isAttached) {
+          row += `<button class="runtime-item-btn" onclick="event.stopPropagation(); restartRuntimeForLanguage('${lang}')" title="Restart">restart</button>`;
+          row += `<button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')" title="Stop this runtime">stop</button>`;
+        } else if (running && !isAttached) {
+          row += `<button class="runtime-item-btn danger" onclick="event.stopPropagation(); killAndRefreshRuntime('${rt.id}', '${lang}')" title="Stop this runtime">stop</button>`;
+          row += `<button class="runtime-item-btn" onclick="event.stopPropagation(); attachToExistingRuntime('${lang}', '${rt.id}')" title="Attach this notebook to this runtime">attach</button>`;
+        } else {
+          row += `<button class="runtime-item-btn" onclick="event.stopPropagation(); startRuntimeWithScope('${lang}', '${scope}')" title="Start a ${scope}-scoped runtime">start</button>`;
+        }
+
+        row += `  </span>`;
+        row += `</div>`;
+
+        // ── Inline detail pane (collapsed by default) ──
+        if (running) {
+          row += `<div class="runtime-scope-detail collapsed" id="${detailId}">`;
+          row += `  <div class="runtime-scope-detail-info">`;
+          row += `    port ${rt.port}`;
+          if (cwdShort) row += ` · cwd: ${cwdShort}`;
+          if (venvShort) row += `<br>venv: ${venvShort}`;
+          row += `    <br>PID ${rt.pid}`;
+          row += `  </div>`;
+          row += `  <button class="runtime-item-btn" onclick="event.stopPropagation(); toggleRuntimeConfig('${lang}')" style="margin-top:4px;">⚙ config</button>`;
+          row += `</div>`;
+        }
+
+        row += `</div>`;
+        return row;
+      }
+
+      // ── Render scope rows ──
+      html += `<div class="runtime-scope-actions">`;
+      html += scopeRow('notebook', myNotebookRt, myNotebookRt?.id === runtime?.id);
+      html += scopeRow('project', projectRuntime, projectRuntime?.id === runtime?.id);
+      html += scopeRow('global', globalRuntime, globalRuntime?.id === runtime?.id);
+      html += `</div>`;
+
+      // ── "Other notebooks" section — always shown ──
+      const isSubOpen = _attachSubPanelOpen[lang];
+      html += `
+        <div class="runtime-scope-row" style="border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent); margin-top: 2px; padding-top: 2px;">
+          <div class="runtime-scope-row-header">
+            <span class="runtime-scope-row-label" onclick="event.stopPropagation(); toggleAttachSubPanel('${lang}')" style="cursor:pointer;">
+              <span style="font-size:10px;color:var(--text-dim)">${isSubOpen ? '▾' : '▸'}</span> Other notebooks…
+            </span>
+          </div>
+        </div>
+      `;
+
+      html += `<div class="runtime-other-list${isSubOpen ? '' : ' collapsed'}">`;
+      if (attachNotebookRuntimes.length > 0) {
+        const sortedAttachRuntimes = [...attachNotebookRuntimes].sort((a, b) => {
+          const aSelf = isCurrentNotebookRuntime(a) ? 0 : 1;
+          const bSelf = isCurrentNotebookRuntime(b) ? 0 : 1;
+          if (aSelf !== bSelf) return aSelf - bSelf;
+          return (a.port || 0) - (b.port || 0);
+        });
+
+        for (const rt of sortedAttachRuntimes) {
+          const isSelf = isCurrentNotebookRuntime(rt);
+          const displayName = isSelf ? 'This notebook runtime' : getDocumentDisplayForRuntime(rt.id, rt);
+          html += `
+            <div class="runtime-other-item${isSelf ? ' runtime-other-item--self' : ''}"
+                 onclick="event.stopPropagation(); attachToExistingRuntime('${lang}', '${rt.id}')"
+                 title="${rt.id}&#10;port ${rt.port}${rt.cwd ? '&#10;cwd: ' + rt.cwd : ''}">
+              <span class="runtime-other-dot" style="background:${isSelf ? 'var(--accent)' : 'var(--success)'}"></span>
+              <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                ${displayName}${isSelf ? ' <span class="runtime-other-self-tag">you</span>' : ''}
+              </span>
+              <span style="color:var(--text-dim);">:${rt.port}</span>
+              <button class="runtime-item-btn" onclick="event.stopPropagation(); attachToExistingRuntime('${lang}', '${rt.id}')">attach</button>
+            </div>
+          `;
+        }
+      } else {
+        html += `<div style="font-size:11px;color:var(--text-dim);padding:4px 8px;">No other notebook runtimes running</div>`;
+      }
+      html += `</div>`;
+
+      html += `</div>`; // close .runtime-accordion-body
+      return html;
+    }
+
+    /** Toggle inline detail pane for a scope row */
+    function toggleScopeDetail(detailId) {
+      const el = document.getElementById(detailId);
+      if (el) el.classList.toggle('collapsed');
     }
 
     /**
@@ -14392,8 +14849,89 @@ session:
     }
 
     /**
+     * Register a specific running session with the editor for a language.
+     * Used by manual "attach" flows where we intentionally bind this notebook
+     * to a session that differs from ensureEffective() for this document.
+     */
+    async function registerAttachedRuntimeWithEditor(language, sessionLike, pinReason = 'manual-attach') {
+      if (!state.editor || !state.currentFile) return false;
+      const langConfig = RUNTIME_LANG_CONFIG[language];
+      if (!langConfig) return false;
+
+      const config = {
+        ...sessionLike,
+        name: sessionLike?.name || sessionLike?.id,
+        alive: sessionLike?.alive !== false,
+      };
+
+      if (!config?.port || !config?.name) {
+        console.warn(`[${language}] registerAttachedRuntimeWithEditor: invalid session`, config);
+        return false;
+      }
+
+      // Update state snapshots
+      if (langConfig.stateKey) state[langConfig.stateKey] = config.port;
+      if (langConfig.sessionKey) state[langConfig.sessionKey] = config;
+      if (language === 'python') {
+        state.pythonPort = config.port;
+        state.session.info = config;
+        state.pythonVenv = {
+          ...(state.pythonVenv || {}),
+          name: config.name,
+          runtimeId: config.name,
+          path: config.venv || state.pythonVenv?.path || null,
+        };
+        updateSessionStatus('connected', config.name || state.session?.name || 'python');
+      }
+
+      if (config.name) {
+        setSessionEntry(config.name, {
+          language,
+          status: 'connected',
+          info: { pid: config.pid, port: config.port, cwd: config.cwd, venv: config.venv },
+        });
+      }
+
+      // Pin this language/doc attachment to the explicit session
+      pinRuntimeAttachment(language, config, pinReason);
+
+      const client = createAutoRestartingClient(
+        config.port,
+        language,
+        langConfig.aliases,
+        (freshConfig) => {
+          if (langConfig.stateKey) state[langConfig.stateKey] = freshConfig.port;
+          if (langConfig.sessionKey) state[langConfig.sessionKey] = freshConfig;
+          if (language === 'python') {
+            state.pythonPort = freshConfig.port;
+            state.session.info = freshConfig;
+            state.pythonVenv = {
+              ...(state.pythonVenv || {}),
+              name: freshConfig.name || config.name,
+              runtimeId: freshConfig.name || config.name,
+              path: freshConfig.venv || config.venv || state.pythonVenv?.path || null,
+            };
+            updateSessionStatus('connected', freshConfig.name || config.name || 'python');
+          }
+          pinRuntimeAttachment(language, freshConfig, 'auto-recovered');
+          if (typeof refreshRuntimes === 'function') refreshRuntimes();
+        },
+        config.name || null,
+      );
+
+      state.editor.registerRuntime(language, client);
+      recordRuntimeEvent('runtime:registered', language, {
+        sessionName: config.name,
+        port: config.port,
+        source: 'attach-existing',
+      });
+      return true;
+    }
+
+    /**
      * Attach the current notebook to an existing runtime session.
-     * Allows using a runtime started from another notebook.
+     * Allows using a runtime started from another notebook, or a
+     * project/global-scoped runtime.
      */
     async function attachToExistingRuntime(language, sessionId) {
       const normalized = normalizeRuntimeLanguage(language) || language;
@@ -14404,26 +14942,77 @@ session:
         return;
       }
 
-      // Pin the attachment for this document + language
-      pinRuntimeAttachment(normalized, {
-        name: target.id,
-        port: target.port,
-      }, 'manual-attach-existing');
+      // Clear previous pin for this doc+language before explicit attach.
+      clearPinnedRuntimeAttachment(normalized, 'manual-attach-existing-clear');
 
-      // Re-register the runtime with the editor so it uses the new session
-      try {
-        if (normalized === 'python') {
-          await registerRuntimeWithEditor('python');
-        } else if (['bash', 'r', 'julia'].includes(normalized)) {
-          await registerRuntimeWithEditor(normalized);
-        } else if (normalized === 'pty') {
-          await registerPtyWithEditor();
+      if (normalized === 'pty') {
+        // PTY has a dedicated full-terminal integration path.
+        const cfg = {
+          ...target,
+          name: target.id,
+          language: 'pty',
+          alive: target.alive !== false,
+        };
+        state.ptySession = cfg;
+        setRuntimePreferenceSnapshot('pty', cfg);
+        pinRuntimeAttachment('pty', cfg, 'manual-attach-existing');
+
+        state.terminalConfig = {
+          filePath: state.currentFile,
+          cwd: cfg.cwd || getDefaultTerminalCwd(),
+          venv: cfg.venv,
+          baseUrl: cfg.port ? `http://127.0.0.1:${cfg.port}` : null,
+        };
+
+        if (fullTermState.initialized && fullTermState.term) {
+          const tab = getActiveTerminalTab() || ensureTerminalTab();
+          connectFullTerminal(fullTermState.term, tab?.sessionId, tab?.cwd || getDefaultTerminalCwd());
         }
-      } catch (e) {
-        console.warn(`[attachToExisting] Failed to re-register ${normalized} with editor:`, e?.message || e);
+      } else {
+        const ok = await registerAttachedRuntimeWithEditor(normalized, {
+          ...target,
+          name: target.id,
+          language: normalized,
+        }, 'manual-attach-existing');
+
+        if (!ok) {
+          console.warn(`[attachToExisting] Failed to attach ${normalized} to ${sessionId}`);
+        }
       }
 
       await refreshRuntimes();
+    }
+
+    /**
+     * Start a runtime with a specific scope (notebook / project / global).
+     * Sets the scope preference first, then triggers the normal start flow.
+     */
+    async function startRuntimeWithScope(language, scope) {
+      const normalized = normalizeRuntimeLanguage(language) || language;
+
+      // Clear existing attachment so the session-switch guard in
+      // registerRuntimeWithEditor doesn't block the scope change.
+      // Without this, switching e.g. from global to notebook scope
+      // triggers "Refusing silent session switch" and fails.
+      clearPinnedRuntimeAttachment(normalized, 'scope-change');
+
+      // Persist the scope preference for this notebook + language
+      try {
+        if (electronAPI.runtime?.prefs?.setNotebook) {
+          await electronAPI.runtime.prefs.setNotebook(
+            state.currentFile,
+            normalized,
+            { scope },
+            state.project?.root || state.projectDir || null,
+          );
+        }
+        await refreshRuntimePreferenceSnapshots();
+      } catch (e) {
+        console.error(`[startRuntimeWithScope] Failed to set scope for ${normalized}:`, e);
+      }
+
+      // Now start with the normal flow (which reads the preference)
+      await startRuntimeForLanguage(normalized);
     }
 
     /**
@@ -14471,11 +15060,11 @@ session:
       // If runtime is currently running, restart that language to apply config.
       try {
         const attachedIds = {
-          python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
-          bash: state.bashSession?.name,
-          r: state.rSession?.name,
-          julia: state.juliaSession?.name,
-          pty: state.ptySession?.name,
+          python: getPinnedRuntimeAttachment('python')?.sessionName || state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+          bash: getPinnedRuntimeAttachment('bash')?.sessionName || state.bashSession?.name,
+          r: getPinnedRuntimeAttachment('r')?.sessionName || state.rSession?.name,
+          julia: getPinnedRuntimeAttachment('julia')?.sessionName || state.juliaSession?.name,
+          pty: getPinnedRuntimeAttachment('pty')?.sessionName || state.ptySession?.name,
         };
         const { runtime } = getPreferredRuntimeForLanguage(language, state.runningRuntimes || [], attachedIds);
         if (runtime?.id) {
@@ -17470,6 +18059,13 @@ session:
         at: new Date().toISOString(),
       };
       state.runtimeAttachments.set(key, attachment);
+
+      // Remember this document's own notebook-scoped runtime session even
+      // when the active attachment later switches to project/global/other.
+      if (getScopeFromSessionName(info.name) === 'notebook') {
+        state.notebookOwnedRuntimeSessions.set(key, info.name);
+      }
+
       recordRuntimeEvent('attachment:pinned', language, {
         sessionName: info.name,
         port: info.port,
@@ -19155,12 +19751,12 @@ session:
     /**
      * Toggle the full terminal panel (slide between notebook and terminal)
      */
-    function toggleFullTerminal() {
+    async function toggleFullTerminal() {
       // Cycle: hidden → split → full → hidden
       if (!fullTermState.active || fullTermState.mode === 'hidden') {
-        showSplitTerminal();
+        await showSplitTerminal();
       } else if (fullTermState.mode === 'split') {
-        showFullTerminal();
+        await showFullTerminal();
       } else {
         hideFullTerminal();
       }
@@ -19178,11 +19774,56 @@ session:
     }
 
     function getDefaultTerminalCwd() {
+      // Full terminal should default to project root for a predictable UX.
+      if (state.project?.root) return state.project.root;
+      if (state.projectDir) return state.projectDir;
       if (state.currentFile) {
         const lastSlash = state.currentFile.lastIndexOf('/');
         if (lastSlash > 0) return state.currentFile.substring(0, lastSlash);
       }
-      return state.projectDir || '/tmp';
+      return '/tmp';
+    }
+
+    /**
+     * Ensure PTY runtime is available for full-terminal view even when
+     * no ```term block exists in the current markdown document.
+     */
+    async function ensurePtyForFullTerminal() {
+      if (!state.currentFile || !electronAPI.runtime) return false;
+
+      try {
+        const cfg = await electronAPI.runtime.ensureEffective(state.currentFile, 'pty');
+        if (!cfg || cfg.error) {
+          return false;
+        }
+
+        setRuntimePreferenceSnapshot('pty', cfg);
+        state.ptySession = cfg;
+
+        state.terminalConfig = {
+          filePath: state.currentFile,
+          cwd: cfg.cwd || getDefaultTerminalCwd(),
+          venv: cfg.venv,
+          baseUrl: cfg.alive && cfg.port ? `http://127.0.0.1:${cfg.port}` : null,
+        };
+
+        if (cfg.alive && cfg.name && cfg.port) {
+          pinRuntimeAttachment('pty', cfg, 'full-terminal-ensure');
+          recordRuntimeEvent('runtime:registered', 'pty', {
+            sessionName: cfg.name,
+            port: cfg.port,
+            source: 'full-terminal-ensure',
+          });
+          if (typeof refreshRuntimes === 'function') {
+            refreshRuntimes().catch(() => {});
+          }
+        }
+
+        return !!(cfg.alive && cfg.port);
+      } catch (e) {
+        console.warn('[pty] ensurePtyForFullTerminal failed:', e?.message || e);
+        return false;
+      }
     }
 
     function buildTerminalTabLabel(indexHint = null) {
@@ -19220,7 +19861,18 @@ session:
     }
 
     function ensureTerminalTab() {
-      if (fullTermState.tabs.length > 0 && fullTermState.activeTabId) return getActiveTerminalTab();
+      if (fullTermState.tabs.length > 0 && fullTermState.activeTabId) {
+        const existing = getActiveTerminalTab();
+        if (existing) {
+          // Keep tab context aligned with current project defaults.
+          // This avoids stale /tmp tabs on first open.
+          const defaultCwd = getDefaultTerminalCwd();
+          if (!existing.cwd || existing.cwd === '/tmp') {
+            existing.cwd = defaultCwd;
+          }
+        }
+        return existing;
+      }
 
       const tab = {
         id: `term-tab-${fullTermState.nextTabId++}`,
@@ -19399,10 +20051,8 @@ session:
           const collapsed = keysBar.classList.toggle('collapsed');
           keysToggle.textContent = collapsed ? 'Keys' : 'Hide';
           keysToggle.classList.toggle('active', !collapsed);
-          // Re-fit terminal when key bar toggles
-          if (fullTermState.fitAddon) {
-            setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 80);
-          }
+          // Re-sync terminal geometry when key bar toggles
+          scheduleTerminalResync('mobile-keys-toggle', [40, 120, 260]);
         };
         preventFocusSteal(keysToggle, toggleKeysAction);
       }
@@ -19450,10 +20100,8 @@ session:
       fullTermState.focusMode = !!on;
       document.body.classList.toggle('terminal-focus', fullTermState.focusMode);
       updateTerminalFocusButton();
-      if (fullTermState.fitAddon) {
-        setTimeout(() => {
-          try { fullTermState.fitAddon.fit(); } catch (e) {}
-        }, 120);
+      if (fullTermState.mode !== 'hidden') {
+        scheduleTerminalResync('focus-mode', [120, 260, 420]);
       }
     }
 
@@ -19462,11 +20110,7 @@ session:
       fullTermState.fontSize = next;
       if (fullTermState.term) {
         fullTermState.term.options.fontSize = next;
-        if (fullTermState.fitAddon) {
-          setTimeout(() => {
-            try { fullTermState.fitAddon.fit(); } catch (e) {}
-          }, 30);
-        }
+        scheduleTerminalResync('font-size', [30, 120, 260]);
       }
     }
 
@@ -19524,6 +20168,47 @@ session:
       slideTerminal.style.flex = `0 0 ${terminalPct}`;
     }
 
+    function clearTerminalResyncTimers() {
+      if (Array.isArray(fullTermState.resyncTimers) && fullTermState.resyncTimers.length > 0) {
+        fullTermState.resyncTimers.forEach((t) => clearTimeout(t));
+      }
+      fullTermState.resyncTimers = [];
+      if (fullTermState.resyncRaf) {
+        cancelAnimationFrame(fullTermState.resyncRaf);
+        fullTermState.resyncRaf = null;
+      }
+    }
+
+    function performTerminalResync(reason = 'resync') {
+      const term = fullTermState.term;
+      if (!term || !fullTermState.fitAddon) return;
+      if (fullTermState.mode === 'hidden') return;
+      try {
+        fullTermState.fitAddon.fit();
+      } catch (e) {
+        return;
+      }
+      if (fullTermState.ptyClient?.isConnected?.()) {
+        try {
+          fullTermState.ptyClient.resize(term.cols, term.rows);
+        } catch (e) {}
+      }
+    }
+
+    function scheduleTerminalResync(reason = 'resync', delays = [0, 90, 220, 420]) {
+      if (!fullTermState.initialized || !fullTermState.term || !fullTermState.fitAddon) return;
+      clearTerminalResyncTimers();
+
+      fullTermState.resyncRaf = requestAnimationFrame(() => {
+        fullTermState.resyncRaf = null;
+        performTerminalResync(`${reason}:raf`);
+      });
+
+      fullTermState.resyncTimers = delays.map((delay) => setTimeout(() => {
+        performTerminalResync(`${reason}:${delay}`);
+      }, delay));
+    }
+
     /**
      * Show the full terminal panel
      */
@@ -19565,19 +20250,9 @@ session:
         document.removeEventListener('pointermove', onPointerMove);
         document.removeEventListener('pointerup', onPointerUp);
 
-        // Persist and re-fit terminal
+        // Persist and re-sync terminal geometry
         localStorage.setItem('mrmd-split-ratio', String(splitRatio));
-        if (fullTermState.fitAddon) {
-          setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 50);
-        }
-        // Also resize PTY to match new terminal dimensions
-        if (fullTermState.ptyClient?.isConnected?.() && fullTermState.term) {
-          setTimeout(() => {
-            try {
-              fullTermState.ptyClient.resize(fullTermState.term.cols, fullTermState.term.rows);
-            } catch (e) {}
-          }, 100);
-        }
+        scheduleTerminalResync('split-divider', [30, 120, 260]);
       }
 
       divider.addEventListener('pointerdown', onPointerDown);
@@ -19587,13 +20262,11 @@ session:
         splitRatio = 0.5;
         localStorage.setItem('mrmd-split-ratio', '0.5');
         applySplitRatio();
-        if (fullTermState.fitAddon) {
-          setTimeout(() => { try { fullTermState.fitAddon.fit(); } catch (e) {} }, 50);
-        }
+        scheduleTerminalResync('split-divider-reset', [30, 120, 260]);
       });
     })();
 
-    function showFullTerminal() {
+    async function showFullTerminal() {
       const track = document.getElementById('app-slide-track');
       const viewport = document.getElementById('app-viewport');
       const indicator = document.getElementById('terminal-edge-indicator');
@@ -19616,15 +20289,16 @@ session:
       updateFullTerminalModeUi();
       if (indicator) indicator.classList.remove('visible');
 
+      // Ensure PTY runtime exists even if no ```term block is present.
+      await ensurePtyForFullTerminal();
+
       // Initialize terminal on first show
       if (!fullTermState.initialized) {
         initFullTerminal();
       } else if (fullTermState.term) {
-        // Re-fit and refocus
+        // Re-sync and refocus after layout transition.
         setTimeout(() => {
-          if (fullTermState.fitAddon) {
-            try { fullTermState.fitAddon.fit(); } catch (e) {}
-          }
+          scheduleTerminalResync('show-full', [0, 120, 280, 520]);
           // Reconnect on demand if we got disconnected while hidden.
           if (!fullTermState.ptyClient?.isConnected?.()) {
             reconnectFullTerminal();
@@ -19637,7 +20311,7 @@ session:
     /**
      * Show split notebook + terminal view
      */
-    function showSplitTerminal() {
+    async function showSplitTerminal() {
       const track = document.getElementById('app-slide-track');
       const viewport = document.getElementById('app-viewport');
       const indicator = document.getElementById('terminal-edge-indicator');
@@ -19658,15 +20332,16 @@ session:
       updateFullTerminalModeUi();
       if (indicator) indicator.classList.remove('visible');
 
+      // Ensure PTY runtime exists even if no ```term block is present.
+      await ensurePtyForFullTerminal();
+
       if (!fullTermState.initialized) {
         initFullTerminal();
       } else if (fullTermState.term) {
         setTimeout(() => {
-          if (fullTermState.fitAddon) {
-            try { fullTermState.fitAddon.fit(); } catch (e) {}
-          }
-          if (fullTermState.ptyClient?.isConnected?.() && fullTermState.term) {
-            try { fullTermState.ptyClient.resize(fullTermState.term.cols, fullTermState.term.rows); } catch (e) {}
+          scheduleTerminalResync('show-split', [0, 80, 180, 360]);
+          if (!fullTermState.ptyClient?.isConnected?.()) {
+            reconnectFullTerminal();
           }
           fullTermState.term.focus();
         }, 100);
@@ -19684,6 +20359,7 @@ session:
 
       fullTermState.active = false;
       fullTermState.mode = 'hidden';
+      clearTerminalResyncTimers();
       setTerminalFocusMode(false);
       document.body.classList.remove('terminal-active-mobile', 'rail-visible');
       viewport?.classList.remove('terminal-split');
@@ -19760,15 +20436,25 @@ session:
 
       // Get theme from CSS variables
       const theme = getFullTerminalXtermTheme();
+      const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+      const initialFontSize = isMobile ? 13 : (fullTermState.fontSize || 14);
+      fullTermState.fontSize = initialFontSize;
 
       // Create terminal
       const term = new Terminal({
         cursorBlink: true,
-        fontSize: fullTermState.fontSize || 14,
-        fontFamily: '"SF Mono", "Fira Code", "Monaco", "Inconsolata", monospace',
-        scrollback: 50000,
+        cursorStyle: 'block',
+        cursorInactiveStyle: 'outline',
+        fontSize: initialFontSize,
+        fontFamily: '"Monaspace Neon Var", "SF Mono", "Fira Code", "Monaco", "Inconsolata", monospace',
+        scrollback: isMobile ? 5000 : 50000,
         convertEol: true,
         theme: theme,
+        drawBoldTextInBrightColors: !isMobile,
+        allowTransparency: false,
+        smoothScrollDuration: 0,
+        fastScrollModifier: 'alt',
+        fastScrollSensitivity: isMobile ? 3 : 5,
       });
 
       fullTermState.term = term;
@@ -19788,11 +20474,41 @@ session:
       // Open terminal in container
       term.open(container);
 
-      // Fit after a moment
-      setTimeout(() => {
-        if (fullTermState.fitAddon) {
-          try { fullTermState.fitAddon.fit(); } catch (e) {}
+      // Renderer addons: prefer WebGL on desktop, fallback to Canvas, then DOM.
+      let rendererLoaded = false;
+      if (!isMobile && typeof WebglAddon !== 'undefined') {
+        try {
+          const webgl = new WebglAddon.WebglAddon();
+          webgl.onContextLoss(() => {
+            try { webgl.dispose(); } catch (e) {}
+            console.warn('[term] WebGL context lost, falling back to canvas/DOM');
+            if (typeof CanvasAddon !== 'undefined') {
+              try {
+                term.loadAddon(new CanvasAddon.CanvasAddon());
+              } catch (canvasErr) {
+                console.warn('[term] Canvas addon failed, using DOM fallback:', canvasErr);
+              }
+            }
+          });
+          term.loadAddon(webgl);
+          rendererLoaded = true;
+        } catch (e) {
+          console.warn('[term] WebGL failed:', e);
         }
+      }
+
+      if (!rendererLoaded && typeof CanvasAddon !== 'undefined') {
+        try {
+          term.loadAddon(new CanvasAddon.CanvasAddon());
+          rendererLoaded = true;
+        } catch (e) {
+          console.warn('[term] Canvas addon failed, using DOM fallback:', e);
+        }
+      }
+
+      // Fit/resize in multiple passes after mount (fonts/layout can settle late).
+      setTimeout(() => {
+        scheduleTerminalResync('init-open', [0, 110, 240, 480]);
         term.focus();
       }, 100);
 
@@ -20014,13 +20730,8 @@ session:
           clearTimeout(fullTermState.resizeFitTimer);
         }
         fullTermState.resizeFitTimer = setTimeout(() => {
-          if (fullTermState.fitAddon && term.element) {
-            try {
-              fullTermState.fitAddon.fit();
-              if (fullTermState.ptyClient?.isConnected()) {
-                fullTermState.ptyClient.resize(term.cols, term.rows);
-              }
-            } catch (e) {}
+          if (term.element) {
+            performTerminalResync('resize-observer');
           }
         }, 90);
       });
@@ -20067,16 +20778,39 @@ session:
       const baseUrl = state.terminalConfig?.baseUrl;
       fullTermState.baseUrl = baseUrl || null;
       if (!baseUrl) {
-        term.write('\x1b[33m[Waiting for PTY server...]\x1b[0m\r\n');
-        term.write('\x1b[33m[Retrying automatically...]\x1b[0m\r\n');
-        updateFullTermStatus('offline');
+        updateFullTermStatus('connecting');
+        term.write('\x1b[33m[Starting PTY server for full terminal...]\x1b[0m\r\n');
 
-        // Auto-retry: runtime registration is async and can lag behind UI open.
-        fullTermState.retryTimer = setTimeout(() => {
-          if (fullTermState.initialized && fullTermState.term) {
-            connectFullTerminal(fullTermState.term, sessionId, cwd);
-          }
-        }, 1200);
+        // Try to bootstrap PTY runtime on demand so terminal works even when
+        // no ```term code block exists in the document.
+        if (!fullTermState.pendingPtyEnsure) {
+          fullTermState.pendingPtyEnsure = true;
+          ensurePtyForFullTerminal()
+            .then((ready) => {
+              fullTermState.pendingPtyEnsure = false;
+              if (ready && fullTermState.initialized && fullTermState.term) {
+                connectFullTerminal(fullTermState.term, sessionId, cwd);
+                return;
+              }
+
+              updateFullTermStatus('offline');
+              fullTermState.retryTimer = setTimeout(() => {
+                if (fullTermState.initialized && fullTermState.term) {
+                  connectFullTerminal(fullTermState.term, sessionId, cwd);
+                }
+              }, 1200);
+            })
+            .catch((e) => {
+              fullTermState.pendingPtyEnsure = false;
+              console.warn('[FullTerm] PTY ensure failed:', e?.message || e);
+              updateFullTermStatus('offline');
+              fullTermState.retryTimer = setTimeout(() => {
+                if (fullTermState.initialized && fullTermState.term) {
+                  connectFullTerminal(fullTermState.term, sessionId, cwd);
+                }
+              }, 1200);
+            });
+        }
         return;
       }
 
@@ -20128,9 +20862,7 @@ session:
       fullTermState.ptyClient = client;
 
       client.connect().then(() => {
-        if (fullTermState.fitAddon) {
-          client.resize(term.cols, term.rows);
-        }
+        scheduleTerminalResync('pty-connect', [0, 90, 220]);
       }).catch((err) => {
         console.error('[FullTerm] Connect failed:', err);
         term.write('\x1b[31m[Failed to connect to PTY server]\x1b[0m\r\n');
@@ -20181,6 +20913,8 @@ session:
     function reconnectFullTerminal() {
       if (!fullTermState.initialized) return;
 
+      clearTerminalResyncTimers();
+
       if (fullTermState.retryTimer) {
         clearTimeout(fullTermState.retryTimer);
         fullTermState.retryTimer = null;
@@ -20202,8 +20936,18 @@ session:
         fullTermState.term.clear();
       }
 
+      const defaultCwd = getDefaultTerminalCwd();
+
+      // Re-anchor tabs to current file/project context so first tab does not
+      // remain stuck at stale /tmp or old document session IDs.
+      fullTermState.tabs = fullTermState.tabs.map((t, idx) => ({
+        ...t,
+        cwd: defaultCwd,
+        sessionId: `fullterm:${state.currentFile || 'untitled'}:${idx + 1}`,
+      }));
+
       const tab = ensureTerminalTab();
-      const cwd = tab?.cwd || getDefaultTerminalCwd();
+      const cwd = tab?.cwd || defaultCwd;
       const sessionId = tab?.sessionId || `fullterm:${state.currentFile || 'untitled'}`;
       fullTermState.sessionId = sessionId;
 
@@ -20352,6 +21096,7 @@ session:
       viewport?.classList.remove('terminal-split');
       fullTermState.active = false;
       fullTermState.mode = 'hidden';
+      clearTerminalResyncTimers();
       setTerminalFocusMode(false);
       ensureTerminalTab();
       applyTerminalLayout('hidden');
@@ -20391,6 +21136,34 @@ session:
 
       // Touch swipe gestures
       initTerminalSwipeGestures();
+
+      // Keep terminal geometry in sync with viewport/keyboard/orientation changes.
+      const onTerminalViewportGeometryChange = () => {
+        if (!fullTermState.active || fullTermState.mode === 'hidden') return;
+        scheduleTerminalResync('viewport-geometry', [0, 90, 220, 420]);
+      };
+      window.addEventListener('resize', onTerminalViewportGeometryChange);
+      window.addEventListener('orientationchange', onTerminalViewportGeometryChange);
+      if (window.visualViewport?.addEventListener) {
+        window.visualViewport.addEventListener('resize', onTerminalViewportGeometryChange);
+      }
+
+      // Manual recovery shortcut: double-click terminal status to re-sync rows/scroll geometry.
+      document.getElementById('full-terminal-status')?.addEventListener('dblclick', () => {
+        scheduleTerminalResync('manual-status-reset', [0, 90, 220, 420]);
+      });
+
+      // Fonts can settle after first paint; re-sync when they do.
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(() => {
+          scheduleTerminalResync('fonts-ready', [0, 120, 260]);
+        }).catch(() => {});
+      }
+      if (document.fonts?.addEventListener) {
+        document.fonts.addEventListener('loadingdone', () => {
+          scheduleTerminalResync('fonts-loadingdone', [0, 120, 260]);
+        });
+      }
 
       console.log('[FullTerm] Panel initialized — Ctrl+` to toggle, swipe on mobile');
     }
@@ -20585,11 +21358,11 @@ session:
           try {
             await startRuntimeForLanguage(normalized);
             const attachedIds = {
-              python: state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
-              bash: state.bashSession?.name,
-              r: state.rSession?.name,
-              julia: state.juliaSession?.name,
-              pty: state.ptySession?.name,
+              python: getPinnedRuntimeAttachment('python')?.sessionName || state.pythonVenv?.runtimeId || state.pythonVenv?.name || state.session?.name,
+              bash: getPinnedRuntimeAttachment('bash')?.sessionName || state.bashSession?.name,
+              r: getPinnedRuntimeAttachment('r')?.sessionName || state.rSession?.name,
+              julia: getPinnedRuntimeAttachment('julia')?.sessionName || state.juliaSession?.name,
+              pty: getPinnedRuntimeAttachment('pty')?.sessionName || state.ptySession?.name,
             };
             const { runtime } = getPreferredRuntimeForLanguage(normalized, state.runningRuntimes || [], attachedIds);
             const recovered = normalized === 'python' ? !!state.pythonPort || !!runtime : !!runtime;
@@ -20617,7 +21390,7 @@ session:
     // THEME MANAGEMENT
     // =========================================================================
 
-    const THEMES = ['wizard-study-dark', 'wizard-study-light', 'github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light'];
+    const THEMES = ['wizard-study-dark', 'wizard-study-light', 'github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light', 'newsprint-dark', 'newsprint-light', 'plain-dark', 'plain-light'];
     let currentThemeIndex = 0;
     const CUSTOM_THEMES_KEY = 'mrmd-custom-themes';
 
@@ -20742,12 +21515,12 @@ session:
         <div class="theme-picker-header">Select Theme</div>
         <div class="theme-picker-section">
           <div class="theme-picker-section-title">Dark</div>
-          ${THEMES.filter(t => ['wizard-study-dark', 'github', 'midnight', 'moonlight', 'nord', 'grayscale-dark'].includes(t))
+          ${THEMES.filter(t => ['wizard-study-dark', 'github', 'midnight', 'moonlight', 'nord', 'grayscale-dark', 'newsprint-dark', 'plain-dark'].includes(t))
             .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
         </div>
         <div class="theme-picker-section">
           <div class="theme-picker-section-title">Light</div>
-          ${THEMES.filter(t => ['wizard-study-light', 'daylight', 'openresponses', 'grayscale-light'].includes(t))
+          ${THEMES.filter(t => ['wizard-study-light', 'daylight', 'openresponses', 'grayscale-light', 'newsprint-light', 'plain-light'].includes(t))
             .map(t => `<div class="theme-picker-item${t === currentTheme ? ' selected' : ''}" data-theme="${t}">${t}</div>`).join('')}
         </div>
         ${customThemeNames.length > 0 ? `
@@ -21510,9 +22283,9 @@ session:
         localStorage.setItem(UI_SCALE_KEY, String(Math.round(clamped)));
       }
 
-      if (fullTermState?.fitAddon) {
+      if (fullTermState?.initialized) {
         setTimeout(() => {
-          try { fullTermState.fitAddon.fit(); } catch (e) {}
+          scheduleTerminalResync('ui-scale', [120, 260, 420]);
         }, 120);
       }
     }
@@ -21859,9 +22632,15 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
 
     // Handle file opened from OS (e.g., double-click .md file when MRMD is default app)
     // This opens the file exactly like selecting it from the Ctrl+P menu
+    // Track whether an external file-open request arrived (prevents startup file picker)
+    let _externalFileRequested = false;
+
     electronAPI.onOpenWithFile(async (data) => {
       console.log('[open-with-file] Received file from OS:', data.filePath);
+      _externalFileRequested = true;
       try {
+        // Hide file picker if it's showing (e.g. startup or Ctrl+P)
+        hideFilePicker();
         await openFile(data.filePath);
         console.log('[open-with-file] File opened successfully');
       } catch (e) {
@@ -23351,8 +24130,73 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       // Initialize voice-to-text
       initVoice();
 
-      // Show file picker on start
-      setTimeout(showFilePicker, 100);
+      // Restore session or open a specific project.
+      const _urlParams = new URLSearchParams(window.location.search);
+      const _isProjectWindow = _urlParams.get('openProject') === '1';
+      const _openProjectRoot = _urlParams.get('projectRoot');
+      const _openProjectFile = _urlParams.get('openFile');
+
+      if (_isProjectWindow) {
+        // Opened via "Open as Project".
+        // Never restore previous session in this path.
+        setTimeout(async () => {
+          if (_openProjectFile) {
+            try {
+              await openFile(_openProjectFile);
+              console.log('[startup] Opened project file:', _openProjectFile);
+              return;
+            } catch (e) {
+              console.error('[startup] Failed to open project file:', e);
+            }
+          }
+
+          // No markdown file found (or failed): still open the selected root in Files mode.
+          if (_openProjectRoot) {
+            try {
+              const project = await electronAPI.project.get(_openProjectRoot);
+              if (project) {
+                state.project = project;
+                navState.mode = 'files';
+                navState.browseRoot = _openProjectRoot;
+                navState.rawTree = null;
+                updateNavSidebar(project, null);
+                console.log('[startup] Opened project root in Files view:', _openProjectRoot);
+                return;
+              }
+            } catch (e) {
+              console.error('[startup] Failed to open project root:', e);
+            }
+          }
+
+          // Last fallback
+          showFilePicker();
+        }, 100);
+      } else {
+        // Normal launch — try to restore last session
+        setTimeout(async () => {
+          if (state.currentFile || _externalFileRequested) return;
+
+          try {
+            const recent = await electronAPI.getRecent();
+            if (recent?.files?.length > 0) {
+              for (const entry of recent.files) {
+                try {
+                  const info = await electronAPI.getFileInfo(entry.path);
+                  if (info) {
+                    await openFile(entry.path);
+                    console.log('[startup] Restored last session:', entry.path);
+                    return;
+                  }
+                } catch { /* file gone, try next */ }
+              }
+            }
+          } catch (e) {
+            console.log('[startup] Could not restore last session:', e.message);
+          }
+
+          showFilePicker();
+        }, 300);
+      }
     }
 
     init();
