@@ -182,6 +182,11 @@ class ProjectService {
     }
 
     // Use chokidar for cross-platform recursive watching
+    // Use polling on Linux by default to avoid EMFILE/inotify exhaustion.
+    const usePolling = process.platform === 'linux'
+      ? (process.env.CHOKIDAR_USEPOLLING !== '0')
+      : (process.env.CHOKIDAR_USEPOLLING === '1');
+
     const watcher = chokidar.watch(projectRoot, {
       ignored: [
         /(^|[\/\\])\../, // Hidden files
@@ -192,6 +197,10 @@ class ProjectService {
       persistent: true,
       ignoreInitial: true,
       depth: 10,
+      usePolling,
+      interval: Number(process.env.CHOKIDAR_INTERVAL || 500),
+      binaryInterval: Number(process.env.CHOKIDAR_BINARY_INTERVAL || 1000),
+      ignorePermissionErrors: true,
     });
 
     // Debounce file change events to batch rapid changes (e.g., git checkout,
@@ -217,6 +226,9 @@ class ProjectService {
     watcher.on('unlink', handleChange);
     watcher.on('addDir', handleChange);
     watcher.on('unlinkDir', handleChange);
+    watcher.on('error', (err) => {
+      console.warn(`[project:watch] watcher error for ${projectRoot}:`, err?.message || err);
+    });
 
     this.watchers.set(projectRoot, watcher);
 

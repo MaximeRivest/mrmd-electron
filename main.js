@@ -61,6 +61,15 @@ for (const stream of [process.stdout, process.stderr]) {
   }
 }
 
+// Keep process alive and log unexpected async failures instead of noisy warnings.
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[main] Uncaught exception:', error);
+});
+
 // Create require for resolving package paths
 const require = createRequire(import.meta.url);
 
@@ -736,12 +745,23 @@ async function getSyncServer(projectDir) {
     '--i-know-what-i-am-doing',
     projectDir,
   ];
+
+  const syncEnv = {
+    ...process.env,
+    // Reduce inotify pressure on Linux (prevents EMFILE watch failures).
+    CHOKIDAR_USEPOLLING: process.env.CHOKIDAR_USEPOLLING || '1',
+    CHOKIDAR_INTERVAL: process.env.CHOKIDAR_INTERVAL || '500',
+  };
+
   const proc = isPackaged()
     ? spawn(process.execPath, nodeArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        env: { ...syncEnv, ELECTRON_RUN_AS_NODE: '1' },
       })
-    : spawn('node', nodeArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+    : spawn('node', nodeArgs, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: syncEnv,
+      });
   proc.expectedExit = false;
 
   proc.stdout.on('data', (d) => console.log(`[sync:${port}]`, d.toString().trim()));

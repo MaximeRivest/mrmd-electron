@@ -330,9 +330,12 @@
       transform: translateY(-50%);
       -webkit-app-region: no-drag;
     }
-    .titlebar-mobile-actions .titlebar-mobile-btn {
+    .titlebar-mobile-actions .titlebar-mobile-btn,
+    .titlebar-mobile-actions .titlebar-desktop-btn {
       display: flex;
       position: static;
+      right: auto;
+      top: auto;
       transform: none;
       width: 28px;
       height: 28px;
@@ -1159,7 +1162,14 @@
       transition: margin-right 0.2s ease;
     }
 
-    .content.panel-pinned-wide .toc-sidebar {
+    /* Source panel pinned: wider to fit ~80 monospace chars comfortably */
+    .content.panel-pinned-source {
+      margin-right: 688px; /* 640px source panel + 48px rail */
+      transition: margin-right 0.2s ease;
+    }
+
+    .content.panel-pinned-wide .toc-sidebar,
+    .content.panel-pinned-source .toc-sidebar {
       display: none !important;
     }
 
@@ -1259,6 +1269,11 @@
     /* Wide panel variant (for source code) */
     .rail-panel-wide {
       width: 500px;
+    }
+
+    /* Source panel gets extra width (~80 monospace chars + padding) */
+    #panel-source.rail-panel-wide {
+      width: min(640px, calc(100vw - 64px));
     }
 
     /* Artifact panel - larger for preview */
@@ -1417,7 +1432,7 @@
       color: var(--text-dim);
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
-      font-family: var(--font-mono);
+      font-family: var(--widget-font-mono, var(--font-mono, monospace));
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1428,12 +1443,12 @@
     .source-code {
       margin: 0;
       padding: 16px;
-      font-family: var(--font-mono);
+      font-family: var(--widget-font-mono, var(--font-mono, monospace));
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.6;
       overflow-x: auto;
-      background: var(--bg-primary);
-      color: var(--text);
+      background: var(--editor-background, var(--bg-primary));
+      color: var(--editor-foreground, var(--text));
       white-space: pre;
       tab-size: 4;
     }
@@ -1442,7 +1457,7 @@
     }
     /* Clickable type references in source */
     .source-type-ref {
-      color: var(--accent);
+      color: var(--syntax-link, var(--accent));
       cursor: pointer;
       text-decoration: underline;
       text-decoration-style: dotted;
@@ -1451,15 +1466,15 @@
     .source-type-ref:hover {
       text-decoration-style: solid;
     }
-    /* Python syntax highlighting (basic) */
-    .source-code .kw { color: #ff7b72; }  /* keywords */
-    .source-code .str { color: #a5d6ff; } /* strings */
-    .source-code .num { color: #79c0ff; } /* numbers */
-    .source-code .cm { color: #8b949e; }  /* comments */
-    .source-code .fn { color: #d2a8ff; }  /* function names */
-    .source-code .cls { color: #ffa657; } /* class names */
-    .source-code .dec { color: #ffa657; } /* decorators */
-    .source-code .type { color: #79c0ff; } /* type annotations */
+    /* Python syntax highlighting (aligned with editor syntax tokens) */
+    .source-code .kw { color: var(--syntax-keyword, #569cd6); }
+    .source-code .str { color: var(--syntax-string, #ce9178); }
+    .source-code .num { color: var(--syntax-number, #b5cea8); }
+    .source-code .cm { color: var(--syntax-comment, #6a9955); }
+    .source-code .fn { color: var(--syntax-function, #dcdcaa); }
+    .source-code .cls { color: var(--syntax-class, #4ec9b0); }
+    .source-code .dec { color: var(--syntax-meta, #858585); }
+    .source-code .type { color: var(--syntax-type, #4ec9b0); }
 
     /* Panel section */
     .rail-panel-section {
@@ -6020,7 +6035,8 @@
       }
 
       .content.panel-pinned,
-      .content.panel-pinned-wide {
+      .content.panel-pinned-wide,
+      .content.panel-pinned-source {
         margin-right: 0 !important;
       }
 
@@ -6637,8 +6653,21 @@
         <span class="cloud-status-pill" id="cloud-status-pill" title="Cloud sync status">Cloud: offline</span>
       </div>
 
-      <!-- Mobile: search + AI (right) — hidden on desktop -->
+      <!-- Actions cluster (desktop + mobile) -->
       <div class="titlebar-mobile-actions">
+        <!-- Desktop-only inline section toggles (left of search icon) -->
+        <button class="titlebar-btn titlebar-desktop-btn" id="toggle-inline-format" title="Toggle inline formatting controls">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M3 4h10M5 8h6M7 12h2"/>
+          </svg>
+        </button>
+        <button class="titlebar-btn titlebar-desktop-btn" id="toggle-inline-ai" title="Toggle inline AI controls">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v3M8 11v3M2 8h3M11 8h3"/>
+            <circle cx="8" cy="8" r="1.5"/>
+          </svg>
+        </button>
+
         <button class="titlebar-btn titlebar-mobile-btn" id="mobile-search-btn" title="Find file">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <circle cx="7" cy="7" r="4.5"/>
@@ -6676,7 +6705,7 @@
         </button>
       </div>
 
-      <!-- Desktop: rail toggle (right, absolute) -->
+      <!-- Desktop: rail toggle -->
       <button class="titlebar-btn rail-toggle titlebar-desktop-btn" id="rail-toggle" title="Toggle tools (Ctrl+\)">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
           <line x1="3" y1="4" x2="13" y2="4"/>
@@ -6814,6 +6843,7 @@
       <!-- Tool buttons -->
       <button class="rail-btn" data-panel="runtimes" title="Runtimes"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 7h2M5 9h4"/></svg></button>
       <button class="rail-btn" data-panel="variables" title="Variables"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4l2 8h4M10 4l2 8"/></svg></button>
+      <button class="rail-btn" data-panel="source" title="Source Explorer (follows cursor)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M6 8l-1.5 1.5L6 11"/><path d="M10 8l1.5 1.5L10 11"/></svg></button>
       <button class="rail-btn" data-panel="artifact" title="Artifact Preview"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 5h12M5 5v9"/></svg></button>
       <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
       <button class="rail-btn" data-panel="voice-history" title="Voice History"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5a2 2 0 012 2V8a2 2 0 11-4 0V4.5a2 2 0 012-2z"/><path d="M4.5 7.5v.5a3.5 3.5 0 007 0v-.5"/><path d="M8 11.5v2"/><path d="M6 13.5h4"/></svg></button>
@@ -6894,11 +6924,13 @@
       <div class="rail-panel-header">
         <button class="source-back-btn" id="source-back" title="Back" disabled>←</button>
         <span class="rail-panel-title" id="source-title">Source</span>
+        <button class="rail-panel-btn" id="source-copy" title="Copy source">Copy</button>
         <button class="rail-panel-pin" data-pin-panel="source" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="source">×</button>
       </div>
       <div class="source-file-path" id="source-file"></div>
       <div class="rail-panel-content source-content">
-        <pre class="source-code" id="source-code"><code>Press F12 on a symbol to view its source code.</code></pre>
+        <pre class="source-code" id="source-code"><code>Move cursor over code to inspect source here.
+Tip: Press F12 for manual jump to symbol under cursor.</code></pre>
       </div>
     </div>
 
@@ -7025,6 +7057,14 @@ session:
               <button class="full-terminal-tab-add" style="width:24px;height:24px;" onclick="adjustUiScale(5)" title="Bigger UI">+</button>
               <button class="full-terminal-tab" style="height:24px;" onclick="resetUiScale()" title="Reset UI scale">Reset</button>
             </div>
+          </div>
+          <div class="rail-panel-item" onclick="toggleJsonOutputWidgetSetting()" title="Toggle JSON output tree widget">
+            <span class="rail-panel-item-label">JSON Output Widget</span>
+            <span class="rail-panel-item-meta" id="settings-json-output-widget">On</span>
+          </div>
+          <div class="rail-panel-item" onclick="toggleLongOutputWidgetSetting()" title="Toggle long-output scroll widget">
+            <span class="rail-panel-item-label">Long Output Widget</span>
+            <span class="rail-panel-item-meta" id="settings-long-output-widget">On</span>
           </div>
         </div>
 
@@ -7677,6 +7717,69 @@ session:
       pickerVirtualInit: false,
       pickerShowAllFolders: false,
     };
+
+    const SECTION_CONTROLS_PREFS_KEY = 'mrmd-section-controls-v1';
+
+    function getSectionControlsPrefs() {
+      try {
+        const raw = localStorage.getItem(SECTION_CONTROLS_PREFS_KEY);
+        if (!raw) return { enabled: true, showAi: true, showFormatting: true };
+        const parsed = JSON.parse(raw);
+        return {
+          enabled: parsed.enabled !== false,
+          showAi: parsed.showAi !== false,
+          showFormatting: parsed.showFormatting !== false,
+        };
+      } catch {
+        return { enabled: true, showAi: true, showFormatting: true };
+      }
+    }
+
+    function setSectionControlsPrefs(next) {
+      const current = getSectionControlsPrefs();
+      const merged = {
+        enabled: next.enabled ?? current.enabled,
+        showAi: next.showAi ?? current.showAi,
+        showFormatting: next.showFormatting ?? current.showFormatting,
+      };
+      localStorage.setItem(SECTION_CONTROLS_PREFS_KEY, JSON.stringify(merged));
+      return merged;
+    }
+
+    function applySectionControlsToEditor() {
+      if (!state.editor?.setSectionControls) return;
+      const prefs = getSectionControlsPrefs();
+      state.editor.setSectionControls(prefs);
+    }
+
+    function updateInlineToggleButtons() {
+      const prefs = getSectionControlsPrefs();
+      const aiBtn = document.getElementById('toggle-inline-ai');
+      const fmtBtn = document.getElementById('toggle-inline-format');
+      aiBtn?.classList.toggle('active', prefs.showAi);
+      fmtBtn?.classList.toggle('active', prefs.showFormatting);
+    }
+
+    function initInlineSectionControlToggles() {
+      const aiBtn = document.getElementById('toggle-inline-ai');
+      const fmtBtn = document.getElementById('toggle-inline-format');
+
+      aiBtn?.addEventListener('click', () => {
+        const prefs = getSectionControlsPrefs();
+        setSectionControlsPrefs({ showAi: !prefs.showAi });
+        applySectionControlsToEditor();
+        updateInlineToggleButtons();
+      });
+
+      fmtBtn?.addEventListener('click', () => {
+        const prefs = getSectionControlsPrefs();
+        setSectionControlsPrefs({ showFormatting: !prefs.showFormatting });
+        applySectionControlsToEditor();
+        updateInlineToggleButtons();
+      });
+
+      updateInlineToggleButtons();
+    }
 
     function normalizeRuntimeLanguage(language) {
       const l = String(language || '').toLowerCase();
@@ -12479,6 +12582,7 @@ session:
         const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
         const editorOptions = {
           theme: currentTheme,
+          sectionControls: getSectionControlsPrefs(),
           cellControls: {
             enabled: true,
             position: 'line-start',
@@ -12519,6 +12623,8 @@ session:
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
+        applySectionControlsToEditor();
+        updateInlineToggleButtons();
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
 
@@ -12817,6 +12923,7 @@ session:
         if (uiScaleEl) {
           uiScaleEl.textContent = `${Number(localStorage.getItem(UI_SCALE_KEY) || 100)}%`;
         }
+        refreshOutputWidgetSettingLabels();
         refreshCloudStatus({ silent: true });
       } else if (panelId === 'voice-history') {
         renderVoiceHistoryPanel();
@@ -12843,13 +12950,13 @@ session:
 
       // Remove panel-pinned layout side effects
       const content = document.querySelector('.content');
-      content?.classList.remove('panel-pinned', 'panel-pinned-wide');
+      content?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
     }
 
     function forceCloseAllPanels() {
       document.querySelectorAll('.rail-panel').forEach((p) => p.classList.remove('open', 'pinned'));
       document.querySelectorAll('.rail-btn.active').forEach((b) => b.classList.remove('active'));
-      document.querySelector('.content')?.classList.remove('panel-pinned', 'panel-pinned-wide');
+      document.querySelector('.content')?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
       railState.activePanel = null;
       railState.pinnedPanel = null;
       removeMobileRailScrim();
@@ -12875,8 +12982,12 @@ session:
       // Check if panel is wide variant
       const isWide = panel?.classList.contains('rail-panel-wide') ||
                      panel?.classList.contains('rail-panel-artifact');
-      content?.classList.remove('panel-pinned', 'panel-pinned-wide');
-      content?.classList.add(isWide ? 'panel-pinned-wide' : 'panel-pinned');
+      content?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
+      if (panelId === 'source') {
+        content?.classList.add('panel-pinned-source');
+      } else {
+        content?.classList.add(isWide ? 'panel-pinned-wide' : 'panel-pinned');
+      }
     }
 
     /**
@@ -12891,7 +13002,7 @@ session:
 
       panel?.classList.remove('pinned');
       pinBtn?.classList.remove('active');
-      content?.classList.remove('panel-pinned', 'panel-pinned-wide');
+      content?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
 
       railState.pinnedPanel = null;
     }
@@ -12899,6 +13010,7 @@ session:
     // Initialize rail on page load
     document.addEventListener('DOMContentLoaded', () => {
       initSideRail();
+      initInlineSectionControlToggles();
       initFullTerminalPanel();
     });
 
@@ -13884,27 +13996,56 @@ session:
     const sourceState = {
       history: [],      // Stack of {name, result} for back navigation
       currentIndex: -1, // Current position in history
+      lastResultKey: null,
+      currentText: '',
+      currentName: '',
+    };
+
+    const SOURCE_FOLLOW_POLL_MS = 220;
+    const SOURCE_FOLLOW_DEBOUNCE_MS = 180;
+    const sourceFollowState = {
+      intervalId: null,
+      timeoutId: null,
+      requestId: 0,
+      lastCursorPos: null,
     };
 
     /**
      * Show source code in the panel
+     *
+     * @param {Object} result
+     * @param {Object} [options]
+     * @param {boolean} [options.pushHistory=true] - Push to back-stack history
+     * @param {boolean} [options.openPanelOnShow=true] - Open/focus source panel
      */
-    function showSource(result) {
+    function showSource(result, { pushHistory = true, openPanelOnShow = true } = {}) {
       if (!result || !result.found) {
         console.log('[source] No result to show');
         return;
       }
 
-      // Add to history
-      if (sourceState.currentIndex < sourceState.history.length - 1) {
-        // If we navigated back and then view new source, truncate forward history
-        sourceState.history = sourceState.history.slice(0, sourceState.currentIndex + 1);
+      if (pushHistory) {
+        // Add to history
+        if (sourceState.currentIndex < sourceState.history.length - 1) {
+          // If we navigated back and then view new source, truncate forward history
+          sourceState.history = sourceState.history.slice(0, sourceState.currentIndex + 1);
+        }
+        sourceState.history.push({ name: result.name, result });
+        sourceState.currentIndex = sourceState.history.length - 1;
+      } else {
+        // Follow mode: update current history entry instead of growing stack
+        if (sourceState.currentIndex >= 0 && sourceState.history.length > 0) {
+          sourceState.history[sourceState.currentIndex] = { name: result.name, result };
+        } else {
+          sourceState.history.push({ name: result.name, result });
+          sourceState.currentIndex = 0;
+        }
       }
-      sourceState.history.push({ name: result.name, result });
-      sourceState.currentIndex = sourceState.history.length - 1;
 
       renderSource(result);
-      openPanel('source');
+      if (openPanelOnShow) {
+        openPanel('source');
+      }
     }
 
     /**
@@ -13916,6 +14057,38 @@ session:
         const entry = sourceState.history[sourceState.currentIndex];
         renderSource(entry.result);
       }
+    }
+
+    async function copyCurrentSource() {
+      const text = sourceState.currentText || document.getElementById('source-code')?.textContent || '';
+      if (!text.trim()) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        const copyBtn = document.getElementById('source-copy');
+        if (copyBtn) {
+          const original = copyBtn.textContent;
+          copyBtn.textContent = 'Copied';
+          setTimeout(() => {
+            copyBtn.textContent = original || 'Copy';
+          }, 900);
+        }
+      } catch (err) {
+        console.warn('[source] Copy failed:', err?.message || err);
+      }
+    }
+
+    function sourceResultKey(result) {
+      if (!result) return null;
+      const file = result.file || '';
+      const name = result.name || '';
+      const line = result.line || '';
+      return `${file}::${name}::${line}`;
+    }
+
+    function isSourcePanelVisible() {
+      const panel = document.getElementById('panel-source');
+      return !!panel?.classList.contains('open');
     }
 
     /**
@@ -13933,6 +14106,7 @@ session:
       titleEl.textContent = result.name || 'Source';
       fileEl.textContent = result.file || '';
       fileEl.title = result.file || '';
+      sourceState.lastResultKey = sourceResultKey(result);
 
       // Update back button state
       if (backBtn) {
@@ -13942,9 +14116,15 @@ session:
       // Get source code or show message
       const sourceCode = result.sourceCode;
       if (!sourceCode) {
-        codeEl.innerHTML = `<code>No source code available for ${result.name}.\n\nType: ${result.type || 'unknown'}\n${result.docstring ? '\nDocstring:\n' + result.docstring : ''}</code>`;
+        const fallback = `No source code available for ${result.name}.\n\nType: ${result.type || 'unknown'}\n${result.docstring ? '\nDocstring:\n' + result.docstring : ''}`;
+        sourceState.currentText = fallback;
+        sourceState.currentName = result.name || 'Source';
+        codeEl.innerHTML = `<code>${fallback}</code>`;
         return;
       }
+
+      sourceState.currentText = sourceCode;
+      sourceState.currentName = result.name || 'Source';
 
       // Apply syntax highlighting and make types clickable
       const highlighted = highlightPythonSource(sourceCode);
@@ -14038,6 +14218,73 @@ session:
       return html;
     }
 
+    function stopSourceFollow() {
+      if (sourceFollowState.intervalId) {
+        clearInterval(sourceFollowState.intervalId);
+        sourceFollowState.intervalId = null;
+      }
+      if (sourceFollowState.timeoutId) {
+        clearTimeout(sourceFollowState.timeoutId);
+        sourceFollowState.timeoutId = null;
+      }
+      sourceFollowState.lastCursorPos = null;
+    }
+
+    function queueSourceFollowLookup(pos, delayMs = SOURCE_FOLLOW_DEBOUNCE_MS) {
+      if (sourceFollowState.timeoutId) {
+        clearTimeout(sourceFollowState.timeoutId);
+      }
+      sourceFollowState.timeoutId = setTimeout(() => {
+        sourceFollowState.timeoutId = null;
+        refreshSourceForCursor(pos);
+      }, delayMs);
+    }
+
+    async function refreshSourceForCursor(pos) {
+      if (!isSourcePanelVisible() || !state.editor || !state.editor.getSourceInfo) return;
+
+      const requestId = ++sourceFollowState.requestId;
+      try {
+        const result = await state.editor.getSourceInfo(pos);
+        if (requestId !== sourceFollowState.requestId) return;
+        if (!result || !result.found) return;
+
+        const key = sourceResultKey(result);
+        if (key && key === sourceState.lastResultKey) return;
+
+        showSource(result, { pushHistory: false, openPanelOnShow: false });
+      } catch (err) {
+        // Keep this quiet in normal flow (cursor moves a lot)
+        console.debug('[source-follow] lookup failed:', err?.message || err);
+      }
+    }
+
+    function startSourceFollow() {
+      if (sourceFollowState.intervalId) return;
+
+      // Prime once on open
+      if (state.editor?.view) {
+        const pos = state.editor.view.state.selection.main.head;
+        sourceFollowState.lastCursorPos = pos;
+        queueSourceFollowLookup(pos, 30);
+      }
+
+      sourceFollowState.intervalId = setInterval(() => {
+        if (!isSourcePanelVisible()) {
+          stopSourceFollow();
+          return;
+        }
+        const view = state.editor?.view;
+        if (!view) return;
+
+        const pos = view.state.selection.main.head;
+        if (pos === sourceFollowState.lastCursorPos) return;
+
+        sourceFollowState.lastCursorPos = pos;
+        queueSourceFollowLookup(pos);
+      }, SOURCE_FOLLOW_POLL_MS);
+    }
+
     /**
      * Drill into a type to view its source
      */
@@ -14069,6 +14316,35 @@ session:
       const backBtn = document.getElementById('source-back');
       if (backBtn) {
         backBtn.addEventListener('click', sourceBack);
+      }
+
+      const copyBtn = document.getElementById('source-copy');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', copyCurrentSource);
+      }
+
+      if (!openPanel._sourceWrapped) {
+        const originalOpenPanel = openPanel;
+        openPanel = function(panelId) {
+          originalOpenPanel(panelId);
+          if (panelId === 'source') {
+            startSourceFollow();
+          } else if (!isSourcePanelVisible()) {
+            stopSourceFollow();
+          }
+        };
+        openPanel._sourceWrapped = true;
+      }
+
+      if (!closePanel._sourceWrapped) {
+        const originalClosePanel = closePanel;
+        closePanel = function(panelId) {
+          originalClosePanel(panelId);
+          if (panelId === 'source' && !isSourcePanelVisible()) {
+            stopSourceFollow();
+          }
+        };
+        closePanel._sourceWrapped = true;
       }
     }
 
@@ -22260,6 +22536,72 @@ session:
     }
 
     const UI_SCALE_KEY = 'mrmd-ui-scale';
+    const JSON_OUTPUT_WIDGET_SETTING_KEY = 'mrmd-json-output-widget-enabled';
+    const LONG_OUTPUT_WIDGET_SETTING_KEY = 'mrmd-long-output-widget-enabled';
+
+    function readBooleanSetting(key, defaultValue = true) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw == null) return defaultValue;
+        return !['0', 'false', 'off', 'no'].includes(String(raw).trim().toLowerCase());
+      } catch {
+        return defaultValue;
+      }
+    }
+
+    function writeBooleanSetting(key, value) {
+      try {
+        localStorage.setItem(key, value ? '1' : '0');
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
+    function isJsonOutputWidgetEnabled() {
+      return readBooleanSetting(JSON_OUTPUT_WIDGET_SETTING_KEY, true);
+    }
+
+    function isLongOutputWidgetEnabled() {
+      return readBooleanSetting(LONG_OUTPUT_WIDGET_SETTING_KEY, true);
+    }
+
+    function refreshOutputWidgetSettingLabels() {
+      const jsonEl = document.getElementById('settings-json-output-widget');
+      if (jsonEl) jsonEl.textContent = isJsonOutputWidgetEnabled() ? 'On' : 'Off';
+
+      const longEl = document.getElementById('settings-long-output-widget');
+      if (longEl) longEl.textContent = isLongOutputWidgetEnabled() ? 'On' : 'Off';
+    }
+
+    function refreshOutputWidgetsInEditor() {
+      const view = state.editor?.view;
+      if (!view) return;
+      try {
+        view.dispatch({});
+      } catch (e) {
+        console.warn('[settings] Failed to refresh output widgets:', e?.message || e);
+      }
+    }
+
+    function setJsonOutputWidgetEnabled(enabled) {
+      writeBooleanSetting(JSON_OUTPUT_WIDGET_SETTING_KEY, Boolean(enabled));
+      refreshOutputWidgetSettingLabels();
+      refreshOutputWidgetsInEditor();
+    }
+
+    function setLongOutputWidgetEnabled(enabled) {
+      writeBooleanSetting(LONG_OUTPUT_WIDGET_SETTING_KEY, Boolean(enabled));
+      refreshOutputWidgetSettingLabels();
+      refreshOutputWidgetsInEditor();
+    }
+
+    function toggleJsonOutputWidgetSetting() {
+      setJsonOutputWidgetEnabled(!isJsonOutputWidgetEnabled());
+    }
+
+    function toggleLongOutputWidgetSetting() {
+      setLongOutputWidgetEnabled(!isLongOutputWidgetEnabled());
+    }
 
     function applyUiScale(scale, { persist = true } = {}) {
       const clamped = Math.max(75, Math.min(140, Number(scale) || 100));
@@ -24107,6 +24449,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       // Load saved theme (must be after mrmd.js is loaded)
       loadSavedTheme();
       loadSavedUiScale();
+      refreshOutputWidgetSettingLabels();
 
       // Set up project file change listener
       electronAPI.project.onChanged(({ projectRoot }) => {
