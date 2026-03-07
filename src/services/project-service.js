@@ -97,10 +97,11 @@ class ProjectService {
    */
   async getProject(filePath) {
     const root = resolveProjectRootFromPath(filePath);
+    const cacheKey = root.replace(/\\/g, '/');
 
     // Check cache
-    if (this.cache.has(root)) {
-      return this.cache.get(root);
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey);
     }
 
     // App-owned project metadata (runtime prefs/config is no longer in mrmd.md)
@@ -116,7 +117,7 @@ class ProjectService {
 
     // Cache and return
     const info = { root, config, files, navTree };
-    this.cache.set(root, info);
+    this.cache.set(cacheKey, info);
     return info;
   }
 
@@ -126,9 +127,11 @@ class ProjectService {
    * @param {string} projectRoot - Project root path
    */
   invalidate(projectRoot) {
-    this.cache.delete(projectRoot);
+    // Normalize to forward slashes to match cache keys (Windows path compat)
+    const normalizedKey = String(projectRoot || '.').replace(/\\/g, '/');
+    this.cache.delete(normalizedKey);
 
-    const normalizedRoot = path.resolve(String(projectRoot || '.'));
+    const normalizedRoot = path.resolve(String(projectRoot || '.')).replace(/\\/g, '/');
     for (const key of this.rawTreeCache.keys()) {
       if (key.startsWith(`${normalizedRoot}::`)) {
         this.rawTreeCache.delete(key);
@@ -272,7 +275,8 @@ class ProjectService {
           if (entry.name === 'node_modules') continue;
           await walk(fullPath, depth + 1);
         } else if (isDocPath(entry.name)) {
-          files.push(relativePath);
+          // Normalize to forward slashes for cross-platform consistency (FSML expects /)
+          files.push(relativePath.replace(/\\/g, '/'));
         }
       }
     };
@@ -318,7 +322,8 @@ class ProjectService {
         if (entry.isDirectory()) {
           await walk(fullPath, depth + 1);
         } else {
-          files.push(relativePath);
+          // Normalize to forward slashes for cross-platform consistency
+          files.push(relativePath.replace(/\\/g, '/'));
         }
       }
     };
@@ -340,7 +345,7 @@ class ProjectService {
    */
   async getRawTree(root, options = {}) {
     const { showSystem = false, maxDepth = PROJECT_SCAN_MAX_DEPTH } = options;
-    const normalizedRoot = path.resolve(String(root || '.'));
+    const normalizedRoot = path.resolve(String(root || '.')).replace(/\\/g, '/');
     const cacheKey = `${normalizedRoot}::${showSystem ? '1' : '0'}::${maxDepth}`;
     const now = Date.now();
     const cached = this.rawTreeCache.get(cacheKey);
@@ -397,7 +402,7 @@ class ProjectService {
       if (!showHidden && entry.name.startsWith('.')) continue;
       if (SKIP.has(entry.name)) continue;
 
-      const fullPath = path.join(dirPath, entry.name);
+      const fullPath = path.join(dirPath, entry.name).replace(/\\/g, '/');
       const isFolder = entry.isDirectory();
       const item = {
         name: entry.name,

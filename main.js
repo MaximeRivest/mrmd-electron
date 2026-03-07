@@ -853,34 +853,43 @@ function startMonitor(docName, syncPort) {
 
 let aiServer = null;
 
+let _aiServerPromise = null;
 async function ensureAiServer() {
   if (aiServer) return aiServer;
+  if (_aiServerPromise) return _aiServerPromise;
+  _aiServerPromise = _startAiServer();
+  try { return await _aiServerPromise; } finally { _aiServerPromise = null; }
+}
+async function _startAiServer() {
 
   const port = await findFreePort();
   console.log(`[ai] Starting on port ${port}...`);
 
   let proc;
 
-  // Check if we have a local sibling package (development mode)
-  const siblingPath = path.join(path.dirname(__dirname), 'mrmd-ai');
-  const hasLocalPackage = !isPackaged() && fs.existsSync(path.join(siblingPath, 'pyproject.toml'));
+  let localPackageDir = null;
+  try {
+    localPackageDir = resolvePackageDir('mrmd-ai');
+  } catch {
+    localPackageDir = null;
+  }
 
-  if (hasLocalPackage) {
-    // DEV MODE: Use 'uv run --project' to run from local source
-    // This ensures we always use the latest local code during development
-    console.log(`[ai] Using local package: ${siblingPath}`);
+  if (localPackageDir && fs.existsSync(path.join(localPackageDir, 'pyproject.toml'))) {
+    // Prefer local/bundled source in both dev and packaged mode so installers
+    // don't depend on PyPI for MRMD's own AI package.
+    console.log(`[ai] Using local package: ${localPackageDir}`);
     proc = spawn('uv', [
-      'run', '--project', siblingPath,
+      'run', '--project', localPackageDir,
       'mrmd-ai-server',
       '--port', port.toString(),
     ], {
-      cwd: siblingPath,
+      cwd: localPackageDir,
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PYTHONUTF8: '1' },
     });
   } else {
-    // PACKAGED MODE: Use 'uv tool run' to download/run from PyPI
-    // This requires mrmd-ai to be published to PyPI for distribution
-    console.log(`[ai] Using uv tool run (packaged mode)`);
+    // Fallback: use published package if no local/bundled copy is present.
+    console.log(`[ai] Using uv tool run (fallback)`);
     proc = spawn('uv', [
       'tool', 'run',
       '--from', `mrmd-ai${PYTHON_DEPS['mrmd-ai']}`,
@@ -888,6 +897,7 @@ async function ensureAiServer() {
       '--port', port.toString(),
     ], {
       stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PYTHONUTF8: '1' },
     });
   }
 
@@ -1225,6 +1235,12 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
 
     if (state.projectDir && state.projectDir !== projectDir) {
       releaseSyncServer(state.projectDir);
+      // Kill old monitors — they're connected to the old sync server
+      for (const [name, proc] of state.monitors) {
+        console.log(`[monitor] Killing old monitor "${name}" (project changed)`);
+        proc.kill('SIGTERM');
+      }
+      state.monitors.clear();
     }
     state.projectDir = projectDir;
 
