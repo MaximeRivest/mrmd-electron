@@ -61,11 +61,15 @@ Everything runs locally. Your code, your data, your machine.
 
 Get the latest release for your platform:
 
+- Full release page: [github.com/MaximeRivest/mrmd-electron/releases/latest](https://github.com/MaximeRivest/mrmd-electron/releases/latest)
+
 | Platform | Download |
 |----------|----------|
-| **Linux** | [AppImage](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/MRMD-0.3.0.AppImage) · [.deb](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/mrmd-electron_0.3.0_amd64.deb) |
-| **macOS** | [Intel .dmg](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/MRMD-0.3.0.dmg) · [Apple Silicon .dmg](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/MRMD-0.3.0-arm64.dmg) |
-| **Windows** | [Installer](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/MRMD.Setup.0.3.0.exe) · [Portable](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.3.0/MRMD.0.3.0.exe) |
+| **Linux** | [AppImage](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/MRMD-0.5.5.AppImage) · [.deb](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/mrmd-electron_0.5.5_amd64.deb) |
+| **macOS** | [Intel .dmg](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/MRMD-0.5.5.dmg) · [Apple Silicon .dmg](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/MRMD-0.5.5-arm64.dmg) |
+| **Windows** | [Installer (recommended)](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/MRMD.Setup.0.5.5.exe) · [Portable](https://github.com/MaximeRivest/mrmd-electron/releases/download/v0.5.5/MRMD.0.5.5.exe) |
+
+> On Windows, most users should choose the **Installer** build. If Windows SmartScreen appears, click **More info** → **Run anyway**.
 
 ### Requirements
 
