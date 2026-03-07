@@ -54,27 +54,27 @@
 
     /* Theme variables - will be set by applyTheme() */
     :root {
-      --bg: var(--mrmd-bg, #0d1117);
-      --bg-secondary: var(--mrmd-panel-bg, #161b22);
-      --bg-tertiary: var(--mrmd-hover-bg, #21262d);
-      --border: var(--mrmd-border, #30363d);
-      --text: var(--mrmd-fg, #c9d1d9);
-      --text-muted: var(--mrmd-fg-muted, #8b949e);
-      --text-dim: var(--mrmd-fg-dim, #6e7681);
-      --accent: var(--mrmd-accent, #58a6ff);
-      --success: var(--mrmd-success, #3fb950);
-      --warning: var(--mrmd-warning, #d29922);
-      --error: var(--mrmd-error, #f85149);
+      --bg: var(--mrmd-bg, #ffffff);
+      --bg-secondary: var(--mrmd-panel-bg, #f3f3f3);
+      --bg-tertiary: var(--mrmd-hover-bg, #f5f5f5);
+      --border: var(--mrmd-border, #d0d0d0);
+      --text: var(--mrmd-fg, #000000);
+      --text-muted: var(--mrmd-fg-muted, #666666);
+      --text-dim: var(--mrmd-fg-dim, #888888);
+      --accent: var(--mrmd-accent, #0078d4);
+      --success: var(--mrmd-success, #107c10);
+      --warning: var(--mrmd-warning, #c47a00);
+      --error: var(--mrmd-error, #d13438);
 
-      /* Soft interaction colors (dark theme default) */
-      --hover-bg: rgba(255, 255, 255, 0.04);
-      --selected-bg: rgba(255, 255, 255, 0.08);
-    }
-
-    /* Light theme overrides */
-    .light-theme {
+      /* Soft interaction colors (plain-light default) */
       --hover-bg: rgba(0, 0, 0, 0.04);
       --selected-bg: rgba(0, 0, 0, 0.06);
+    }
+
+    /* Dark theme overrides */
+    .dark-theme {
+      --hover-bg: rgba(255, 255, 255, 0.04);
+      --selected-bg: rgba(255, 255, 255, 0.08);
     }
 
     html, body {
@@ -86,7 +86,7 @@
       font-weight: var(--widget-font-weight, 400);
     }
 
-    /* Custom scrollbar - subtle (dark theme default) */
+    /* Custom scrollbar - subtle (plain-light default) */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -95,22 +95,22 @@
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.15);
       border-radius: 4px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.25);
     }
     ::-webkit-scrollbar-corner {
       background: transparent;
     }
 
-    /* Light theme scrollbar */
-    .light-theme ::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15);
+    /* Dark theme scrollbar */
+    .dark-theme ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
     }
-    .light-theme ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 0, 0, 0.25);
+    .dark-theme ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.15);
     }
 
     /* =======================================================================
@@ -443,6 +443,103 @@
       color: var(--accent);
     }
 
+    .nav-search-wrap {
+      display: none;
+      padding: 8px 12px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-search-wrap.visible {
+      display: block;
+    }
+
+    .nav-search-shell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+      background: color-mix(in srgb, var(--bg-tertiary) 82%, transparent);
+    }
+
+    .nav-search-shell:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+    }
+
+    .nav-search-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    .nav-search-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .nav-search-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .nav-search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .nav-search-clear {
+      width: 18px;
+      height: 18px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-dim);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+      font-size: 12px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .nav-search-wrap.has-query .nav-search-clear {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .nav-search-clear:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .nav-search-meta {
+      display: none;
+      margin-top: 6px;
+      padding-left: 4px;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    .nav-search-wrap.has-query .nav-search-meta {
+      display: block;
+    }
+
     /* Nav mode toggle — sliding switch */
     .nav-mode-toggle {
       width: 40px;
@@ -620,6 +717,21 @@
 
     .nav-item.selected .nav-item-label {
       font-weight: 500;
+    }
+
+    .nav-item.keyboard-active {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+
+    .nav-item.keyboard-active .nav-item-icon {
+      opacity: 0.8;
+    }
+
+    .nav-empty {
+      padding: 14px 16px;
+      font-size: 12px;
+      color: var(--text-dim);
     }
 
     /* Folder/section headers */
@@ -976,6 +1088,7 @@
     }
 
     .nav-sidebar.collapsed > .nav-header,
+    .nav-sidebar.collapsed > .nav-search-wrap,
     .nav-sidebar.collapsed > .nav-tree {
       display: none !important;
     }
@@ -1283,6 +1396,193 @@
       min-width: 400px;
       display: flex;
       flex-direction: column;
+    }
+
+    /* Comments panel */
+    #panel-comments.rail-panel-wide {
+      width: min(420px, calc(100vw - 64px));
+    }
+
+    .comments-panel-content {
+      padding: 12px;
+    }
+
+    .comments-panel-count {
+      min-width: 24px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .comments-panel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .comments-panel-empty {
+      padding: 18px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 12px;
+      background: color-mix(in srgb, var(--bg) 75%, transparent);
+    }
+
+    .comment-thread-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .comment-thread-card.active {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent), 0 6px 18px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .comment-thread-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+    }
+
+    .comment-thread-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .comment-thread-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .comment-thread-jump {
+      border: none;
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .comment-thread-jump:hover {
+      background: var(--hover-bg);
+    }
+
+    .comment-thread-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .comment-thread-bubble {
+      padding: 10px 12px;
+      border-radius: 12px;
+      line-height: 1.45;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid transparent;
+    }
+
+    .comment-thread-bubble.comment,
+    .comment-thread-bubble.author-comment {
+      background: rgba(255, 203, 107, 0.14);
+      border-color: rgba(255, 203, 107, 0.25);
+      color: var(--text);
+      align-self: flex-start;
+      margin-right: 24px;
+    }
+
+    .comment-thread-bubble.reply,
+    .comment-thread-bubble.author-reply,
+    .comment-thread-bubble.assistant,
+    .comment-thread-bubble.ai {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+      color: var(--text);
+      align-self: flex-end;
+      margin-left: 24px;
+    }
+
+    .comment-thread-role {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .comment-thread-reply {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 0 12px 12px;
+    }
+
+    .comment-thread-reply textarea {
+      min-height: 64px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .comment-thread-reply textarea:focus {
+      outline: none;
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .comment-thread-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .comment-thread-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .comment-thread-submit {
+      border: 1px solid color-mix(in srgb, var(--accent) 70%, var(--border));
+      background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .comment-thread-submit:hover {
+      background: color-mix(in srgb, var(--accent) 18%, var(--bg));
+    }
+
+    .comment-thread-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .artifact-content {
@@ -5642,11 +5942,13 @@
       }
 
       .nav-sidebar.collapsed.mobile-open > .nav-header,
+      .nav-sidebar.collapsed.mobile-open > .nav-search-wrap,
       .nav-sidebar.collapsed.mobile-open > .nav-tree {
         display: flex !important;
       }
 
-      .nav-sidebar.collapsed.mobile-open > .nav-tree {
+      .nav-sidebar.collapsed.mobile-open > .nav-tree,
+      .nav-sidebar.collapsed.mobile-open > .nav-search-wrap {
         display: block !important;
       }
 
@@ -5671,6 +5973,18 @@
       .nav-sidebar.mobile-open .nav-header {
         padding: 16px 20px;
         min-height: 56px;
+      }
+
+      .nav-sidebar.mobile-open .nav-search-wrap {
+        padding: 10px 16px 12px;
+      }
+
+      .nav-sidebar.mobile-open .nav-search-shell {
+        height: 38px;
+      }
+
+      .nav-sidebar.mobile-open .nav-search-input {
+        font-size: 14px;
       }
 
       .nav-sidebar.mobile-open .nav-action {
@@ -6619,7 +6933,7 @@
     }
   </style>
 </head>
-<body>
+<body class="light-theme theme-plain-light">
   <!-- Voice recording shimmer overlay (covers entire viewport) -->
   <div class="voice-shimmer-overlay" id="voice-shimmer-overlay"></div>
   <div class="voice-recording-badge" id="voice-recording-badge" title="Click to stop recording">
@@ -6686,6 +7000,11 @@
             <circle cx="8" cy="8" r="1.5"/>
           </svg>
         </button>
+        <button class="titlebar-btn titlebar-desktop-btn" id="toggle-comments-view" title="Toggle comments sidebar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 4.5a1.5 1.5 0 011.5-1.5h7A1.5 1.5 0 0113 4.5v4A1.5 1.5 0 0111.5 10H7l-3 2v-2H4.5A1.5 1.5 0 013 8.5z"/>
+          </svg>
+        </button>
 
         <button class="titlebar-btn titlebar-mobile-btn" id="mobile-search-btn" title="Find file">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -6750,6 +7069,19 @@
             <span class="toggle-seg" data-mode="files"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5a1 1 0 011-1h3.5l1.5 1.5H13a1 1 0 011 1V12a1 1 0 01-1 1H3a1 1 0 01-1-1z"/></svg></span>
           </div>
           <button class="nav-action" id="nav-new-btn" title="New file (n)">+</button>
+        </div>
+        <div class="nav-search-wrap" id="nav-search-wrap">
+          <div class="nav-search-shell">
+            <span class="nav-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="7" cy="7" r="4"></circle>
+                <line x1="10.2" y1="10.2" x2="13.5" y2="13.5"></line>
+              </svg>
+            </span>
+            <input class="nav-search-input" id="nav-level-search" type="text" placeholder="Search this level…" autocomplete="off" spellcheck="false" />
+            <button class="nav-search-clear" id="nav-search-clear" type="button" title="Clear search">×</button>
+          </div>
+          <div class="nav-search-meta" id="nav-search-meta"></div>
         </div>
         <div class="nav-breadcrumb" id="nav-breadcrumb"></div>
         <div class="nav-tree" id="nav-tree">
@@ -6984,6 +7316,10 @@ Tip: Press F12 for manual jump to symbol under cursor.</code></pre>
             <span class="rail-panel-item-label">Toggle rail</span>
             <span class="rail-panel-item-meta">Ctrl+\</span>
           </div>
+          <div class="rail-panel-item">
+            <span class="rail-panel-item-label">Apply grammar suggestion</span>
+            <span class="rail-panel-item-meta">Alt+Enter</span>
+          </div>
         </div>
         <div class="rail-panel-section">
           <div class="rail-panel-section-title">Tips</div>
@@ -7090,6 +7426,46 @@ session:
           <div class="rail-panel-item" onclick="toggleLongOutputWidgetSetting()" title="Toggle long-output scroll widget">
             <span class="rail-panel-item-label">Long Output Widget</span>
             <span class="rail-panel-item-meta" id="settings-long-output-widget">On</span>
+          </div>
+          <div class="rail-panel-item" onclick="cycleSectionControlsMode()" title="Click to change inline controls style: full toolbar, dots with hover expand, or dots with click">
+            <span class="rail-panel-item-label">Inline Controls</span>
+            <span class="rail-panel-item-meta" id="settings-section-controls-mode">Dots → hover</span>
+          </div>
+        </div>
+
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Document</div>
+          <div class="rail-panel-item" onclick="openSpellcheckLanguagePicker()" title="Choose spellcheck languages for this document">
+            <span class="rail-panel-item-label">Spellcheck Languages</span>
+            <span class="rail-panel-item-meta" id="settings-spellcheck-languages">Default</span>
+          </div>
+          <div class="rail-panel-item" style="cursor: default;">
+            <span class="rail-panel-item-label">Grammar Engine</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-status">Loading…</span>
+          </div>
+          <div class="rail-panel-item" onclick="toggleLanguageToolForDocument()" title="Enable or disable grammar checking for this document">
+            <span class="rail-panel-item-label">Grammar Checking</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-enabled">On</span>
+          </div>
+          <div class="rail-panel-item" onclick="applyFirstLanguageToolSuggestionAction()" title="Apply the first grammar suggestion near the cursor">
+            <span class="rail-panel-item-label">Apply Suggestion</span>
+            <span class="rail-panel-item-meta">Alt+Enter</span>
+          </div>
+          <div class="rail-panel-item" onclick="openLanguageToolLanguagePicker()" title="Choose the LanguageTool language for this document">
+            <span class="rail-panel-item-label">Grammar Language</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-language">Default</span>
+          </div>
+          <div class="rail-panel-item" onclick="cycleLanguageToolMode()" title="Switch between default and picky grammar rules">
+            <span class="rail-panel-item-label">Grammar Mode</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-mode">Default</span>
+          </div>
+          <div class="rail-panel-item" onclick="editLanguageToolMotherTongue()" title="Optional mother tongue hint for multilingual checking">
+            <span class="rail-panel-item-label">Mother Tongue</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-mother-tongue">None</span>
+          </div>
+          <div class="rail-panel-item" onclick="manageLanguageToolDictionary()" title="View and manage custom dictionary words">
+            <span class="rail-panel-item-label">Custom Dictionary</span>
+            <span class="rail-panel-item-meta" id="settings-languagetool-dictionary">0 words</span>
           </div>
         </div>
 
@@ -7264,6 +7640,20 @@ session:
             <span class="ai-cmd-label">Address All</span>
             <span class="ai-cmd-hint">document</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Comments -->
+    <div class="rail-panel rail-panel-wide" id="panel-comments">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">Comments</span>
+        <span class="comments-panel-count" id="comments-panel-count">0</span>
+        <button class="rail-panel-close" id="comments-panel-close" title="Back to inline comments">×</button>
+      </div>
+      <div class="rail-panel-content comments-panel-content">
+        <div id="comments-panel-list" class="comments-panel-list">
+          <div class="comments-panel-empty">No comments in this document</div>
         </div>
       </div>
     </div>
@@ -7667,6 +8057,13 @@ session:
       currentFile: null,
       projectDir: null,
       editor: null,
+      commentsChangeUnsub: null,
+      commentsRenderTimer: null,
+      commentsActiveThreadStart: null,
+      documentSpellcheck: null,
+      languageToolStatus: null,
+      languageToolPrefs: null,
+      languageToolEditorView: null,
       variablesCellCompleteUnsub: null,
       variablesCellErrorUnsub: null,
       drive: null,
@@ -7745,18 +8142,26 @@ session:
 
     const SECTION_CONTROLS_PREFS_KEY = 'mrmd-section-controls-v1';
 
+    const SECTION_CONTROLS_MODES = ['full', 'dots-hover', 'dots-click'];
+    const SECTION_CONTROLS_MODE_LABELS = {
+      'full': 'Full toolbar',
+      'dots-hover': 'Dots → hover',
+      'dots-click': 'Dots → click',
+    };
+
     function getSectionControlsPrefs() {
       try {
         const raw = localStorage.getItem(SECTION_CONTROLS_PREFS_KEY);
-        if (!raw) return { enabled: true, showAi: true, showFormatting: true };
+        if (!raw) return { enabled: true, showAi: true, showFormatting: true, mode: 'dots-click' };
         const parsed = JSON.parse(raw);
         return {
           enabled: parsed.enabled !== false,
           showAi: parsed.showAi !== false,
           showFormatting: parsed.showFormatting !== false,
+          mode: SECTION_CONTROLS_MODES.includes(parsed.mode) ? parsed.mode : 'dots-click',
         };
       } catch {
-        return { enabled: true, showAi: true, showFormatting: true };
+        return { enabled: true, showAi: true, showFormatting: true, mode: 'dots-click' };
       }
     }
 
@@ -7766,6 +8171,7 @@ session:
         enabled: next.enabled ?? current.enabled,
         showAi: next.showAi ?? current.showAi,
         showFormatting: next.showFormatting ?? current.showFormatting,
+        mode: next.mode ?? current.mode,
       };
       localStorage.setItem(SECTION_CONTROLS_PREFS_KEY, JSON.stringify(merged));
       return merged;
@@ -7804,6 +8210,88 @@ session:
       });
 
       updateInlineToggleButtons();
+      updateSectionControlsModeLabel();
+    }
+
+    const COMMENT_VIEW_MODE_KEY = 'mrmd-comment-view-mode-v1';
+
+    function getCommentViewMode() {
+      return localStorage.getItem(COMMENT_VIEW_MODE_KEY) === 'sidebar' ? 'sidebar' : 'inline';
+    }
+
+    function setCommentViewMode(mode) {
+      const next = mode === 'sidebar' ? 'sidebar' : 'inline';
+      localStorage.setItem(COMMENT_VIEW_MODE_KEY, next);
+      return next;
+    }
+
+    function getCommentSyntaxApi() {
+      return mrmd.default?.commentSyntax || mrmd.commentSyntax || {};
+    }
+
+    function updateCommentsToggleButton() {
+      const btn = document.getElementById('toggle-comments-view');
+      const sidebar = getCommentViewMode() === 'sidebar';
+      btn?.classList.toggle('active', sidebar);
+      if (btn) {
+        btn.title = sidebar ? 'Switch comments back inline' : 'Show comments in sidebar';
+      }
+    }
+
+    function applyCommentConfigToEditor() {
+      if (!state.editor?.view) return;
+      const commentSyntax = getCommentSyntaxApi();
+      const commentFacet = commentSyntax.commentConfigFacet;
+      if (!commentFacet) return;
+
+      state.editor.view.dispatch({
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(
+          commentFacet.of({
+            aiClient,
+            juiceLevel: currentJuiceLevel,
+            displayMode: getCommentViewMode(),
+          })
+        ),
+      });
+    }
+
+    function applyCommentViewMode() {
+      const mode = getCommentViewMode();
+      applyCommentConfigToEditor();
+      updateCommentsToggleButton();
+
+      if (mode === 'sidebar') {
+        openPanel('comments');
+        pinPanel('comments');
+        renderCommentsPanel();
+      } else {
+        if (railState.pinnedPanel === 'comments') {
+          unpinPanel();
+        }
+        closePanel('comments');
+      }
+    }
+
+    function initCommentsToggle() {
+      const btn = document.getElementById('toggle-comments-view');
+      const closeBtn = document.getElementById('comments-panel-close');
+
+      btn?.addEventListener('click', () => {
+        setCommentViewMode(getCommentViewMode() === 'sidebar' ? 'inline' : 'sidebar');
+        applyCommentViewMode();
+      });
+
+      closeBtn?.addEventListener('click', () => {
+        setCommentViewMode('inline');
+        applyCommentViewMode();
+      });
+
+      window.addEventListener('mrmd-comment-thread-open', (event) => {
+        event.preventDefault();
+        openCommentThreadFromEditor(event.detail || {});
+      });
+
+      updateCommentsToggleButton();
     }
 
     function normalizeRuntimeLanguage(language) {
@@ -10483,6 +10971,9 @@ session:
       rawTree: null,         // Cached raw tree for files mode
       rawTreeDirty: false,   // Marks files cache stale without forcing immediate reload in docs mode
       browseRoot: null,      // Current root for file browser (can navigate above project)
+      searchQuery: '',       // Fuzzy filter for current raw level
+      searchResults: [],
+      searchSelectedPath: null,
     };
 
     const titleSyncState = {
@@ -11520,6 +12011,196 @@ session:
       return NAV_ICONS.folder;
     }
 
+    function getNavSearchElements() {
+      return {
+        wrap: document.getElementById('nav-search-wrap'),
+        input: document.getElementById('nav-level-search'),
+        clear: document.getElementById('nav-search-clear'),
+        meta: document.getElementById('nav-search-meta'),
+      };
+    }
+
+    function updateNavSearchUI() {
+      const { wrap, input, meta } = getNavSearchElements();
+      if (!wrap || !input || !meta) return;
+
+      const query = navState.searchQuery || '';
+      const visible = navState.mode === 'files';
+      wrap.classList.toggle('visible', visible);
+      wrap.classList.toggle('has-query', visible && query.trim().length > 0);
+
+      if (input.value !== query) input.value = query;
+      meta.textContent = '';
+    }
+
+    function getCurrentNavLevelNodes() {
+      return Array.isArray(navState.rawTree) ? navState.rawTree : [];
+    }
+
+    function findLiteralMatchPositions(query, text) {
+      const q = String(query || '').toLowerCase();
+      const t = String(text || '').toLowerCase();
+      if (!q || !t) return null;
+      const start = t.indexOf(q);
+      if (start < 0) return null;
+      return Array.from({ length: q.length }, (_, i) => start + i);
+    }
+
+    function isCompactFuzzyMatch(matches, queryLength) {
+      if (!Array.isArray(matches) || !matches.length) return false;
+      const spread = matches[matches.length - 1] - matches[0] + 1;
+      const maxSpread = Math.max(queryLength + 2, Math.ceil(queryLength * 1.6));
+      return spread <= maxSpread;
+    }
+
+    function buildNavLevelSearchResults(query) {
+      const trimmed = String(query || '').trim();
+      if (!trimmed) return [];
+
+      const results = getCurrentNavLevelNodes()
+        .map((node) => {
+          const name = node.name || '';
+          const literalMatches = findLiteralMatchPositions(trimmed, name);
+          if (literalMatches) {
+            let score = 1000 - literalMatches[0] * 8 - Math.max(0, name.length - trimmed.length);
+            if (name.toLowerCase().startsWith(trimmed.toLowerCase())) score += 40;
+            if (node.isFolder) score += 4;
+            return { node, score, matches: literalMatches };
+          }
+
+          const nameResult = fuzzyMatch(trimmed, name);
+          if (!nameResult.score || !isCompactFuzzyMatch(nameResult.matches, trimmed.length)) {
+            return null;
+          }
+
+          let score = nameResult.score * 2;
+          if (node.isFolder) score += 2;
+          return {
+            node,
+            score,
+            matches: nameResult.matches,
+          };
+        })
+        .filter((entry) => entry && entry.score > 0)
+        .sort((a, b) => {
+          if (a.node.isFolder && !b.node.isFolder) return -1;
+          if (!a.node.isFolder && b.node.isFolder) return 1;
+          if (a.score !== b.score) return b.score - a.score;
+          return (a.node.name || '').localeCompare(b.node.name || '', undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+      return results.slice(0, 12);
+    }
+
+    function syncNavSearchResults({ preserveSelection = false } = {}) {
+      const query = navState.searchQuery || '';
+      navState.searchResults = buildNavLevelSearchResults(query);
+
+      if (!query.trim()) {
+        navState.searchSelectedPath = null;
+      } else if (
+        !preserveSelection
+        || !navState.searchSelectedPath
+        || !navState.searchResults.some((entry) => entry.node.path === navState.searchSelectedPath)
+      ) {
+        navState.searchSelectedPath = navState.searchResults[0]?.node.path || null;
+      }
+
+      updateNavSearchUI();
+    }
+
+    function clearNavLevelSearch({ keepFocus = false } = {}) {
+      navState.searchQuery = '';
+      syncNavSearchResults();
+      renderRawTreeToDOM();
+      if (keepFocus) {
+        getNavSearchElements().input?.focus({ preventScroll: true });
+      }
+    }
+
+    function setNavLevelSearchQuery(query, { preserveSelection = false } = {}) {
+      navState.searchQuery = String(query || '');
+      syncNavSearchResults({ preserveSelection });
+      renderRawTreeToDOM();
+    }
+
+    function moveNavSearchSelection(delta) {
+      const results = navState.searchResults || [];
+      if (!results.length) return;
+      const currentIndex = Math.max(0, results.findIndex((entry) => entry.node.path === navState.searchSelectedPath));
+      const nextIndex = (currentIndex + delta + results.length) % results.length;
+      navState.searchSelectedPath = results[nextIndex]?.node.path || results[0]?.node.path || null;
+      renderRawTreeToDOM();
+    }
+
+    async function activateNavSearchSelection() {
+      const result = (navState.searchResults || []).find((entry) => entry.node.path === navState.searchSelectedPath)
+        || navState.searchResults[0];
+      if (!result) return;
+
+      const root = navState.browseRoot || state.project?.root || '/';
+      const fullPath = joinFsPath(root, result.node.path);
+
+      if (result.node.isFolder) {
+        clearNavLevelSearch();
+        await navigateRawBrowser(fullPath);
+        return;
+      }
+
+      clearNavLevelSearch();
+      await openFileFromRawBrowser(fullPath, result.node.name);
+    }
+
+    function renderRawSearchResults(container) {
+      const results = navState.searchResults || [];
+      if (!results.length) {
+        const empty = document.createElement('div');
+        empty.className = 'nav-empty';
+        empty.textContent = 'No matches in this level';
+        container.appendChild(empty);
+        return;
+      }
+
+      for (const result of results) {
+        const { node, matches } = result;
+        const item = document.createElement('div');
+        item.className = 'nav-item'
+          + (node.path === navState.searchSelectedPath ? ' keyboard-active' : '')
+          + (node.isHidden ? ' hidden-item' : '');
+        item.dataset.path = node.path;
+        item.dataset.isFolder = node.isFolder ? 'true' : 'false';
+        item.style.paddingLeft = '8px';
+
+        const expand = document.createElement('span');
+        expand.className = 'nav-expand hidden';
+        expand.textContent = '›';
+        item.appendChild(expand);
+
+        const icon = document.createElement('span');
+        icon.className = 'nav-item-icon';
+        icon.innerHTML = node.isFolder ? folderIcon(node.name) : fileIcon(node.name);
+        item.appendChild(icon);
+
+        const label = document.createElement('span');
+        label.className = 'nav-item-label';
+        label.innerHTML = highlightMatches(node.name, matches);
+        item.appendChild(label);
+
+        item.onclick = async () => {
+          navState.searchSelectedPath = node.path;
+          await activateNavSearchSelection();
+        };
+
+        item.onmouseenter = () => {
+          if (navState.searchSelectedPath === node.path) return;
+          navState.searchSelectedPath = node.path;
+          renderRawTreeToDOM();
+        };
+
+        container.appendChild(item);
+      }
+    }
+
     /** Toggle between docs and files mode */
     function toggleNavMode() {
       const wasFiles = navState.mode === 'files';
@@ -11547,6 +12228,7 @@ session:
       toggle.querySelectorAll('.toggle-seg').forEach(seg => {
         seg.classList.toggle('active', seg.dataset.mode === navState.mode);
       });
+      updateNavSearchUI();
       if (navState.mode === 'files') {
         breadcrumb.classList.add('visible');
         updateBreadcrumb();
@@ -11781,10 +12463,13 @@ session:
       container.innerHTML = '';
       if (dropZone) container.appendChild(dropZone);
 
+      syncNavSearchResults({ preserveSelection: true });
+
       // ".." entry to go up (hide at filesystem root)
       const root = navState.browseRoot || state.project?.root || '/';
       const isAtRoot = root === '/' || /^[A-Za-z]:\/?$/.test(root);
-      if (!isAtRoot) {
+      const hasSearchQuery = !!String(navState.searchQuery || '').trim();
+      if (!isAtRoot && !hasSearchQuery) {
         const upItem = document.createElement('div');
         upItem.className = 'nav-item';
         upItem.style.paddingLeft = '8px';
@@ -11796,6 +12481,11 @@ session:
           navigateRawBrowser(parent);
         };
         container.appendChild(upItem);
+      }
+
+      if (hasSearchQuery) {
+        renderRawSearchResults(container);
+        return;
       }
 
       renderRawNodes(navState.rawTree, container, 0);
@@ -12045,8 +12735,15 @@ session:
             state.editor.awareness.setLocalStateField('cursor', null);
           }
           detachSyncStatusHandlers();
+          state.commentsChangeUnsub?.();
+          state.commentsChangeUnsub = null;
+          if (state.commentsRenderTimer) {
+            clearTimeout(state.commentsRenderTimer);
+            state.commentsRenderTimer = null;
+          }
           state.editor.destroy?.();
           state.editor = null;
+          renderCommentsPanel();
           document.getElementById('editor').innerHTML = '';
         }
 
@@ -12083,7 +12780,7 @@ session:
           try { const { css } = await import('https://esm.sh/@codemirror/lang-css@6'); langExtensions.push(css()); } catch {}
         }
 
-        const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
+        const currentTheme = localStorage.getItem('mrmd-theme') || DEFAULT_THEME;
         const isDark = !currentTheme.includes('light');
 
         const plainState = EditorState.create({
@@ -12249,6 +12946,10 @@ session:
 
       if (!project) {
         sidebar.classList.remove('visible');
+        navState.searchQuery = '';
+        navState.searchResults = [];
+        navState.searchSelectedPath = null;
+        updateNavSearchUI();
         return;
       }
 
@@ -12280,6 +12981,46 @@ session:
     document.getElementById('nav-mode-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       toggleNavMode();
+    });
+
+    document.getElementById('nav-level-search').addEventListener('input', (e) => {
+      setNavLevelSearchQuery(e.target.value);
+    });
+
+    document.getElementById('nav-level-search').addEventListener('keydown', (e) => {
+      if (navState.mode !== 'files') return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveNavSearchSelection(1);
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveNavSearchSelection(-1);
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (!navState.searchResults.length) return;
+        e.preventDefault();
+        void activateNavSearchSelection();
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if ((navState.searchQuery || '').trim()) {
+          clearNavLevelSearch({ keepFocus: true });
+        } else {
+          e.target.blur();
+        }
+      }
+    });
+
+    document.getElementById('nav-search-clear').addEventListener('click', () => {
+      clearNavLevelSearch({ keepFocus: true });
     });
 
     // Initialize nav mode UI on load
@@ -12638,13 +13379,20 @@ session:
             state.editor.awareness.setLocalStateField('cursor', null);
           }
           detachSyncStatusHandlers();
+          state.commentsChangeUnsub?.();
+          state.commentsChangeUnsub = null;
+          if (state.commentsRenderTimer) {
+            clearTimeout(state.commentsRenderTimer);
+            state.commentsRenderTimer = null;
+          }
           state.editor.destroy?.();
           state.editor = null;
+          renderCommentsPanel();
           document.getElementById('editor').innerHTML = '';
         }
 
         // Editor options
-        const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
+        const currentTheme = localStorage.getItem('mrmd-theme') || DEFAULT_THEME;
         const editorOptions = {
           theme: currentTheme,
           sectionControls: getSectionControlsPrefs(),
@@ -12690,8 +13438,22 @@ session:
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
         applySectionControlsToEditor();
         updateInlineToggleButtons();
+        initializeCommentsPanel();
+        applyCommentViewMode();
         attachSyncStatusHandlers(state.editor);
         state.currentFile = filePath;
+        try {
+          await refreshDocumentSpellcheckSetting({ apply: true });
+        } catch (e) {
+          console.warn('[spellcheck] Failed to apply document spellcheck settings on open:', e);
+        }
+        try {
+          await refreshLanguageToolSettings();
+        } catch (e) {
+          console.warn('[languagetool] Failed to refresh settings on open:', e);
+        }
+        state.languageToolEditorView = null;
+        installLanguageToolDiagnosticsExtension();
 
         // Refresh runtimes immediately when file changes so panel reflects
         // the new document context without manual refresh.
@@ -12989,6 +13751,12 @@ session:
           uiScaleEl.textContent = `${Number(localStorage.getItem(UI_SCALE_KEY) || 100)}%`;
         }
         refreshOutputWidgetSettingLabels();
+        refreshDocumentSpellcheckSetting({ apply: false }).catch((e) => {
+          console.warn('[spellcheck] Failed to refresh settings panel label:', e);
+        });
+        refreshLanguageToolSettings().catch((e) => {
+          console.warn('[languagetool] Failed to refresh settings panel labels:', e);
+        });
         refreshCloudStatus({ silent: true });
       } else if (panelId === 'voice-history') {
         renderVoiceHistoryPanel();
@@ -13001,6 +13769,11 @@ session:
     function closePanel(panelId) {
       const panel = document.getElementById(`panel-${panelId}`);
       const btn = document.querySelector(`.rail-btn[data-panel="${panelId}"]`);
+
+      if (panelId === 'comments') {
+        setCommentViewMode('inline');
+        updateCommentsToggleButton();
+      }
 
       // Force-close regardless of current rail state
       panel?.classList.remove('open', 'pinned');
@@ -13019,11 +13792,17 @@ session:
     }
 
     function forceCloseAllPanels() {
+      const closingComments = railState.activePanel === 'comments' || railState.pinnedPanel === 'comments';
       document.querySelectorAll('.rail-panel').forEach((p) => p.classList.remove('open', 'pinned'));
       document.querySelectorAll('.rail-btn.active').forEach((b) => b.classList.remove('active'));
       document.querySelector('.content')?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
       railState.activePanel = null;
       railState.pinnedPanel = null;
+      if (closingComments) {
+        setCommentViewMode('inline');
+        updateCommentsToggleButton();
+        applyCommentConfigToEditor();
+      }
       removeMobileRailScrim();
     }
 
@@ -13076,6 +13855,7 @@ session:
     document.addEventListener('DOMContentLoaded', () => {
       initSideRail();
       initInlineSectionControlToggles();
+      initCommentsToggle();
       initFullTerminalPanel();
     });
 
@@ -16498,21 +17278,22 @@ session:
         },
       }) || [];
 
-      // Create comment syntax extension (<!--! !--> markers)
+      // Configure built-in comment syntax (already installed by mrmd-editor)
       const commentSyntax = mrmd.default?.commentSyntax || mrmd.commentSyntax;
-      const commentExtensions = commentSyntax?.createCommentSyntaxExtension?.({
+      const commentConfig = commentSyntax?.commentConfigFacet?.of({
         aiClient,
         juiceLevel: currentJuiceLevel,
-      }) || [];
+        displayMode: getCommentViewMode(),
+      });
 
-      if (ctrlKExtensions.length > 0 || commentExtensions.length > 0) {
+      if (ctrlKExtensions.length > 0 || commentConfig) {
         editor.view.dispatch({
           effects: mrmd.codemirror.StateEffect.appendConfig.of([
             ...ctrlKExtensions,
-            ...commentExtensions,
+            commentConfig,
           ].filter(Boolean)),
         });
-        console.log('[AI] Ctrl-K and comment syntax extensions added');
+        console.log('[AI] Ctrl-K and comment configuration added');
       }
     }
 
@@ -18222,6 +19003,177 @@ session:
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    function commentRoleLabel(role) {
+      const normalized = String(role || 'comment').replace(/[-_]+/g, ' ').trim();
+      return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Comment';
+    }
+
+    function extractEditorComments() {
+      if (!state.editor?.view) return [];
+      const commentSyntax = getCommentSyntaxApi();
+      const docText = state.editor.view.state.doc.toString();
+      const comments = commentSyntax.extractComments?.(docText) || [];
+      const threads = commentSyntax.groupAdjacentComments
+        ? commentSyntax.groupAdjacentComments(docText, comments)
+        : comments.map((comment) => ({
+            start: comment.start,
+            end: comment.end,
+            raw: comment.raw,
+            preview: comment.preview || comment.content,
+            count: 1,
+            comments: [comment],
+            messages: [{ role: 'comment', text: comment.content }],
+          }));
+
+      return threads.map((thread, index) => ({
+        ...thread,
+        index,
+        line: state.editor.view.state.doc.lineAt(thread.start).number,
+        preview: thread.preview || thread.messages?.[0]?.text || 'Comment',
+        messages: Array.isArray(thread.messages) && thread.messages.length > 0
+          ? thread.messages
+          : [{ role: 'comment', text: thread.comments?.[0]?.content || '' }],
+      }));
+    }
+
+    function focusCommentInEditor(comment) {
+      if (!state.editor?.view || !comment) return;
+      state.editor.view.dispatch({
+        selection: { anchor: comment.start },
+        scrollIntoView: true,
+      });
+      state.editor.view.focus();
+    }
+
+    function activateCommentsThread(thread) {
+      state.commentsActiveThreadStart = thread?.start ?? null;
+      requestAnimationFrame(() => {
+        const listEl = document.getElementById('comments-panel-list');
+        if (!listEl) return;
+        const selected = state.commentsActiveThreadStart == null
+          ? null
+          : listEl.querySelector(`.comment-thread-card[data-thread-start="${state.commentsActiveThreadStart}"]`);
+        listEl.querySelectorAll('.comment-thread-card.active').forEach((card) => card.classList.remove('active'));
+        if (selected) {
+          selected.classList.add('active');
+          selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
+
+    function openCommentThreadFromEditor(detail = {}) {
+      if (!detail) return;
+      state.commentsActiveThreadStart = detail.from ?? null;
+      setCommentViewMode('sidebar');
+      applyCommentViewMode();
+      activateCommentsThread({ start: state.commentsActiveThreadStart });
+    }
+
+    function renderCommentsPanel() {
+      const listEl = document.getElementById('comments-panel-list');
+      const countEl = document.getElementById('comments-panel-count');
+      if (!listEl || !countEl) return;
+
+      const comments = extractEditorComments();
+      countEl.textContent = String(comments.length);
+
+      if (comments.length === 0) {
+        listEl.innerHTML = '<div class="comments-panel-empty">No comments in this document</div>';
+        return;
+      }
+
+      listEl.innerHTML = comments.map((comment) => {
+        const messagesHtml = (comment.messages || []).map((message) => {
+          const role = String(message.role || 'comment').toLowerCase();
+          return `
+            <div class="comment-thread-bubble ${escapeHtml(role)}">
+              <span class="comment-thread-role">${escapeHtml(commentRoleLabel(role))}</span>
+              ${escapeHtml(message.text || '')}
+            </div>
+          `;
+        }).join('');
+
+        const countLabel = comment.count > 1 ? ` · ${comment.count} messages` : '';
+
+        return `
+          <div class="comment-thread-card" data-comment-index="${comment.index}" data-thread-start="${comment.start}">
+            <div class="comment-thread-header">
+              <div>
+                <div class="comment-thread-title">${escapeHtml(comment.preview || 'Comment')}</div>
+                <div class="comment-thread-meta">Line ${comment.line}${countLabel}</div>
+              </div>
+              <button class="comment-thread-jump" type="button" data-jump-index="${comment.index}">Jump</button>
+            </div>
+            <div class="comment-thread-body">${messagesHtml}</div>
+            <div class="comment-thread-reply">
+              <textarea data-reply-index="${comment.index}" placeholder="Reply to this thread…" spellcheck="true"></textarea>
+              <div class="comment-thread-actions">
+                <span class="comment-thread-hint">Replies append another adjacent <!--! !--> marker.</span>
+                <button class="comment-thread-submit" type="button" data-submit-index="${comment.index}">Reply</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('[data-jump-index]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const index = Number(btn.dataset.jumpIndex);
+          activateCommentsThread(comments[index]);
+          focusCommentInEditor(comments[index]);
+        });
+      });
+
+      listEl.querySelectorAll('[data-submit-index]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const index = Number(btn.dataset.submitIndex);
+          const textarea = listEl.querySelector(`textarea[data-reply-index="${index}"]`);
+          const replyText = textarea?.value?.trim() || '';
+          if (!replyText || !state.editor?.view) return;
+
+          const commentSyntax = getCommentSyntaxApi();
+          const latestComments = extractEditorComments();
+          const target = latestComments[index] || latestComments.find((entry) => entry.start === comments[index]?.start && entry.raw === comments[index]?.raw);
+          if (!target) return;
+
+          const replyRaw = commentSyntax.buildCommentRaw
+            ? commentSyntax.buildCommentRaw(replyText)
+            : `<!--! ${String(replyText).replace(/\s+/g, ' ').trim()} !-->`;
+
+          state.editor.view.dispatch({
+            changes: { from: target.end, to: target.end, insert: replyRaw },
+          });
+
+          if (textarea) textarea.value = '';
+          state.commentsActiveThreadStart = target.start;
+          renderCommentsPanel();
+        });
+      });
+
+      activateCommentsThread({ start: state.commentsActiveThreadStart });
+    }
+
+    function initializeCommentsPanel() {
+      state.commentsChangeUnsub?.();
+      if (state.commentsRenderTimer) {
+        clearTimeout(state.commentsRenderTimer);
+        state.commentsRenderTimer = null;
+      }
+
+      if (!state.editor) {
+        renderCommentsPanel();
+        return;
+      }
+
+      renderCommentsPanel();
+      state.commentsChangeUnsub = state.editor.onChange(() => {
+        clearTimeout(state.commentsRenderTimer);
+        state.commentsRenderTimer = setTimeout(() => {
+          renderCommentsPanel();
+        }, 120);
+      });
     }
 
     /**
@@ -21854,6 +22806,7 @@ session:
     // =========================================================================
 
     const THEMES = ['wizard-study-dark', 'wizard-study-light', 'github', 'midnight', 'moonlight', 'nord', 'daylight', 'openresponses', 'grayscale-dark', 'grayscale-light', 'newsprint-dark', 'newsprint-light', 'plain-dark', 'plain-light'];
+    const DEFAULT_THEME = 'plain-light';
     let currentThemeIndex = 0;
     const CUSTOM_THEMES_KEY = 'mrmd-custom-themes';
 
@@ -21969,7 +22922,7 @@ session:
 
       const allThemes = getAllThemeNames();
       const customThemeNames = loadCustomThemes().map(t => t.name);
-      const currentTheme = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
+      const currentTheme = localStorage.getItem('mrmd-theme') || DEFAULT_THEME;
 
       // Create menu
       themeMenuElement = document.createElement('div');
@@ -22072,6 +23025,844 @@ session:
       }
       themeMenuOpen = false;
       document.removeEventListener('click', closeThemePickerOnOutsideClick);
+    }
+
+    // =========================================================================
+    // DOCUMENT SPELLCHECK SETTINGS
+    // =========================================================================
+
+    const POPULAR_SPELLCHECK_LANGUAGES = [
+      'en-US', 'en-GB', 'fr-FR', 'fr', 'es-ES', 'de-DE',
+      'pt-BR', 'pt-PT', 'it-IT', 'nl-NL', 'ru-RU', 'zh-CN', 'ja', 'ko'
+    ];
+
+    function getSpellcheckLanguageLabel(locale) {
+      const value = String(locale || '').trim();
+      if (!value) return '—';
+
+      try {
+        const [languageCode, regionCode] = value.split('-');
+        const languageNames = new Intl.DisplayNames(undefined, { type: 'language' });
+        const regionNames = new Intl.DisplayNames(undefined, { type: 'region' });
+        const language = languageNames.of(languageCode) || languageCode;
+        const region = regionCode ? (regionNames.of(regionCode.toUpperCase()) || regionCode.toUpperCase()) : '';
+        return region ? `${language} (${region})` : language;
+      } catch {
+        return value;
+      }
+    }
+
+    function applySpellcheckLanguagesToEditor(languages) {
+      try {
+        const primary = Array.isArray(languages) && languages.length > 0 ? languages[0] : '';
+        const content = state.editor?.view?.contentDOM;
+        if (!content) return;
+        if (primary) {
+          content.setAttribute('lang', primary);
+        } else {
+          content.removeAttribute('lang');
+        }
+      } catch (e) {
+        console.warn('[spellcheck] Failed to apply editor lang attribute:', e?.message || e);
+      }
+    }
+
+    function updateDocumentSpellcheckLabel(info = state.documentSpellcheck) {
+      const el = document.getElementById('settings-spellcheck-languages');
+      if (!el) return;
+
+      if (!window.electronAPI?.spellcheck) {
+        el.textContent = 'Unavailable';
+        el.title = 'Spellcheck API unavailable';
+        return;
+      }
+
+      if (!state.currentFile) {
+        el.textContent = 'Open document';
+        el.title = 'Open a document to choose spellcheck languages';
+        return;
+      }
+
+      if (!info) {
+        el.textContent = 'Loading…';
+        el.title = '';
+        return;
+      }
+
+      const effective = Array.isArray(info.effectiveLanguages) ? info.effectiveLanguages : [];
+      const configured = Array.isArray(info.configuredLanguages) ? info.configuredLanguages : [];
+      const labels = effective.map(getSpellcheckLanguageLabel);
+
+      if (effective.length === 0) {
+        el.textContent = 'Unavailable';
+        el.title = 'No spellchecker dictionaries are available in this Electron session';
+        return;
+      }
+
+      if (info.usingDefault) {
+        el.textContent = `Default (${labels.join(', ')})`;
+      } else {
+        el.textContent = labels.join(', ');
+      }
+
+      const configuredText = configured.length > 0 ? configured.join(', ') : 'none';
+      const effectiveText = effective.join(', ');
+      el.title = `Configured: ${configuredText}\nEffective: ${effectiveText}${info.sharedSession ? '\nNote: Electron spellchecker languages are shared by the current browser session.' : ''}`;
+    }
+
+    async function refreshDocumentSpellcheckSetting(options = {}) {
+      const { apply = false } = options;
+      const el = document.getElementById('settings-spellcheck-languages');
+      if (!el) return null;
+
+      if (!window.electronAPI?.spellcheck) {
+        updateDocumentSpellcheckLabel(null);
+        return null;
+      }
+
+      if (!state.currentFile) {
+        state.documentSpellcheck = null;
+        updateDocumentSpellcheckLabel(null);
+        return null;
+      }
+
+      try {
+        el.textContent = 'Loading…';
+        const info = await window.electronAPI.spellcheck.getForDocument(
+          state.currentFile,
+          state.project?.root || state.projectDir || null,
+          apply,
+        );
+        state.documentSpellcheck = info;
+        updateDocumentSpellcheckLabel(info);
+        applySpellcheckLanguagesToEditor(info?.effectiveLanguages || []);
+        return info;
+      } catch (e) {
+        console.warn('[spellcheck] Failed to load document spellcheck settings:', e);
+        el.textContent = 'Error';
+        el.title = e?.message || String(e);
+        return null;
+      }
+    }
+
+    async function openSpellcheckLanguagePicker() {
+      if (!window.electronAPI?.spellcheck) {
+        alert('Spellcheck settings are not available in this build.');
+        return;
+      }
+
+      if (!state.currentFile) {
+        alert('Open a document first.');
+        return;
+      }
+
+      const info = state.documentSpellcheck || await refreshDocumentSpellcheckSetting({ apply: false });
+      const available = Array.isArray(info?.availableLanguages) ? info.availableLanguages.slice() : [];
+      const currentSelection = new Set(
+        (Array.isArray(info?.configuredLanguages) && info.configuredLanguages.length > 0
+          ? info.configuredLanguages
+          : (info?.effectiveLanguages || []))
+      );
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay visible';
+      overlay.style.zIndex = '2600';
+
+      const dialog = document.createElement('div');
+      dialog.className = 'voice-retranscribe-dialog';
+      dialog.style.width = 'min(560px, calc(100vw - 32px))';
+      dialog.style.maxHeight = 'min(80vh, 720px)';
+      dialog.style.display = 'flex';
+      dialog.style.flexDirection = 'column';
+      dialog.style.gap = '12px';
+
+      dialog.innerHTML = `
+        <div class="voice-retranscribe-title">Spellcheck Languages</div>
+        <div style="font-size:12px; opacity:0.75; line-height:1.45;">
+          Choose one or more dictionaries for <strong>${state.currentFile.split('/').pop()}</strong>.
+          Use <strong>Use Default</strong> to clear the document override.
+        </div>
+        <input type="text" placeholder="Filter languages..." autocomplete="off" spellcheck="false"
+               style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); color:var(--text);" />
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; opacity:0.75;">
+          <span id="spellcheck-selection-summary">0 selected</span>
+          <span>${info?.sharedSession ? 'Applies to the current Electron session.' : ''}</span>
+        </div>
+        <div id="spellcheck-language-list" style="overflow:auto; border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--bg-elevated); min-height:180px; max-height:40vh;"></div>
+        <div class="voice-retranscribe-actions">
+          <button class="cloud-btn cloud-btn-secondary" id="spellcheck-cancel-btn">Cancel</button>
+          <button class="cloud-btn cloud-btn-secondary" id="spellcheck-default-btn">Use Default</button>
+          <button class="cloud-btn cloud-btn-primary" id="spellcheck-save-btn">Save</button>
+        </div>
+      `;
+
+      const filterInput = dialog.querySelector('input');
+      const listEl = dialog.querySelector('#spellcheck-language-list');
+      const summaryEl = dialog.querySelector('#spellcheck-selection-summary');
+      const cancelBtn = dialog.querySelector('#spellcheck-cancel-btn');
+      const defaultBtn = dialog.querySelector('#spellcheck-default-btn');
+      const saveBtn = dialog.querySelector('#spellcheck-save-btn');
+
+      function selectedValues() {
+        return Array.from(currentSelection);
+      }
+
+      function updateSummary() {
+        const selected = selectedValues();
+        summaryEl.textContent = selected.length > 0
+          ? `${selected.length} selected: ${selected.map(getSpellcheckLanguageLabel).join(', ')}`
+          : 'No explicit override';
+      }
+
+      function renderLanguageList() {
+        const query = String(filterInput.value || '').trim().toLowerCase();
+        const popular = available.filter((lang) => POPULAR_SPELLCHECK_LANGUAGES.includes(lang));
+        const rest = available.filter((lang) => !POPULAR_SPELLCHECK_LANGUAGES.includes(lang));
+        const ordered = [...popular, ...rest];
+        const filtered = ordered.filter((lang) => {
+          if (!query) return true;
+          const label = getSpellcheckLanguageLabel(lang).toLowerCase();
+          return lang.toLowerCase().includes(query) || label.includes(query);
+        });
+
+        if (available.length === 0) {
+          listEl.innerHTML = '<div style="padding:12px; font-size:13px; opacity:0.75;">No spellchecker dictionaries are available in this Electron session.</div>';
+          saveBtn.disabled = true;
+          return;
+        }
+
+        saveBtn.disabled = false;
+        listEl.innerHTML = filtered.length > 0
+          ? filtered.map((lang) => `
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-radius:8px; cursor:pointer;">
+              <span style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" data-lang="${lang}" ${currentSelection.has(lang) ? 'checked' : ''} />
+                <span>${getSpellcheckLanguageLabel(lang)}</span>
+              </span>
+              <span style="font-size:11px; opacity:0.6;">${lang}</span>
+            </label>
+          `).join('')
+          : '<div style="padding:12px; font-size:13px; opacity:0.75;">No languages match that filter.</div>';
+      }
+
+      const cleanup = () => overlay.remove();
+
+      listEl.addEventListener('change', (e) => {
+        const checkbox = e.target?.closest?.('input[type="checkbox"][data-lang]');
+        if (!checkbox) return;
+        const lang = checkbox.getAttribute('data-lang');
+        if (checkbox.checked) currentSelection.add(lang);
+        else currentSelection.delete(lang);
+        updateSummary();
+      });
+
+      filterInput.addEventListener('input', renderLanguageList);
+      cancelBtn.addEventListener('click', cleanup);
+      defaultBtn.addEventListener('click', async () => {
+        try {
+          defaultBtn.disabled = true;
+          const result = await window.electronAPI.spellcheck.clearForDocument(
+            state.currentFile,
+            state.project?.root || state.projectDir || null,
+          );
+          state.documentSpellcheck = result;
+          updateDocumentSpellcheckLabel(result);
+          applySpellcheckLanguagesToEditor(result?.effectiveLanguages || []);
+          cleanup();
+        } catch (e) {
+          console.warn('[spellcheck] Failed to clear document spellcheck override:', e);
+          alert(`Failed to clear spellcheck override: ${e?.message || e}`);
+          defaultBtn.disabled = false;
+        }
+      });
+      saveBtn.addEventListener('click', async () => {
+        try {
+          saveBtn.disabled = true;
+          const result = await window.electronAPI.spellcheck.setForDocument(
+            state.currentFile,
+            selectedValues(),
+            state.project?.root || state.projectDir || null,
+          );
+          state.documentSpellcheck = result;
+          updateDocumentSpellcheckLabel(result);
+          applySpellcheckLanguagesToEditor(result?.effectiveLanguages || []);
+          cleanup();
+        } catch (e) {
+          console.warn('[spellcheck] Failed to save document spellcheck languages:', e);
+          alert(`Failed to save spellcheck languages: ${e?.message || e}`);
+          saveBtn.disabled = false;
+        }
+      });
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) cleanup();
+      });
+
+      document.body.appendChild(overlay);
+      overlay.appendChild(dialog);
+      updateSummary();
+      renderLanguageList();
+      setTimeout(() => filterInput.focus(), 0);
+    }
+
+    // =========================================================================
+    // LANGUAGETOOL SETTINGS
+    // =========================================================================
+
+    function getLanguageToolLanguageOptions(rawLanguages = []) {
+      const seen = new Set();
+      const options = [];
+
+      for (const entry of Array.isArray(rawLanguages) ? rawLanguages : []) {
+        const code = String(entry?.longCode || entry?.code || '').trim();
+        if (!code) continue;
+        const key = code.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const name = String(entry?.name || code).trim();
+        const label = entry?.longCode && entry.longCode !== entry.code
+          ? `${name} (${entry.longCode})`
+          : `${name} (${code})`;
+        options.push({ code, name, label, raw: entry });
+      }
+
+      options.sort((a, b) => a.label.localeCompare(b.label));
+      return options;
+    }
+
+    function getLanguageToolModeLabel(mode) {
+      const normalized = String(mode || 'default').toLowerCase();
+      return normalized === 'picky' ? 'Picky' : 'Default';
+    }
+
+    function updateLanguageToolStatusLabel(status = state.languageToolStatus) {
+      const el = document.getElementById('settings-languagetool-status');
+      if (!el) return;
+
+      if (!window.electronAPI?.languagetool) {
+        el.textContent = 'Unavailable';
+        el.title = 'LanguageTool API unavailable';
+        return;
+      }
+
+      if (!status) {
+        el.textContent = 'Loading…';
+        el.title = '';
+        return;
+      }
+
+      if (!status.available) {
+        el.textContent = 'Unavailable';
+        el.title = status.error || 'LanguageTool is not configured';
+        return;
+      }
+
+      if (!status.running) {
+        el.textContent = status.mode === 'remote' ? 'Remote (offline)' : 'Ready on demand';
+        el.title = status.error || (status.mode === 'remote'
+          ? `Configured remote endpoint: ${status.baseUrl || 'unknown'}`
+          : `Local LanguageTool is configured${status.distributionDir ? ` at ${status.distributionDir}` : ''}`);
+        return;
+      }
+
+      el.textContent = status.mode === 'remote' ? 'Remote' : 'Local';
+      el.title = [
+        status.baseUrl ? `Endpoint: ${status.baseUrl}` : null,
+        status.distributionDir ? `Distribution: ${status.distributionDir}` : null,
+        status.javaBin ? `Java: ${status.javaBin}` : null,
+      ].filter(Boolean).join('\n');
+    }
+
+    function updateLanguageToolPrefLabels(info = state.languageToolPrefs) {
+      const enabledEl = document.getElementById('settings-languagetool-enabled');
+      const languageEl = document.getElementById('settings-languagetool-language');
+      const modeEl = document.getElementById('settings-languagetool-mode');
+      const motherTongueEl = document.getElementById('settings-languagetool-mother-tongue');
+      const dictionaryEl = document.getElementById('settings-languagetool-dictionary');
+
+      if (dictionaryEl) {
+        const count = Array.isArray(info?.dictionary) ? info.dictionary.length : 0;
+        dictionaryEl.textContent = `${count} word${count === 1 ? '' : 's'}`;
+      }
+
+      if (!enabledEl || !languageEl || !modeEl || !motherTongueEl) return;
+
+      if (!window.electronAPI?.languagetool) {
+        enabledEl.textContent = 'Unavailable';
+        languageEl.textContent = 'Unavailable';
+        modeEl.textContent = 'Unavailable';
+        motherTongueEl.textContent = 'Unavailable';
+        return;
+      }
+
+      if (!state.currentFile) {
+        enabledEl.textContent = 'Open document';
+        languageEl.textContent = 'Open document';
+        modeEl.textContent = 'Open document';
+        motherTongueEl.textContent = 'Open document';
+        return;
+      }
+
+      if (!info) {
+        enabledEl.textContent = 'Loading…';
+        languageEl.textContent = 'Loading…';
+        modeEl.textContent = 'Loading…';
+        motherTongueEl.textContent = 'Loading…';
+        return;
+      }
+
+      const effective = info.effective || {};
+      const overrides = info.overrides || {};
+      enabledEl.textContent = effective.enabled === false ? 'Off' : 'On';
+      enabledEl.title = overrides.enabled !== undefined
+        ? `Document override: ${effective.enabled === false ? 'disabled' : 'enabled'}`
+        : 'Using default grammar enabled setting';
+
+      languageEl.textContent = effective.language ? getSpellcheckLanguageLabel(effective.language) : 'Default';
+      languageEl.title = effective.language
+        ? `LanguageTool language: ${effective.language}`
+        : 'Using automatic/default LanguageTool language';
+
+      modeEl.textContent = getLanguageToolModeLabel(effective.mode);
+      modeEl.title = effective.mode === 'picky'
+        ? 'Picky mode enables stricter grammar/style rules'
+        : 'Default mode uses standard grammar/style rules';
+
+      motherTongueEl.textContent = effective.motherTongue ? getSpellcheckLanguageLabel(effective.motherTongue) : 'None';
+      motherTongueEl.title = effective.motherTongue
+        ? `Mother tongue hint: ${effective.motherTongue}`
+        : 'No mother tongue hint';
+    }
+
+    async function refreshLanguageToolStatus() {
+      const el = document.getElementById('settings-languagetool-status');
+      if (el) el.textContent = 'Loading…';
+
+      if (!window.electronAPI?.languagetool) {
+        state.languageToolStatus = null;
+        updateLanguageToolStatusLabel(null);
+        return null;
+      }
+
+      try {
+        const status = await window.electronAPI.languagetool.status();
+        state.languageToolStatus = status;
+        updateLanguageToolStatusLabel(status);
+        return status;
+      } catch (e) {
+        console.warn('[languagetool] Failed to load status:', e);
+        state.languageToolStatus = { available: false, error: e?.message || String(e) };
+        updateLanguageToolStatusLabel(state.languageToolStatus);
+        return state.languageToolStatus;
+      }
+    }
+
+    async function refreshLanguageToolPrefs() {
+      if (!window.electronAPI?.languagetool) {
+        state.languageToolPrefs = null;
+        updateLanguageToolPrefLabels(null);
+        return null;
+      }
+
+      try {
+        let info;
+        if (state.currentFile) {
+          info = await window.electronAPI.languagetool.getPrefs(
+            state.currentFile,
+            state.project?.root || state.projectDir || null,
+          );
+        } else {
+          const defaults = await window.electronAPI.languagetool.getDefaults();
+          const dictionary = await window.electronAPI.languagetool.getDictionary();
+          info = { defaults, overrides: {}, effective: defaults, dictionary };
+        }
+        state.languageToolPrefs = info;
+        updateLanguageToolPrefLabels(info);
+        return info;
+      } catch (e) {
+        console.warn('[languagetool] Failed to load prefs:', e);
+        state.languageToolPrefs = null;
+        updateLanguageToolPrefLabels(null);
+        return null;
+      }
+    }
+
+    async function refreshLanguageToolSettings() {
+      const [status, prefs] = await Promise.all([
+        refreshLanguageToolStatus(),
+        refreshLanguageToolPrefs(),
+      ]);
+      return { status, prefs };
+    }
+
+    function refreshLanguageToolEditorDiagnostics() {
+      if (!state.editor?.view || !mrmd?.refreshLanguageToolDiagnostics) return;
+      try {
+        mrmd.refreshLanguageToolDiagnostics(state.editor.view);
+      } catch (e) {
+        console.warn('[languagetool] Failed to refresh editor diagnostics:', e);
+      }
+    }
+
+    function applyFirstLanguageToolSuggestionAction() {
+      if (!state.editor?.view || !mrmd?.applyFirstLanguageToolSuggestion) return false;
+      try {
+        const applied = mrmd.applyFirstLanguageToolSuggestion(state.editor.view);
+        if (!applied) {
+          console.log('[languagetool] No suggestion available near the cursor');
+        }
+        return applied;
+      } catch (e) {
+        console.warn('[languagetool] Failed to apply first suggestion:', e);
+        return false;
+      }
+    }
+
+    function installLanguageToolDiagnosticsExtension() {
+      if (!state.editor?.view) return;
+      if (!window.electronAPI?.languagetool) return;
+      if (!mrmd?.createLanguageToolDiagnosticsExtension) return;
+      if (state.languageToolEditorView === state.editor.view) return;
+
+      const extension = mrmd.createLanguageToolDiagnosticsExtension({
+        check: (payload) => window.electronAPI.languagetool.check(payload),
+        getPreferences: () => {
+          const effective = { ...(state.languageToolPrefs?.effective || { enabled: true }) };
+          if (!effective.language) {
+            effective.language = state.documentSpellcheck?.effectiveLanguages?.[0] || 'auto';
+          }
+          return effective;
+        },
+        getDictionary: () => state.languageToolPrefs?.dictionary || [],
+        debounceMs: 800,
+        maxDiagnostics: 60,
+      });
+
+      state.editor.view.dispatch({
+        effects: mrmd.codemirror.StateEffect.appendConfig.of(extension),
+      });
+      state.languageToolEditorView = state.editor.view;
+      refreshLanguageToolEditorDiagnostics();
+    }
+
+    async function toggleLanguageToolForDocument() {
+      if (!window.electronAPI?.languagetool) {
+        alert('LanguageTool is not available in this build.');
+        return;
+      }
+      if (!state.currentFile) {
+        alert('Open a document first.');
+        return;
+      }
+
+      const info = state.languageToolPrefs || await refreshLanguageToolPrefs();
+      const enabled = info?.effective?.enabled !== false;
+      try {
+        const updated = await window.electronAPI.languagetool.setPrefs(
+          state.currentFile,
+          { enabled: !enabled },
+          state.project?.root || state.projectDir || null,
+        );
+        state.languageToolPrefs = updated;
+        updateLanguageToolPrefLabels(updated);
+        refreshLanguageToolEditorDiagnostics();
+      } catch (e) {
+        console.warn('[languagetool] Failed to toggle enabled state:', e);
+        alert(`Failed to update grammar setting: ${e?.message || e}`);
+      }
+    }
+
+    async function cycleLanguageToolMode() {
+      if (!window.electronAPI?.languagetool) {
+        alert('LanguageTool is not available in this build.');
+        return;
+      }
+      if (!state.currentFile) {
+        alert('Open a document first.');
+        return;
+      }
+
+      const info = state.languageToolPrefs || await refreshLanguageToolPrefs();
+      const nextMode = String(info?.effective?.mode || 'default').toLowerCase() === 'picky' ? 'default' : 'picky';
+      try {
+        const updated = await window.electronAPI.languagetool.setPrefs(
+          state.currentFile,
+          { mode: nextMode },
+          state.project?.root || state.projectDir || null,
+        );
+        state.languageToolPrefs = updated;
+        updateLanguageToolPrefLabels(updated);
+        refreshLanguageToolEditorDiagnostics();
+      } catch (e) {
+        console.warn('[languagetool] Failed to update mode:', e);
+        alert(`Failed to update grammar mode: ${e?.message || e}`);
+      }
+    }
+
+    async function editLanguageToolMotherTongue() {
+      if (!window.electronAPI?.languagetool) {
+        alert('LanguageTool is not available in this build.');
+        return;
+      }
+      if (!state.currentFile) {
+        alert('Open a document first.');
+        return;
+      }
+
+      const info = state.languageToolPrefs || await refreshLanguageToolPrefs();
+      const currentValue = info?.effective?.motherTongue || '';
+      const value = await requestTextInput({
+        title: 'LanguageTool Mother Tongue',
+        label: 'Language code',
+        initialValue: currentValue,
+        placeholder: 'e.g. en-US, fr-FR (leave empty to clear)',
+        confirmText: 'Save',
+      });
+      if (value === null) return;
+
+      try {
+        const updated = await window.electronAPI.languagetool.setPrefs(
+          state.currentFile,
+          { motherTongue: value.trim() || null },
+          state.project?.root || state.projectDir || null,
+        );
+        state.languageToolPrefs = updated;
+        updateLanguageToolPrefLabels(updated);
+        refreshLanguageToolEditorDiagnostics();
+      } catch (e) {
+        console.warn('[languagetool] Failed to update mother tongue:', e);
+        alert(`Failed to update mother tongue: ${e?.message || e}`);
+      }
+    }
+
+    async function openLanguageToolLanguagePicker() {
+      if (!window.electronAPI?.languagetool) {
+        alert('LanguageTool is not available in this build.');
+        return;
+      }
+      if (!state.currentFile) {
+        alert('Open a document first.');
+        return;
+      }
+
+      const [info, rawLanguages] = await Promise.all([
+        state.languageToolPrefs || refreshLanguageToolPrefs(),
+        window.electronAPI.languagetool.languages(),
+      ]);
+      const choices = getLanguageToolLanguageOptions(rawLanguages);
+      const current = String(info?.effective?.language || '').trim();
+      let selected = current;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay visible';
+      overlay.style.zIndex = '2600';
+
+      const dialog = document.createElement('div');
+      dialog.className = 'voice-retranscribe-dialog';
+      dialog.style.width = 'min(560px, calc(100vw - 32px))';
+      dialog.style.maxHeight = 'min(80vh, 720px)';
+      dialog.style.display = 'flex';
+      dialog.style.flexDirection = 'column';
+      dialog.style.gap = '12px';
+
+      dialog.innerHTML = `
+        <div class="voice-retranscribe-title">Grammar Language</div>
+        <div style="font-size:12px; opacity:0.75; line-height:1.45;">
+          Choose the LanguageTool language for <strong>${state.currentFile.split('/').pop()}</strong>.
+          Use <strong>Use Default</strong> to let MRMD/LanguageTool pick automatically.
+        </div>
+        <input type="text" placeholder="Filter languages..." autocomplete="off" spellcheck="false"
+               style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); color:var(--text);" />
+        <div id="lt-language-list" style="overflow:auto; border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--bg-elevated); min-height:180px; max-height:40vh;"></div>
+        <div class="voice-retranscribe-actions">
+          <button class="cloud-btn cloud-btn-secondary" id="lt-language-cancel">Cancel</button>
+          <button class="cloud-btn cloud-btn-secondary" id="lt-language-default">Use Default</button>
+          <button class="cloud-btn cloud-btn-primary" id="lt-language-save">Save</button>
+        </div>
+      `;
+
+      const filterInput = dialog.querySelector('input');
+      const listEl = dialog.querySelector('#lt-language-list');
+      const cancelBtn = dialog.querySelector('#lt-language-cancel');
+      const defaultBtn = dialog.querySelector('#lt-language-default');
+      const saveBtn = dialog.querySelector('#lt-language-save');
+
+      function renderList() {
+        const query = String(filterInput.value || '').trim().toLowerCase();
+        const filtered = choices.filter((choice) => {
+          if (!query) return true;
+          return choice.code.toLowerCase().includes(query) || choice.label.toLowerCase().includes(query);
+        });
+
+        listEl.innerHTML = filtered.length > 0
+          ? filtered.map((choice) => `
+            <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-radius:8px; cursor:pointer;">
+              <span style="display:flex; align-items:center; gap:10px;">
+                <input type="radio" name="lt-language" data-lang="${choice.code}" ${selected === choice.code ? 'checked' : ''} />
+                <span>${choice.label}</span>
+              </span>
+            </label>
+          `).join('')
+          : '<div style="padding:12px; font-size:13px; opacity:0.75;">No languages match that filter.</div>';
+      }
+
+      const cleanup = () => overlay.remove();
+      listEl.addEventListener('change', (e) => {
+        const radio = e.target?.closest?.('input[type="radio"][data-lang]');
+        if (!radio) return;
+        selected = radio.getAttribute('data-lang') || '';
+      });
+      filterInput.addEventListener('input', renderList);
+      cancelBtn.addEventListener('click', cleanup);
+      defaultBtn.addEventListener('click', async () => {
+        try {
+          const updated = await window.electronAPI.languagetool.setPrefs(
+            state.currentFile,
+            { language: null },
+            state.project?.root || state.projectDir || null,
+          );
+          state.languageToolPrefs = updated;
+          updateLanguageToolPrefLabels(updated);
+          refreshLanguageToolEditorDiagnostics();
+          cleanup();
+        } catch (e) {
+          console.warn('[languagetool] Failed to clear language override:', e);
+          alert(`Failed to clear grammar language: ${e?.message || e}`);
+        }
+      });
+      saveBtn.addEventListener('click', async () => {
+        try {
+          const updated = await window.electronAPI.languagetool.setPrefs(
+            state.currentFile,
+            { language: selected || null },
+            state.project?.root || state.projectDir || null,
+          );
+          state.languageToolPrefs = updated;
+          updateLanguageToolPrefLabels(updated);
+          refreshLanguageToolEditorDiagnostics();
+          cleanup();
+        } catch (e) {
+          console.warn('[languagetool] Failed to save language override:', e);
+          alert(`Failed to save grammar language: ${e?.message || e}`);
+        }
+      });
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) cleanup();
+      });
+
+      document.body.appendChild(overlay);
+      overlay.appendChild(dialog);
+      renderList();
+      setTimeout(() => filterInput.focus(), 0);
+    }
+
+    async function manageLanguageToolDictionary() {
+      if (!window.electronAPI?.languagetool) {
+        alert('LanguageTool is not available in this build.');
+        return;
+      }
+
+      const currentWords = Array.isArray(state.languageToolPrefs?.dictionary)
+        ? state.languageToolPrefs.dictionary.slice()
+        : await window.electronAPI.languagetool.getDictionary();
+      let words = currentWords.slice().sort((a, b) => a.localeCompare(b));
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay visible';
+      overlay.style.zIndex = '2600';
+
+      const dialog = document.createElement('div');
+      dialog.className = 'voice-retranscribe-dialog';
+      dialog.style.width = 'min(560px, calc(100vw - 32px))';
+      dialog.style.maxHeight = 'min(80vh, 720px)';
+      dialog.style.display = 'flex';
+      dialog.style.flexDirection = 'column';
+      dialog.style.gap = '12px';
+
+      dialog.innerHTML = `
+        <div class="voice-retranscribe-title">Custom Dictionary</div>
+        <div style="font-size:12px; opacity:0.75; line-height:1.45;">
+          Words added here are ignored by MRMD grammar features and reused across documents.
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="lt-dict-input" placeholder="Add a word..." autocomplete="off" spellcheck="false"
+                 style="flex:1; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-elevated); color:var(--text);" />
+          <button class="cloud-btn cloud-btn-primary" id="lt-dict-add">Add</button>
+        </div>
+        <div id="lt-dict-list" style="overflow:auto; border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--bg-elevated); min-height:180px; max-height:40vh;"></div>
+        <div class="voice-retranscribe-actions">
+          <button class="cloud-btn cloud-btn-secondary" id="lt-dict-close">Done</button>
+        </div>
+      `;
+
+      const input = dialog.querySelector('#lt-dict-input');
+      const addBtn = dialog.querySelector('#lt-dict-add');
+      const listEl = dialog.querySelector('#lt-dict-list');
+      const closeBtn = dialog.querySelector('#lt-dict-close');
+
+      function renderList() {
+        listEl.innerHTML = words.length > 0
+          ? words.map((word) => `
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 10px; border-radius:8px;">
+              <span>${word}</span>
+              <button class="cloud-btn cloud-btn-secondary" data-remove-word="${word}" style="padding:4px 8px; min-height:unset;">Remove</button>
+            </div>
+          `).join('')
+          : '<div style="padding:12px; font-size:13px; opacity:0.75;">No custom dictionary words yet.</div>';
+      }
+
+      async function refreshAllPrefs() {
+        state.languageToolPrefs = await refreshLanguageToolPrefs();
+      }
+
+      async function addWord() {
+        const word = String(input.value || '').trim();
+        if (!word) return;
+        try {
+          words = await window.electronAPI.languagetool.addToDictionary(word);
+          words = words.slice().sort((a, b) => a.localeCompare(b));
+          input.value = '';
+          renderList();
+          await refreshAllPrefs();
+          refreshLanguageToolEditorDiagnostics();
+        } catch (e) {
+          console.warn('[languagetool] Failed to add dictionary word:', e);
+          alert(`Failed to add dictionary word: ${e?.message || e}`);
+        }
+      }
+
+      listEl.addEventListener('click', async (e) => {
+        const btn = e.target?.closest?.('[data-remove-word]');
+        if (!btn) return;
+        const word = btn.getAttribute('data-remove-word');
+        try {
+          words = await window.electronAPI.languagetool.removeFromDictionary(word);
+          words = words.slice().sort((a, b) => a.localeCompare(b));
+          renderList();
+          await refreshAllPrefs();
+          refreshLanguageToolEditorDiagnostics();
+        } catch (err) {
+          console.warn('[languagetool] Failed to remove dictionary word:', err);
+          alert(`Failed to remove dictionary word: ${err?.message || err}`);
+        }
+      });
+
+      addBtn.addEventListener('click', addWord);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addWord();
+        }
+      });
+      closeBtn.addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+      });
+
+      document.body.appendChild(overlay);
+      overlay.appendChild(dialog);
+      renderList();
+      setTimeout(() => input.focus(), 0);
     }
 
     // =========================================================================
@@ -22516,7 +24307,7 @@ session:
       // Switch to default if deleted current
       const current = localStorage.getItem('mrmd-theme');
       if (current === themeName) {
-        applyTheme('github');
+        applyTheme(DEFAULT_THEME);
       }
     }
 
@@ -22790,6 +24581,21 @@ session:
       setLongOutputWidgetEnabled(!isLongOutputWidgetEnabled());
     }
 
+    function cycleSectionControlsMode() {
+      const prefs = getSectionControlsPrefs();
+      const idx = SECTION_CONTROLS_MODES.indexOf(prefs.mode);
+      const next = SECTION_CONTROLS_MODES[(idx + 1) % SECTION_CONTROLS_MODES.length];
+      setSectionControlsPrefs({ mode: next });
+      applySectionControlsToEditor();
+      updateSectionControlsModeLabel();
+    }
+
+    function updateSectionControlsModeLabel() {
+      const prefs = getSectionControlsPrefs();
+      const el = document.getElementById('settings-section-controls-mode');
+      if (el) el.textContent = SECTION_CONTROLS_MODE_LABELS[prefs.mode] || prefs.mode;
+    }
+
     function applyUiScale(scale, { persist = true } = {}) {
       const clamped = Math.max(75, Math.min(140, Number(scale) || 100));
       const el = document.getElementById('settings-ui-scale');
@@ -22837,11 +24643,12 @@ session:
       // Register custom themes first
       registerCustomThemes();
 
-      const saved = localStorage.getItem('mrmd-theme') || 'wizard-study-dark';
+      const saved = localStorage.getItem('mrmd-theme') || DEFAULT_THEME;
       const allThemes = getAllThemeNames();
       currentThemeIndex = allThemes.indexOf(saved);
+      if (currentThemeIndex < 0) currentThemeIndex = allThemes.indexOf(DEFAULT_THEME);
       if (currentThemeIndex < 0) currentThemeIndex = 0;
-      applyTheme(allThemes[currentThemeIndex] || 'daylight');
+      applyTheme(allThemes[currentThemeIndex] || DEFAULT_THEME);
     }
 
     // =========================================================================

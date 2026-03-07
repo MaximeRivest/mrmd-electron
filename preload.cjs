@@ -223,6 +223,41 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // ==========================================================================
+  // LANGUAGETOOL API
+  // ==========================================================================
+
+  languagetool: {
+    status: () => ipcRenderer.invoke('languagetool:status'),
+    languages: () => ipcRenderer.invoke('languagetool:languages'),
+    check: (payload) => ipcRenderer.invoke('languagetool:check', payload),
+    getPrefs: (documentPath, projectRoot) =>
+      ipcRenderer.invoke('languagetool:getPrefs', { documentPath, projectRoot }),
+    setPrefs: (documentPath, patch, projectRoot) =>
+      ipcRenderer.invoke('languagetool:setPrefs', { documentPath, patch, projectRoot }),
+    clearPrefs: (documentPath, projectRoot) =>
+      ipcRenderer.invoke('languagetool:clearPrefs', { documentPath, projectRoot }),
+    getDictionary: () => ipcRenderer.invoke('languagetool:getDictionary'),
+    addToDictionary: (word) => ipcRenderer.invoke('languagetool:addToDictionary', { word }),
+    removeFromDictionary: (word) => ipcRenderer.invoke('languagetool:removeFromDictionary', { word }),
+    getDefaults: () => ipcRenderer.invoke('languagetool:getDefaults'),
+    setDefaults: (patch) => ipcRenderer.invoke('languagetool:setDefaults', { patch }),
+  },
+
+  // ==========================================================================
+  // SPELLCHECK API
+  // ==========================================================================
+
+  spellcheck: {
+    getAvailableLanguages: () => ipcRenderer.invoke('spellcheck:getAvailableLanguages'),
+    getForDocument: (documentPath, projectRoot, apply = false) =>
+      ipcRenderer.invoke('spellcheck:getForDocument', { documentPath, projectRoot, apply }),
+    setForDocument: (documentPath, languages, projectRoot) =>
+      ipcRenderer.invoke('spellcheck:setForDocument', { documentPath, languages, projectRoot }),
+    clearForDocument: (documentPath, projectRoot) =>
+      ipcRenderer.invoke('spellcheck:clearForDocument', { documentPath, projectRoot }),
+  },
+
+  // ==========================================================================
   // SETTINGS SERVICE API
   // ==========================================================================
 

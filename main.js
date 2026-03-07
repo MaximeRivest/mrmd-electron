@@ -8,7 +8,7 @@
  * - mrmd-ai: SHARED (stateless)
  */
 
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, Menu, MenuItem, ipcMain, shell } from 'electron';
 import { spawn, execSync } from 'child_process';
 import { createRequire } from 'module';
 import crypto from 'crypto';
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'url';
 import { WebSocket } from 'ws';
 
 // Services
-import { ProjectService, RuntimeService, FileService, AssetService, SettingsService, RuntimePreferencesService } from './src/services/index.js';
+import { ProjectService, RuntimeService, FileService, AssetService, SettingsService, RuntimePreferencesService, SpellcheckPreferencesService, LanguageToolService, LanguageToolPreferencesService } from './src/services/index.js';
 
 // Shared utilities and configuration
 import { findFreePort, waitForPort, isPortInUse } from './src/utils/index.js';
@@ -174,6 +174,132 @@ const fileService = new FileService(projectService);
 const assetService = new AssetService(fileService);
 const settingsService = new SettingsService();
 const runtimePreferencesService = new RuntimePreferencesService({ projectService });
+const spellcheckPreferencesService = new SpellcheckPreferencesService({ projectService });
+const languageToolService = new LanguageToolService({
+  distributionDirs: [
+    path.join(__dirname, 'vendor', 'languagetool'),
+  ],
+});
+const languageToolPreferencesService = new LanguageToolPreferencesService({ projectService });
+
+// ============================================================================
+// SPELLCHECK HELPERS
+// ============================================================================
+
+function normalizeSpellcheckLocale(locale) {
+  return String(locale || '').trim();
+}
+
+function matchSpellcheckLocale(requested, available) {
+  const target = normalizeSpellcheckLocale(requested);
+  if (!target) return null;
+
+  const exact = available.find((lang) => lang.toLowerCase() === target.toLowerCase());
+  if (exact) return exact;
+
+  const base = target.toLowerCase().split('-')[0];
+  if (!base) return null;
+
+  return available.find((lang) => lang.toLowerCase() === base || lang.toLowerCase().startsWith(`${base}-`)) || null;
+}
+
+function getAvailableSpellcheckLanguages(win) {
+  try {
+    return Array.isArray(win?.webContents?.session?.availableSpellCheckerLanguages)
+      ? win.webContents.session.availableSpellCheckerLanguages
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function sanitizeRequestedSpellcheckLanguages(requested, available) {
+  const list = Array.isArray(requested) ? requested : [requested];
+  const out = [];
+  const seen = new Set();
+
+  for (const item of list) {
+    const matched = matchSpellcheckLocale(item, available);
+    if (!matched) continue;
+    const key = matched.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(matched);
+  }
+
+  return out;
+}
+
+function getDefaultSpellcheckLanguages(win) {
+  const available = getAvailableSpellcheckLanguages(win);
+  if (available.length === 0) return [];
+
+  const locale = app.getLocale?.() || 'en-US';
+  const candidates = [
+    locale,
+    locale.split('-')[0],
+    'en-US',
+    'en-GB',
+    'en',
+  ];
+
+  const resolved = sanitizeRequestedSpellcheckLanguages(candidates, available);
+  return resolved.length > 0 ? resolved : [available[0]];
+}
+
+function applySpellcheckLanguagesToWindow(win, languages) {
+  const available = getAvailableSpellcheckLanguages(win);
+  const normalized = sanitizeRequestedSpellcheckLanguages(languages, available);
+
+  try {
+    if (win?.webContents?.session?.setSpellCheckerLanguages) {
+      win.webContents.session.setSpellCheckerLanguages(normalized);
+    }
+    return { available, applied: normalized, error: null };
+  } catch (error) {
+    console.warn('[spellcheck] Failed to apply spellchecker languages:', normalized, error);
+    return { available, applied: normalized, error: error?.message || String(error) };
+  }
+}
+
+async function getSpellcheckStateForWindow(win, { documentPath, projectRoot = null, apply = false } = {}) {
+  if (!documentPath) {
+    const availableLanguages = getAvailableSpellcheckLanguages(win);
+    const defaultLanguages = getDefaultSpellcheckLanguages(win);
+    const applied = apply ? applySpellcheckLanguagesToWindow(win, defaultLanguages) : { applied: defaultLanguages, error: null };
+    return {
+      context: null,
+      configuredLanguages: [],
+      effectiveLanguages: applied.applied,
+      defaultLanguages,
+      availableLanguages,
+      hasOverride: false,
+      usingDefault: true,
+      sharedSession: true,
+      error: applied.error,
+    };
+  }
+
+  const pref = await spellcheckPreferencesService.getForDocument({ documentPath, projectRoot });
+  const availableLanguages = getAvailableSpellcheckLanguages(win);
+  const configuredLanguages = Array.isArray(pref.languages) ? pref.languages : [];
+  const resolvedConfigured = sanitizeRequestedSpellcheckLanguages(configuredLanguages, availableLanguages);
+  const defaultLanguages = getDefaultSpellcheckLanguages(win);
+  const effectiveLanguages = resolvedConfigured.length > 0 ? resolvedConfigured : defaultLanguages;
+  const applied = apply ? applySpellcheckLanguagesToWindow(win, effectiveLanguages) : { applied: effectiveLanguages, error: null };
+
+  return {
+    context: pref.context,
+    configuredLanguages,
+    effectiveLanguages: applied.applied,
+    defaultLanguages,
+    availableLanguages,
+    hasOverride: configuredLanguages.length > 0,
+    usingDefault: configuredLanguages.length === 0 || resolvedConfigured.length === 0,
+    sharedSession: true,
+    error: applied.error,
+  };
+}
 
 // ============================================================================
 // CLOUD AUTH + SYNC
@@ -2077,6 +2203,86 @@ ipcMain.handle('voice:transcribeParakeet', async (event, { audioBytes, mimeType,
 });
 
 // ============================================================================
+// LANGUAGETOOL IPC HANDLERS
+// ============================================================================
+
+ipcMain.handle('languagetool:status', async () => {
+  return languageToolService.status();
+});
+
+ipcMain.handle('languagetool:languages', async () => {
+  return languageToolService.languages();
+});
+
+ipcMain.handle('languagetool:check', async (event, payload = {}) => {
+  return languageToolService.check(payload || {});
+});
+
+ipcMain.handle('languagetool:getPrefs', async (event, { documentPath, projectRoot = null } = {}) => {
+  return languageToolPreferencesService.getForDocument({ documentPath, projectRoot });
+});
+
+ipcMain.handle('languagetool:setPrefs', async (event, { documentPath, patch = {}, projectRoot = null } = {}) => {
+  return languageToolPreferencesService.setForDocument({ documentPath, patch, projectRoot });
+});
+
+ipcMain.handle('languagetool:clearPrefs', async (event, { documentPath, projectRoot = null } = {}) => {
+  return languageToolPreferencesService.clearDocumentOverrides({ documentPath, projectRoot });
+});
+
+ipcMain.handle('languagetool:getDictionary', () => {
+  return languageToolPreferencesService.getDictionary();
+});
+
+ipcMain.handle('languagetool:addToDictionary', (event, { word }) => {
+  return languageToolPreferencesService.addToDictionary(word);
+});
+
+ipcMain.handle('languagetool:removeFromDictionary', (event, { word }) => {
+  return languageToolPreferencesService.removeFromDictionary(word);
+});
+
+ipcMain.handle('languagetool:getDefaults', () => {
+  return languageToolPreferencesService.getDefaults();
+});
+
+ipcMain.handle('languagetool:setDefaults', (event, { patch = {} } = {}) => {
+  return languageToolPreferencesService.setDefaults(patch);
+});
+
+// ============================================================================
+// SPELLCHECK IPC HANDLERS
+// ============================================================================
+
+ipcMain.handle('spellcheck:getAvailableLanguages', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const availableLanguages = getAvailableSpellcheckLanguages(win);
+  const defaultLanguages = getDefaultSpellcheckLanguages(win);
+  return {
+    availableLanguages,
+    defaultLanguages,
+    sharedSession: true,
+  };
+});
+
+ipcMain.handle('spellcheck:getForDocument', async (event, { documentPath, projectRoot = null, apply = false } = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  return getSpellcheckStateForWindow(win, { documentPath, projectRoot, apply });
+});
+
+ipcMain.handle('spellcheck:setForDocument', async (event, { documentPath, languages = [], projectRoot = null } = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  await spellcheckPreferencesService.setForDocument({ documentPath, languages, projectRoot });
+  return getSpellcheckStateForWindow(win, { documentPath, projectRoot, apply: true });
+});
+
+ipcMain.handle('spellcheck:clearForDocument', async (event, { documentPath, projectRoot = null } = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  await spellcheckPreferencesService.clearForDocument({ documentPath, projectRoot });
+  return getSpellcheckStateForWindow(win, { documentPath, projectRoot, apply: true });
+});
+
+// ============================================================================
 // SETTINGS SERVICE IPC HANDLERS
 // ============================================================================
 
@@ -2322,19 +2528,69 @@ function createWindow(options = {}) {
     height: DEFAULT_WINDOW_HEIGHT,
     backgroundColor: DEFAULT_BACKGROUND_COLOR,
     titleBarStyle: 'hiddenInset',
+    autoHideMenuBar: true,
     icon: path.join(__dirname, 'assets', 'icon-256.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      spellcheck: true,
     },
   });
 
   windows.add(win);
+  win.setMenuBarVisibility(false);
 
   win.on('closed', () => {
     windows.delete(win);
     cleanupWindow(win.id);
+  });
+
+  // ---- Spellcheck context menu ----
+  // When the user right-clicks a misspelled word, show spelling suggestions
+  // at the top of the context menu, followed by standard Edit actions.
+  win.webContents.on('context-menu', (_event, params) => {
+    const menu = new Menu();
+
+    // Spelling suggestions (only when the spellchecker flagged a word)
+    if (params.misspelledWord) {
+      if (params.dictionarySuggestions.length > 0) {
+        for (const suggestion of params.dictionarySuggestions) {
+          menu.append(new MenuItem({
+            label: suggestion,
+            click: () => win.webContents.replaceMisspelling(suggestion),
+          }));
+        }
+      } else {
+        menu.append(new MenuItem({ label: 'No suggestions', enabled: false }));
+      }
+
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({
+        label: `Add "${params.misspelledWord}" to Dictionary`,
+        click: () => {
+          try {
+            win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord);
+          } catch (error) {
+            console.warn('[spellcheck] Failed to add word to dictionary:', params.misspelledWord, error);
+          }
+          try {
+            languageToolPreferencesService.addToDictionary(params.misspelledWord);
+          } catch (error) {
+            console.warn('[languagetool] Failed to add word to MRMD dictionary:', params.misspelledWord, error);
+          }
+        },
+      }));
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
+
+    // Standard Edit actions
+    menu.append(new MenuItem({ role: 'cut' }));
+    menu.append(new MenuItem({ role: 'copy' }));
+    menu.append(new MenuItem({ role: 'paste' }));
+    menu.append(new MenuItem({ role: 'selectAll' }));
+
+    menu.popup();
   });
 
   if (options.query) {
@@ -2607,6 +2863,8 @@ app.on('window-all-closed', () => {
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');
   }
+
+  languageToolService.stop().catch(() => {});
 
   // Shutdown Jupyter bridges
   for (const [ipynbPath, entry] of jupyterBridges) {
