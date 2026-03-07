@@ -4838,6 +4838,25 @@
       transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
 
+    .full-terminal-shell-select {
+      height: 28px;
+      min-width: 108px;
+      padding: 0 8px;
+      background: transparent;
+      border: 1px solid var(--term-border, var(--widget-border, #3c3c3c));
+      color: var(--term-header-fg, var(--widget-text-muted, #888));
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .full-terminal-shell-select:hover,
+    .full-terminal-shell-select:focus {
+      color: var(--term-foreground, var(--editor-foreground, #fff));
+      border-color: var(--accent, #58a6ff);
+      background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+    }
+
     .full-terminal-mode-btn svg,
     .full-terminal-focus-btn svg {
       width: 14px;
@@ -6793,6 +6812,12 @@
                 </svg>
               </button>
               <span class="full-terminal-title" id="full-terminal-title">Terminal</span>
+              <select class="full-terminal-shell-select" id="full-terminal-shell" title="Terminal shell" aria-label="Terminal shell">
+                <option value="auto">Auto</option>
+                <option value="powershell">PowerShell</option>
+                <option value="wsl">WSL</option>
+                <option value="cmd">cmd</option>
+              </select>
               <button class="full-terminal-mode-btn" id="full-terminal-split" title="Split view" onclick="showSplitTerminal()" aria-label="Split view">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="3" width="4.8" height="10" rx="1.1"/><rect x="9" y="3" width="4.8" height="10" rx="1.1"/></svg>
               </button>
@@ -7601,7 +7626,7 @@ session:
 
   <!-- Load mrmd-editor -->
   <script src="../mrmd-editor/dist/mrmd.iife.js"></script>
-  <script src="../mrmd-voice/dist/mrmd-voice.iife.js"></script>
+  <script src="./src/voice-fallback.js"></script>
 
   <!-- Load xterm.js for terminal blocks -->
   <link rel="stylesheet" href="./node_modules/xterm/css/xterm.css">
@@ -8237,7 +8262,7 @@ session:
 
     function isInScopePath(filePath, scopePath) {
       if (!scopePath) return true;
-      if (scopePath === '/') return filePath.startsWith('/');
+      if (scopePath === '/') return true; // Root scope matches everything (including Windows drive paths)
       if (filePath === scopePath) return true;
       return filePath.startsWith(scopePath + '/');
     }
@@ -8277,7 +8302,11 @@ session:
       if (absPath === '/') return null;
       const normalized = absPath.replace(/\/+$/, '') || '/';
       if (normalized === '/') return null;
+      // Handle Windows drive root (e.g., "C:" or "C:/")
+      if (/^[A-Za-z]:$/.test(normalized) || /^[A-Za-z]:\/$/.test(normalized)) return null;
       const parent = normalized.split('/').slice(0, -1).join('/');
+      // If parent is just a drive letter (e.g., "C:"), make it "C:/"
+      if (/^[A-Za-z]:$/.test(parent)) return parent + '/';
       return parent || '/';
     }
 
@@ -8530,7 +8559,7 @@ session:
 
         function isInScopePath(filePath, scopePath) {
           if (!scopePath) return true;
-          if (scopePath === '/') return filePath.startsWith('/');
+          if (scopePath === '/') return true; // Root scope matches everything (including Windows drive paths)
           if (filePath === scopePath) return true;
           return filePath.startsWith(scopePath + '/');
         }
@@ -9646,7 +9675,7 @@ session:
 
       return `
         <div class="${rowClass} ${classes}" ${style} data-index="${index}" data-path="${file.path}" ${isFolder ? 'data-folder="true"' : ''}
-             onclick="selectFileItem(${index})" ondblclick="${isFolder ? 'enterFolder' : 'openSelectedFile'}('${file.path.replace(/'/g, "\\'")}')">
+             onclick="selectFileItem(${index})" ondblclick="${isFolder ? 'enterFolder' : 'openSelectedFile'}('${file.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
           <span class="picker-item-icon">${icon}</span>
           <span class="picker-item-name">${highlightMatches(file.name, file.nameMatches)}</span>
           ${notebookBadge}
@@ -9880,7 +9909,11 @@ session:
     /**
      * Create a new project
      */
+    let _creatingProject = false;
     async function createNewProject() {
+      if (_creatingProject) return; // Prevent double-trigger
+      _creatingProject = true;
+
       const query = document.getElementById('file-search').value;
 
       // Remove path prefixes
@@ -9918,6 +9951,8 @@ session:
       } catch (e) {
         console.error('Failed to create project:', e);
         alert('Failed to create project: ' + e.message);
+      } finally {
+        _creatingProject = false;
       }
     }
 
@@ -10574,7 +10609,7 @@ session:
       const project = await electronAPI.project.get(anchor);
       if (!project) return;
 
-      state.project = project;
+      state.project = normalizeProjectPaths(project);
       updateNavSidebar(project, state.currentFile || anchor);
 
       if (state.editor && project.files) {
@@ -10816,6 +10851,19 @@ session:
         }
       }
 
+      // Ensure icon is present (for docs mode items created before icons were added)
+      if (!item.querySelector('.nav-item-icon')) {
+        const icon = document.createElement('span');
+        icon.className = 'nav-item-icon';
+        icon.innerHTML = node.isFolder ? folderIcon(node.path) : fileIcon(node.path);
+        const expandEl = item.querySelector('.nav-expand');
+        if (expandEl && expandEl.nextSibling) {
+          item.insertBefore(icon, expandEl.nextSibling);
+        } else {
+          item.appendChild(icon);
+        }
+      }
+
       // Handle rename input vs label
       const existingInput = item.querySelector('.nav-rename-input');
       const existingLabel = item.querySelector('.nav-item-label');
@@ -10881,6 +10929,12 @@ session:
         };
       }
       item.appendChild(expand);
+
+      // Icon (doc page or folder)
+      const icon = document.createElement('span');
+      icon.className = 'nav-item-icon';
+      icon.innerHTML = node.isFolder ? folderIcon(node.path) : fileIcon(node.path);
+      item.appendChild(icon);
 
       // Label or rename input
       if (isRenaming) {
@@ -11390,7 +11444,7 @@ session:
         }
         if (state.project?.root) {
           const project = await electronAPI.project.get(state.project.root + '/index.md');
-          state.project = project;
+          state.project = normalizeProjectPaths(project);
           if (navState.mode === 'docs') renderNavTreeFull();
         }
       } catch (e) {
@@ -11546,6 +11600,13 @@ session:
       if (!path) return '/';
       if (path === '/') return '/';
       return path.replace(/\/+$/, '') || '/';
+    }
+
+    /** Normalize a project info object's paths (backslashes → forward slashes) for consistent renderer-side handling */
+    function normalizeProjectPaths(project) {
+      if (!project) return project;
+      if (project.root) project.root = project.root.replace(/\\/g, '/');
+      return project;
     }
 
     function joinFsPath(basePath, relPath) {
@@ -11720,15 +11781,18 @@ session:
       container.innerHTML = '';
       if (dropZone) container.appendChild(dropZone);
 
-      // ".." entry to go up
+      // ".." entry to go up (hide at filesystem root)
       const root = navState.browseRoot || state.project?.root || '/';
-      if (root !== '/') {
+      const isAtRoot = root === '/' || /^[A-Za-z]:\/?$/.test(root);
+      if (!isAtRoot) {
         const upItem = document.createElement('div');
         upItem.className = 'nav-item';
         upItem.style.paddingLeft = '8px';
         upItem.innerHTML = '<span class="nav-expand hidden">›</span><span class="nav-item-icon">' + NAV_ICONS.arrowUp + '</span><span class="nav-item-label">..</span>';
         upItem.onclick = () => {
-          const parent = root.replace(/\/[^/]+\/?$/, '') || '/';
+          let parent = root.replace(/\/[^/]+\/?$/, '') || '/';
+          // Ensure Windows drive roots end with slash (e.g., "C:/")
+          if (/^[A-Za-z]:$/.test(parent)) parent += '/';
           navigateRawBrowser(parent);
         };
         container.appendChild(upItem);
@@ -11958,6 +12022,7 @@ session:
 
     /** Open any file as plain text in a minimal CM6 editor */
     async function openPlainTextFile(fullPath) {
+      fullPath = fullPath.replace(/\\/g, '/');
       console.log('[raw-browser] Opening as plain text:', fullPath);
 
       try {
@@ -12450,8 +12515,8 @@ session:
     // =========================================================================
 
     async function openFile(filePath) {
-      // Normalize path - remove double slashes
-      filePath = filePath.replace(/\/+/g, '/');
+      // Normalize path - backslashes to forward slashes, remove double slashes
+      filePath = filePath.replace(/\\/g, '/').replace(/\/+/g, '/');
       console.log('Opening file:', filePath);
       titleSyncState.busy = false;
 
@@ -12527,7 +12592,7 @@ session:
       try {
         // === NEW: Get project info from service ===
         const project = await electronAPI.project.get(filePath);
-        state.project = project;
+        state.project = normalizeProjectPaths(project);
 
         if (project) {
           console.log('Project detected:', project.root);
@@ -12553,7 +12618,7 @@ session:
         }
 
         const { syncPort, docName, projectDir } = result;
-        state.projectDir = projectDir;
+        state.projectDir = projectDir?.replace(/\\/g, '/');
 
         console.log('Sync on port', syncPort, 'doc:', docName);
 
@@ -15237,6 +15302,7 @@ session:
           filePath: state.currentFile,
           cwd: cfg.cwd || getDefaultTerminalCwd(),
           venv: cfg.venv,
+          shell: getPreferredTerminalShell(),
           baseUrl: cfg.port ? `http://127.0.0.1:${cfg.port}` : null,
         };
 
@@ -15780,7 +15846,7 @@ session:
 
     function escapeAttr(str) {
       if (!str) return '';
-      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
 
     function shortenPath(path, maxLen = 25) {
@@ -19963,6 +20029,7 @@ session:
           filePath: state.currentFile,
           cwd: ptyConfig.cwd,
           venv: ptyConfig.venv,
+          shell: getPreferredTerminalShell(),
           baseUrl: ptyConfig.alive ? `http://127.0.0.1:${ptyConfig.port}` : null,
         };
 
@@ -20060,6 +20127,64 @@ session:
       return '/tmp';
     }
 
+    function isWindowsClient() {
+      const ua = navigator.userAgent || '';
+      return /Windows/i.test(ua);
+    }
+
+    function normalizeTerminalShell(shell) {
+      const value = String(shell || '').toLowerCase().trim();
+      if (!value || value === 'auto') return 'auto';
+      if (value === 'pwsh') return 'powershell';
+      if (value === 'powershell.exe') return 'powershell';
+      if (value === 'cmd.exe') return 'cmd';
+      if (value === 'wsl.exe') return 'wsl';
+      if (value === 'powershell' || value === 'wsl' || value === 'cmd') return value;
+      return 'auto';
+    }
+
+    function getPreferredTerminalShell() {
+      const saved = normalizeTerminalShell(localStorage.getItem('mrmd-terminal-shell'));
+      if (saved !== 'auto') return saved;
+      if (isWindowsClient()) return 'powershell';
+      return null;
+    }
+
+    function getActiveTerminalShell() {
+      const tab = getActiveTerminalTab();
+      return normalizeTerminalShell(tab?.shell || getPreferredTerminalShell() || 'auto');
+    }
+
+    function updateTerminalShellUi() {
+      const select = document.getElementById('full-terminal-shell');
+      if (!select) return;
+      const shell = getActiveTerminalShell();
+      select.value = shell;
+      select.style.display = isWindowsClient() ? '' : 'none';
+    }
+
+    function setActiveTerminalShell(shell) {
+      const normalized = normalizeTerminalShell(shell);
+      localStorage.setItem('mrmd-terminal-shell', normalized);
+
+      const tab = getActiveTerminalTab();
+      if (tab) {
+        tab.shell = normalized;
+        tab.sessionId = `fullterm:${state.currentFile || 'untitled'}:${normalized}:${Date.now()}`;
+      }
+      if (state.terminalConfig) {
+        state.terminalConfig.shell = normalized === 'auto' ? getPreferredTerminalShell() : normalized;
+      }
+      updateTerminalShellUi();
+      renderFullTerminalTabs();
+
+      if (fullTermState.term && fullTermState.active) {
+        fullTermState.term.clear();
+        const activeTab = getActiveTerminalTab();
+        if (activeTab) connectFullTerminal(fullTermState.term, activeTab.sessionId, activeTab.cwd);
+      }
+    }
+
     /**
      * Ensure PTY runtime is available for full-terminal view even when
      * no ```term block exists in the current markdown document.
@@ -20069,7 +20194,19 @@ session:
 
       try {
         const cfg = await electronAPI.runtime.ensureEffective(state.currentFile, 'pty');
-        if (!cfg || cfg.error) {
+        if (!cfg) {
+          return false;
+        }
+        if (cfg.error) {
+          state.ptySession = cfg;
+          state.terminalConfig = {
+            filePath: state.currentFile,
+            cwd: getDefaultTerminalCwd(),
+            venv: null,
+            shell: getPreferredTerminalShell(),
+            baseUrl: null,
+            error: cfg.error,
+          };
           return false;
         }
 
@@ -20080,7 +20217,9 @@ session:
           filePath: state.currentFile,
           cwd: cfg.cwd || getDefaultTerminalCwd(),
           venv: cfg.venv,
+          shell: getPreferredTerminalShell(),
           baseUrl: cfg.alive && cfg.port ? `http://127.0.0.1:${cfg.port}` : null,
+          error: null,
         };
 
         if (cfg.alive && cfg.name && cfg.port) {
@@ -20128,7 +20267,7 @@ session:
         const el = document.createElement('button');
         el.className = `full-terminal-tab ${tab.id === fullTermState.activeTabId ? 'active' : ''}`;
         el.textContent = tab.label;
-        el.title = `${tab.label} — ${tab.cwd}`;
+        el.title = `${tab.label} — ${tab.cwd} — ${tab.shell || 'auto'}`;
         el.onclick = () => switchFullTerminalTab(tab.id);
         list.appendChild(el);
       });
@@ -20146,15 +20285,20 @@ session:
           if (!existing.cwd || existing.cwd === '/tmp') {
             existing.cwd = defaultCwd;
           }
+          if (!existing.shell) {
+            existing.shell = normalizeTerminalShell(getPreferredTerminalShell() || 'auto');
+          }
         }
         return existing;
       }
 
+      const shell = normalizeTerminalShell(getPreferredTerminalShell() || 'auto');
       const tab = {
         id: `term-tab-${fullTermState.nextTabId++}`,
         label: buildTerminalTabLabel(1),
-        sessionId: `fullterm:${state.currentFile || 'untitled'}:1`,
+        sessionId: `fullterm:${state.currentFile || 'untitled'}:${shell}:1`,
         cwd: getDefaultTerminalCwd(),
+        shell,
       };
       fullTermState.tabs = [tab];
       fullTermState.activeTabId = tab.id;
@@ -20164,11 +20308,13 @@ session:
 
     function createTerminalTab() {
       const n = fullTermState.tabs.length + 1;
+      const shell = normalizeTerminalShell(getPreferredTerminalShell() || 'auto');
       const tab = {
         id: `term-tab-${fullTermState.nextTabId++}`,
         label: buildTerminalTabLabel(n),
-        sessionId: `fullterm:${state.currentFile || 'untitled'}:${Date.now()}:${n}`,
+        sessionId: `fullterm:${state.currentFile || 'untitled'}:${shell}:${Date.now()}:${n}`,
         cwd: getDefaultTerminalCwd(),
+        shell,
       };
       fullTermState.tabs.push(tab);
       fullTermState.activeTabId = tab.id;
@@ -20187,6 +20333,10 @@ session:
 
       fullTermState.activeTabId = tabId;
       renderFullTerminalTabs();
+      updateTerminalShellUi();
+      if (state.terminalConfig) {
+        state.terminalConfig.shell = normalizeTerminalShell(tab.shell || getPreferredTerminalShell() || 'auto');
+      }
       if (fullTermState.term) {
         fullTermState.term.clear();
         connectFullTerminal(fullTermState.term, tab.sessionId, tab.cwd);
@@ -20220,6 +20370,10 @@ session:
       const next = fullTermState.tabs[Math.max(0, idx - 1)] || fullTermState.tabs[0];
       fullTermState.activeTabId = next?.id || null;
       renderFullTerminalTabs();
+      updateTerminalShellUi();
+      if (state.terminalConfig) {
+        state.terminalConfig.shell = normalizeTerminalShell(next?.shell || getPreferredTerminalShell() || 'auto');
+      }
       if (next && fullTermState.term) {
         fullTermState.term.clear();
         connectFullTerminal(fullTermState.term, next.sessionId, next.cwd);
@@ -21054,6 +21208,13 @@ session:
       const baseUrl = state.terminalConfig?.baseUrl;
       fullTermState.baseUrl = baseUrl || null;
       if (!baseUrl) {
+        const terminalError = state.terminalConfig?.error || state.ptySession?.error;
+        if (terminalError) {
+          updateFullTermStatus('error');
+          term.write(`\x1b[31m[${terminalError}]\x1b[0m\r\n`);
+          return;
+        }
+
         updateFullTermStatus('connecting');
         term.write('\x1b[33m[Starting PTY server for full terminal...]\x1b[0m\r\n');
 
@@ -21066,6 +21227,15 @@ session:
               fullTermState.pendingPtyEnsure = false;
               if (ready && fullTermState.initialized && fullTermState.term) {
                 connectFullTerminal(fullTermState.term, sessionId, cwd);
+                return;
+              }
+
+              const ensureError = state.terminalConfig?.error || state.ptySession?.error;
+              if (ensureError) {
+                updateFullTermStatus('error');
+                if (fullTermState.term) {
+                  fullTermState.term.write(`\x1b[31m[${ensureError}]\x1b[0m\r\n`);
+                }
                 return;
               }
 
@@ -21092,11 +21262,14 @@ session:
 
       updateFullTermStatus('connecting');
 
+      const activeTab = getActiveTerminalTab();
+      const shell = normalizeTerminalShell(activeTab?.shell || state.terminalConfig?.shell || getPreferredTerminalShell() || 'auto');
       const client = new mrmd.terminal.PtyClient({
         baseUrl: baseUrl,
         sessionId: sessionId,
         cwd: cwd,
         filePath: state.currentFile,
+        shell: shell === 'auto' ? null : shell,
         onData: (data) => term.write(data),
         onConnect: () => {
           console.log('[FullTerm] Connected');
@@ -21367,6 +21540,10 @@ session:
         setTerminalFocusMode(!fullTermState.focusMode);
       });
 
+      document.getElementById('full-terminal-shell')?.addEventListener('change', (e) => {
+        setActiveTerminalShell(e.target.value);
+      });
+
       // Hard reset any stale terminal layout classes at startup
       const viewport = document.getElementById('app-viewport');
       viewport?.classList.remove('terminal-split');
@@ -21378,6 +21555,7 @@ session:
       applyTerminalLayout('hidden');
 
       updateFullTerminalModeUi();
+      updateTerminalShellUi();
       initTerminalMobileControls();
 
       // Edge indicator click
@@ -21656,7 +21834,16 @@ session:
         }
 
         openPanel('runtimes');
-        alert(`No ${normalized} runtime available. Please configure it in the Runtimes panel.`);
+
+        // Build a helpful message: list available runtimes the user could switch to
+        const availableLangs = (state.runningRuntimes || [])
+          .map(rt => rt.language)
+          .filter((v, i, a) => v && a.indexOf(v) === i);
+        let hint = '';
+        if (availableLangs.length > 0 && !availableLangs.includes(normalized)) {
+          hint = `\n\nYou have ${availableLangs.join(', ')} available. Change the code fence from \`\`\`${normalized} to \`\`\`${availableLangs[0]} to use it.`;
+        }
+        alert(`No ${normalized} runtime available. Please configure it in the Runtimes panel.${hint}`);
       });
 
       console.log('[noRuntime] Handler registered');
@@ -22902,13 +23089,15 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
       }
 
       // Always accumulate data even if picker is hidden (for cache)
+      // Normalize backslashes to forward slashes for consistent path handling on Windows
+      const normPaths = (arr) => arr.map(p => p.replace(/\\/g, '/'));
       if (hasLegacyFiles) {
-        state.files = payload.files;
+        state.files = normPaths(payload.files);
       } else if (hasChunkFiles && payload.filesChunk.length > 0) {
-        state.files.push(...payload.filesChunk);
+        state.files.push(...normPaths(payload.filesChunk));
       }
       if (hasChunkDirs && payload.dirsChunk.length > 0) {
-        state.scannedDirs.push(...payload.dirsChunk);
+        state.scannedDirs.push(...normPaths(payload.dirsChunk));
       }
 
       const isDone = payload.done === true || (hasLegacyFiles && payload.done == null);
@@ -24412,7 +24601,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
           }
           const project = await electronAPI.project.get(state.currentFile || state.project.root + '/index.md');
           if (project) {
-            state.project = project;
+            state.project = normalizeProjectPaths(project);
             updateNavSidebar(project, state.currentFile);
 
             // Update wiki-link completion with new files
@@ -24443,8 +24632,8 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
     async function init() {
       console.log('mrmd-electron ready');
 
-      // Load home directory for path resolution
-      state.homeDir = await electronAPI.getHomeDir();
+      // Load home directory for path resolution (normalize to forward slashes for consistent handling)
+      state.homeDir = (await electronAPI.getHomeDir()).replace(/\\/g, '/');
 
       // Load saved theme (must be after mrmd.js is loaded)
       loadSavedTheme();
@@ -24498,7 +24687,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
             try {
               const project = await electronAPI.project.get(_openProjectRoot);
               if (project) {
-                state.project = project;
+                state.project = normalizeProjectPaths(project);
                 navState.mode = 'files';
                 navState.browseRoot = _openProjectRoot;
                 navState.rawTree = null;
@@ -24525,7 +24714,7 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
               for (const entry of recent.files) {
                 try {
                   const info = await electronAPI.getFileInfo(entry.path);
-                  if (info) {
+                  if (info?.success) {
                     await openFile(entry.path);
                     console.log('[startup] Restored last session:', entry.path);
                     return;

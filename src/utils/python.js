@@ -21,15 +21,32 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function resolveSiblingMrmdPythonPath() {
+function resolveLocalMrmdPythonSource() {
+  const explicit = process.env.MRMD_PYTHON_DEV;
+  if (explicit && fs.existsSync(path.join(explicit, 'pyproject.toml'))) {
+    return { path: explicit, editable: true, source: 'env' };
+  }
+
   try {
     const sibling = path.resolve(__dirname, '../../../mrmd-python');
     if (fs.existsSync(path.join(sibling, 'pyproject.toml'))) {
-      return sibling;
+      return { path: sibling, editable: true, source: 'sibling' };
     }
   } catch {
     // ignore
   }
+
+  try {
+    if (process.resourcesPath) {
+      const bundled = path.join(process.resourcesPath, 'mrmd-python');
+      if (fs.existsSync(path.join(bundled, 'pyproject.toml'))) {
+        return { path: bundled, editable: false, source: 'bundled' };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
   return null;
 }
 
@@ -65,7 +82,9 @@ export async function installMrmdPython(venvPath, options = {}) {
     onProgress
   } = options;
 
-  const effectiveLocalDev = localDev || resolveSiblingMrmdPythonPath();
+  const localSource = localDev
+    ? { path: localDev, editable: true, source: 'explicit' }
+    : resolveLocalMrmdPythonSource();
 
   const report = (stage, detail) => {
     console.log(`[python] ${stage}: ${detail}`);
@@ -88,11 +107,17 @@ export async function installMrmdPython(venvPath, options = {}) {
   // Build package list from version matrix
   const packages = [];
 
-  if (effectiveLocalDev) {
-    // Development mode: install mrmd-python from local path, keep the rest from PyPI.
+  if (localSource?.path) {
+    // Prefer bundled/local mrmd-python source so packaged apps don't depend on
+    // PyPI for MRMD's own runtime package. Keep third-party deps from PyPI.
     const installArgs = getPythonInstallArgs().filter((spec) => !spec.startsWith('mrmd-python'));
-    packages.push(...installArgs, '-e', effectiveLocalDev);
-    report('mode', `local mrmd-python + PyPI deps (${effectiveLocalDev})`);
+    packages.push(...installArgs);
+    if (localSource.editable) {
+      packages.push('-e', localSource.path);
+    } else {
+      packages.push(localSource.path);
+    }
+    report('mode', `${localSource.source} mrmd-python + PyPI deps (${localSource.path})`);
   } else {
     // Production: install from PyPI with version constraints
     const installArgs = getPythonInstallArgs();

@@ -21,7 +21,7 @@
  */
 
 import { Project } from 'mrmd-project';
-import { spawn, execSync } from 'child_process';
+import { spawn, execSync, execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -135,7 +135,11 @@ const LANGUAGE_REGISTRY = {
     },
 
     buildEnv(config) {
-      return { ...process.env, VIRTUAL_ENV: config.venv };
+      return {
+        ...process.env,
+        VIRTUAL_ENV: config.venv,
+        PYTHONUTF8: process.env.PYTHONUTF8 || '1',
+      };
     },
 
     async preStart(config) {
@@ -211,6 +215,7 @@ const LANGUAGE_REGISTRY = {
     _rscriptPath: null,
     _packageDir: null,
     _resolved: false,
+    _preparedKey: null,
 
     _resolve(force = false) {
       if (this._resolved && !force) return;
@@ -229,6 +234,7 @@ const LANGUAGE_REGISTRY = {
       this._resolved = false;
       this._rscriptPath = null;
       this._packageDir = null;
+      this._preparedKey = null;
     },
 
     validate() {
@@ -260,6 +266,60 @@ const LANGUAGE_REGISTRY = {
     spawnCwd() {
       this._resolve();
       return this._packageDir;
+    },
+
+    async preStart() {
+      this._resolve();
+      if (!this._rscriptPath || !this._packageDir) return;
+
+      const key = `${this._rscriptPath}|${this._packageDir}|${process.env.R_LIBS_USER || ''}`;
+      if (this._preparedKey === key) return;
+
+      const requiredPkgs = ['httpuv', 'jsonlite', 'evaluate', 'later'];
+      const quoted = requiredPkgs.map(p => `"${p}"`).join(',');
+      const checkScript = `cat(paste(sapply(c(${quoted}), function(p) requireNamespace(p, quietly=TRUE)), collapse=","))`;
+      const execOpts = {
+        encoding: 'utf-8',
+        windowsHide: true,
+        stdio: 'pipe',
+        maxBuffer: 10 * 1024 * 1024,
+      };
+
+      try {
+        const result = execFileSync(this._rscriptPath, ['-e', checkScript], {
+          ...execOpts,
+          timeout: 15000,
+        }).trim();
+        const installed = result ? result.split(',') : [];
+        const missing = requiredPkgs.filter((_, i) => installed[i] !== 'TRUE');
+
+        if (missing.length > 0) {
+          console.log(`[runtime:r] Installing missing R packages: ${missing.join(', ')}...`);
+          const installScript = `install.packages(c(${missing.map(p => `"${p}"`).join(',')}), repos="https://cloud.r-project.org", quiet=TRUE)`;
+          execFileSync(this._rscriptPath, ['-e', installScript], {
+            ...execOpts,
+            timeout: 300000,
+          });
+
+          const verify = execFileSync(this._rscriptPath, ['-e', checkScript], {
+            ...execOpts,
+            timeout: 15000,
+          }).trim();
+          const verified = verify ? verify.split(',') : [];
+          const stillMissing = requiredPkgs.filter((_, i) => verified[i] !== 'TRUE');
+          if (stillMissing.length > 0) {
+            throw new Error(`Missing R packages after install: ${stillMissing.join(', ')}`);
+          }
+          console.log('[runtime:r] R packages installed successfully');
+        }
+
+        this._preparedKey = key;
+      } catch (e) {
+        const stderr = e?.stderr ? e.stderr.toString() : '';
+        const stdout = e?.stdout ? e.stdout.toString() : '';
+        const details = (stderr || stdout || e?.message || '').trim();
+        throw new Error(`Failed to prepare R runtime dependencies.${details ? ` ${details}` : ''}`);
+      }
     },
   },
 
@@ -357,6 +417,14 @@ const LANGUAGE_REGISTRY = {
   pty: {
     aliases: ['term'],
     startupTimeout: 10000,
+
+    validate() {
+      const resolved = this.findExecutable();
+      if (resolved?.type === 'dev' && !resolved.packageDir) {
+        return { available: false, error: 'mrmd-pty package not found.' };
+      }
+      return { available: true };
+    },
 
     findExecutable() {
       const siblingPath = getSiblingPath('mrmd-pty', 'pyproject.toml');
@@ -540,12 +608,13 @@ class RuntimeService {
     //   1. buildSpawnArgs() for uv-based runtimes (bash, pty)
     //   2. findExecutable() + buildArgs() for direct executables (python, r, julia)
     //
-    // All runtimes use detached: true to get their own process group.
-    // IMPORTANT: use stdio: 'ignore' for detached child stability.
-    // Piped stdio can cause certain runtimes (notably Python/uvicorn foreground)
-    // to exit shortly after startup when no TTY/reader is attached.
+    // On Unix we prefer detached process groups so helpers can survive app restarts.
+    // On Windows, detached console subprocesses can still flash visible console
+    // windows even with windowsHide enabled, so keep them attached there.
+    // IMPORTANT: use stdio: 'ignore' for child stability.
     const usePipedLogs = process.env.MRMD_RUNTIME_PIPE_LOGS === '1';
     const childStdio = usePipedLogs ? ['pipe', 'pipe', 'pipe'] : 'ignore';
+    const childDetached = !isWin;
     console.log(`[runtime] Spawn stdio mode for ${name}: ${usePipedLogs ? 'pipe' : 'ignore'}`);
 
     let proc;
@@ -554,9 +623,10 @@ class RuntimeService {
       proc = spawn(spawn_info.command, spawn_info.args, {
         cwd: spawn_info.cwd || cwd,
         stdio: childStdio,
-        detached: true,
+        detached: childDetached,
+        windowsHide: true, // Prevent visible console windows on Windows
       });
-      proc.unref(); // Don't keep electron alive just for this child
+      if (childDetached) proc.unref();
     } else {
       const exe = descriptor.findExecutable(config, this);
       if (!exe) {
@@ -574,10 +644,11 @@ class RuntimeService {
       proc = spawn(exe, args, {
         cwd: spawnCwd,
         stdio: childStdio,
-        detached: true,
+        detached: childDetached,
+        windowsHide: true, // Prevent visible console windows on Windows
         env,
       });
-      proc.unref(); // Don't keep electron alive just for this child
+      if (childDetached) proc.unref();
     }
 
     // Handle spawn errors (e.g. uv not installed)

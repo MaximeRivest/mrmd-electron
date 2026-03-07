@@ -19,6 +19,10 @@ Clones the sibling repos expected by mrmd-electron, installs the required
 Node dependencies, builds mrmd-editor, bundles sibling CLIs for Electron, and
 optionally produces Windows build artifacts.
 
+Also performs Windows-specific preflight checks so local development stays
+close to a distributable setup (Git line endings, long paths, packaging assets,
+and expected build/config files).
+
 .EXAMPLE
 powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap-windows.ps1
 
@@ -111,6 +115,91 @@ function Invoke-Checked([string]$WorkingDirectory, [string]$Label, [string[]]$Co
     }
 }
 
+function Invoke-NpmInstall([string]$WorkingDirectory, [string]$ProjectName) {
+    try {
+        Invoke-Checked $WorkingDirectory "${ProjectName}: npm ci" @('npm', 'ci')
+    }
+    catch {
+        Write-WarnMsg "${ProjectName}: npm ci failed, falling back to npm install (likely lockfile drift)"
+        Invoke-Checked $WorkingDirectory "${ProjectName}: npm install" @('npm', 'install')
+    }
+}
+
+function Invoke-OptionalNodeSetup([string]$WorkingDirectory, [string]$ProjectName, [switch]$BuildIfPresent) {
+    if (-not (Test-Path (Join-Path $WorkingDirectory 'package.json'))) {
+        return
+    }
+
+    Invoke-NpmInstall $WorkingDirectory $ProjectName
+
+    if ($BuildIfPresent) {
+        $packageJson = Get-Content -Raw -Path (Join-Path $WorkingDirectory 'package.json') | ConvertFrom-Json
+        if ($packageJson.scripts -and $packageJson.scripts.build) {
+            Invoke-Checked $WorkingDirectory "${ProjectName}: npm run build" @('npm', 'run', 'build')
+        }
+    }
+}
+
+function Get-GitConfigValue([string]$Scope, [string]$Key) {
+    try {
+        $value = (& git config $Scope --get $Key 2>$null)
+        if ($LASTEXITCODE -eq 0) {
+            return ($value | Out-String).Trim()
+        }
+    }
+    catch {
+    }
+    return $null
+}
+
+function Test-RegistryValue([string]$Path, [string]$Name, [object]$ExpectedValue) {
+    try {
+        $item = Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop
+        return $item.$Name -eq $ExpectedValue
+    }
+    catch {
+        return $false
+    }
+}
+
+function Assert-PathExists([string]$Path, [string]$Description) {
+    if (-not (Test-Path $Path)) {
+        throw "Missing ${Description}: $Path"
+    }
+    Write-Success "$Description present: $Path"
+}
+
+function Show-WindowsReadinessHints {
+    $autoCrlf = Get-GitConfigValue '--global' 'core.autocrlf'
+    if ([string]::IsNullOrWhiteSpace($autoCrlf)) {
+        Write-WarnMsg "Git core.autocrlf is not set globally. Recommended for this repo: git config --global core.autocrlf false"
+    }
+    elseif ($autoCrlf -ne 'false') {
+        Write-WarnMsg "Git core.autocrlf=$autoCrlf. Recommended for Electron/Node cross-platform work: false"
+    }
+    else {
+        Write-Success 'Git core.autocrlf=false'
+    }
+
+    $longPathsEnabled = Test-RegistryValue 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' 'LongPathsEnabled' 1
+    $gitLongPaths = Get-GitConfigValue '--system' 'core.longpaths'
+    if (-not $longPathsEnabled) {
+        Write-WarnMsg 'Windows long paths are not enabled. Recommended: enable LongPathsEnabled=1 in Windows and reboot if npm ever hits path-length errors.'
+    }
+    else {
+        Write-Success 'Windows long paths enabled'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($gitLongPaths) -or $gitLongPaths -ne 'true') {
+        Write-WarnMsg 'Git core.longpaths is not enabled system-wide. Recommended (admin shell): git config --system core.longpaths true'
+    }
+    else {
+        Write-Success 'Git core.longpaths=true'
+    }
+
+    Write-Info 'Unsigned local Windows builds are fine for development. Add code signing later via CSC_LINK / CSC_KEY_PASSWORD for release signing.'
+}
+
 function Ensure-Repo([hashtable]$Repo) {
     $repoDir = Join-Path $RootDir $Repo.Name
 
@@ -131,6 +220,31 @@ function Ensure-Repo([hashtable]$Repo) {
     return $repoDir
 }
 
+function Show-BuildArtifacts([string]$DistDir) {
+    if (-not (Test-Path $DistDir)) {
+        Write-WarnMsg "No dist directory found yet: $DistDir"
+        return
+    }
+
+    $artifacts = Get-ChildItem -Path $DistDir -File -Recurse |
+        Where-Object {
+            $_.Extension -in @('.exe', '.msi', '.blockmap', '.yml') -or
+            $_.Name -like '*win-unpacked*'
+        } |
+        Select-Object -ExpandProperty FullName
+
+    if (-not $artifacts) {
+        Write-Info "Build output directory: $DistDir"
+        return
+    }
+
+    Write-Host ''
+    Write-Host 'Artifacts:' -ForegroundColor Cyan
+    foreach ($artifact in $artifacts) {
+        Write-Host "  $artifact"
+    }
+}
+
 $script:MandatoryRepos = @(
     @{ Name = 'mrmd-editor'; Url = 'https://github.com/MaximeRivest/mrmd-editor.git' },
     @{ Name = 'mrmd-electron'; Url = 'https://github.com/MaximeRivest/mrmd-electron.git' },
@@ -146,7 +260,8 @@ $script:OptionalRepos = @(
     @{ Name = 'mrmd-bash'; Url = 'https://github.com/MaximeRivest/mrmd-bash.git' },
     @{ Name = 'mrmd-js'; Url = 'https://github.com/MaximeRivest/mrmd-js.git' },
     @{ Name = 'mrmd-project'; Url = 'https://github.com/MaximeRivest/mrmd-project.git' },
-    @{ Name = 'mrmd-jupyter-bridge'; Url = 'https://github.com/MaximeRivest/mrmd-jupyter-bridge.git' }
+    @{ Name = 'mrmd-jupyter-bridge'; Url = 'https://github.com/MaximeRivest/mrmd-jupyter-bridge.git' },
+    @{ Name = 'mrmd-pty'; Url = 'https://github.com/MaximeRivest/mrmd-pty.git' }
 )
 
 if ($env:OS -ne 'Windows_NT') {
@@ -172,11 +287,17 @@ Write-Section 'Checking required tools'
 Assert-Command 'git' 'Install Git for Windows from https://git-scm.com/download/win' | Out-Null
 Assert-Command 'node' 'Install Node.js 18+ from https://nodejs.org/' | Out-Null
 Assert-Command 'npm' 'npm should come with Node.js. Reinstall Node.js if needed.' | Out-Null
-Assert-Command 'python' 'Install Python 3.11+ from https://www.python.org/downloads/windows/' | Out-Null
+Assert-Command 'python' 'Install Python 3.11+ from https://www.python.org/downloads/windows/ and make sure it is added to PATH.' | Out-Null
 Assert-Command 'uv' 'Install uv from https://docs.astral.sh/uv/getting-started/installation/' | Out-Null
 Assert-NodeVersion
 Assert-PythonVersion
 Assert-UvVersion
+
+Write-Section 'Windows packaging readiness checks'
+Show-WindowsReadinessHints
+Assert-PathExists (Join-Path $electronDir 'electron-builder.config.cjs') 'electron-builder config'
+Assert-PathExists (Join-Path $electronDir 'build\icon.ico') 'Windows app icon'
+Assert-PathExists (Join-Path $electronDir 'scripts\bundle-siblings.js') 'sibling bundler script'
 
 Write-Section "Using workspace root: $RootDir"
 
@@ -203,23 +324,36 @@ if ($IncludeOptional) {
 $editorDir = Join-Path $RootDir 'mrmd-editor'
 $syncDir = Join-Path $RootDir 'mrmd-sync'
 $monitorDir = Join-Path $RootDir 'mrmd-monitor'
+$mrmdJsDir = Join-Path $RootDir 'mrmd-js'
+$mrmdProjectDir = Join-Path $RootDir 'mrmd-project'
+$jupyterBridgeDir = Join-Path $RootDir 'mrmd-jupyter-bridge'
+$distDir = Join-Path $electronDir 'dist'
+
+if ($IncludeOptional) {
+    Write-Section 'Installing optional Node sibling packages used via local links'
+    Invoke-OptionalNodeSetup $mrmdProjectDir 'mrmd-project'
+    Invoke-OptionalNodeSetup $jupyterBridgeDir 'mrmd-jupyter-bridge'
+    Invoke-OptionalNodeSetup $mrmdJsDir 'mrmd-js' -BuildIfPresent
+}
 
 Write-Section 'Installing/building required packages'
-Invoke-Checked $editorDir 'mrmd-editor: npm ci' @('npm', 'ci')
+Invoke-NpmInstall $editorDir 'mrmd-editor'
 Invoke-Checked $editorDir 'mrmd-editor: npm run build' @('npm', 'run', 'build')
-Invoke-Checked $syncDir 'mrmd-sync: npm ci' @('npm', 'ci')
-Invoke-Checked $monitorDir 'mrmd-monitor: npm ci' @('npm', 'ci')
-Invoke-Checked $electronDir 'mrmd-electron: npm ci' @('npm', 'ci')
+Invoke-NpmInstall $syncDir 'mrmd-sync'
+Invoke-NpmInstall $monitorDir 'mrmd-monitor'
+Invoke-NpmInstall $electronDir 'mrmd-electron'
 Invoke-Checked $electronDir 'mrmd-electron: npm run bundle' @('npm', 'run', 'bundle')
 
 if ($BuildDir) {
     Write-Section 'Building unpacked Windows app'
     Invoke-Checked $electronDir 'mrmd-electron: npm run build:dir' @('npm', 'run', 'build:dir')
+    Show-BuildArtifacts $distDir
 }
 
 if ($BuildWin) {
     Write-Section 'Building Windows installer + portable artifacts'
     Invoke-Checked $electronDir 'mrmd-electron: npm run build:win' @('npm', 'run', 'build:win')
+    Show-BuildArtifacts $distDir
 }
 
 Write-Section 'Done'
@@ -232,3 +366,4 @@ Write-Host '  npm run build:dir        # fast packaged-app sanity check'
 Write-Host '  npm run build:win        # NSIS installer + portable EXE'
 Write-Host ''
 Write-Host 'If you need to sync existing checkouts later, rerun with -PullExisting.' -ForegroundColor DarkCyan
+Write-Host 'If you want local editable Python runtime repos too, rerun with -IncludeOptional.' -ForegroundColor DarkCyan

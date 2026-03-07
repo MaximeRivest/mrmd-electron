@@ -96,14 +96,34 @@ module.exports = {
     // Runtime source packages for interpreted runtimes
     // (RuntimeService resolves these from process.resourcesPath in packaged mode)
     {
+      from: "../mrmd-python",
+      to: "mrmd-python",
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**"]
+    },
+    {
+      from: "../mrmd-ai",
+      to: "mrmd-ai",
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**"]
+    },
+    {
+      from: "../mrmd-bash",
+      to: "mrmd-bash",
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**"]
+    },
+    {
+      from: "../mrmd-pty",
+      to: "mrmd-pty",
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**"]
+    },
+    {
       from: "../mrmd-r",
       to: "mrmd-r",
-      filter: ["**/*", "!.git/**"]
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**"]
     },
     {
       from: "../mrmd-julia",
       to: "mrmd-julia",
-      filter: ["**/*", "!.git/**", "!.mrmd-assets/**"]
+      filter: ["**/*", "!.git/**", "!.venv/**", "!**/__pycache__/**", "!**/*.pyc", "!dist/**", "!.mrmd-assets/**"]
     }
   ],
 
@@ -131,12 +151,21 @@ module.exports = {
   },
 
   // Windows configuration
+  // IMPORTANT:
+  // - signAndEditExecutable=false avoids electron-builder downloading the
+  //   winCodeSign helper on normal Windows developer machines, which often
+  //   fails due to symlink extraction privileges.
+  // - This makes local packaging work reliably without admin/Developer Mode.
+  // - For official signed release builds, override with
+  //   MRMD_WINDOWS_SIGN_AND_EDIT=1 in CI/release env.
   win: {
     target: [
       { target: "nsis", arch: ["x64"] },
       { target: "portable", arch: ["x64"] }
     ],
-    icon: "build/icon.ico"
+    icon: "build/icon.ico",
+    signAndEditExecutable: process.env.MRMD_WINDOWS_SIGN_AND_EDIT === "1",
+    verifyUpdateCodeSignature: false,
   },
 
   // NSIS installer options
