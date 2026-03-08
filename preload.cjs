@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   system: {
     info: () => ipcRenderer.invoke('system:info'),
     ensureUv: () => ipcRenderer.invoke('system:ensureUv'),
+    listFonts: () => ipcRenderer.invoke('system:listFonts'),
   },
 
   // Shell utilities
@@ -314,6 +315,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     validate: () => ipcRenderer.invoke('cloud:validate'),
     bridgeDoc: (projectDir, docName) => ipcRenderer.invoke('cloud:bridgeDoc', { projectDir, docName }),
     fetchAsset: (localProjectRoot, relativePath) => ipcRenderer.invoke('cloud:fetchAsset', { localProjectRoot, relativePath }),
+    listShares: () => ipcRenderer.invoke('cloud:listShares'),
+    listSharedWithMe: () => ipcRenderer.invoke('cloud:listSharedWithMe'),
+    createShare: (payload) => ipcRenderer.invoke('cloud:createShare', payload),
+    updateShare: (shareId, patch) => ipcRenderer.invoke('cloud:updateShare', { shareId, patch }),
+    deleteShare: (shareId) => ipcRenderer.invoke('cloud:deleteShare', { shareId }),
   },
 
   // ==========================================================================

@@ -58,12 +58,17 @@ export class RuntimeTunnel {
     this.hostname = os.hostname();
     /** @type {((req: {project: string, docPath: string}) => void) | null} */
     this.onBridgeRequest = opts.onBridgeRequest || null;
+    /** @type {((req: {project: string, docPath: string}) => {documentPath: string, projectRoot: string}|null) | null} */
+    this.resolveSharedDocument = opts.resolveSharedDocument || null;
+    /** @type {((req: {project: string, docPath: string}) => {syncPort: number, projectRoot?: string, docPath?: string}|null) | null} */
+    this.resolveSharedSyncInfo = opts.resolveSharedSyncInfo || null;
     /** @type {((req: {audioBase64: string, mimeType: string, url: string}) => Promise<object>) | null} */
     this.onVoiceTranscribe = opts.onVoiceTranscribe || null;
     this.ws = null;
     this._destroyed = false;
     this._reconnectTimer = null;
     this._connected = false;
+    this._pingTimer = null;
 
     /** @type {Map<string, WebSocket>} id → local WebSocket */
     this._wsSessions = new Map();
@@ -105,6 +110,15 @@ export class RuntimeTunnel {
         hostname: this.hostname,
         capabilities: languages,
       });
+
+      // Keep-alive: send WebSocket pings every 25s to prevent reverse-proxy
+      // idle timeouts (Caddy default is 30s for websocket connections).
+      this._stopPing();
+      this._pingTimer = setInterval(() => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          try { this.ws.ping(); } catch { /* ignore */ }
+        }
+      }, 25000);
     });
 
     this.ws.on('message', (data) => {
@@ -118,11 +132,19 @@ export class RuntimeTunnel {
 
     this.ws.on('close', () => {
       this._connected = false;
+      this._stopPing();
       this._cleanupAll();
       if (!this._destroyed) this._scheduleReconnect();
     });
 
     this.ws.on('error', () => { /* handled by close */ });
+  }
+
+  _stopPing() {
+    if (this._pingTimer) {
+      clearInterval(this._pingTimer);
+      this._pingTimer = null;
+    }
   }
 
   _scheduleReconnect() {
@@ -150,6 +172,7 @@ export class RuntimeTunnel {
       case 'ws-msg':          return this._handleWsMsg(msg);
       case 'ws-close':        return this._handleWsClose(msg);
       case 'bridge-request':  return this._handleBridgeRequest(msg);
+      case 'shared-sync-info': return this._handleSharedSyncInfo(msg);
       case 'voice-transcribe': return this._handleVoiceTranscribe(msg);
       case 'provider-status': return; // ignore, for consumers
       default: return; // unknown
@@ -164,6 +187,24 @@ export class RuntimeTunnel {
       try { this.onBridgeRequest({ project, docPath }); } catch (err) {
         console.error('[runtime-tunnel] Bridge request handler error:', err.message);
       }
+    }
+  }
+
+  _handleSharedSyncInfo(msg) {
+    const { id, project, docPath } = msg;
+    try {
+      if (!project || !docPath || !this.resolveSharedSyncInfo) {
+        this._send({ t: 'runtime-error', id, error: 'Shared sync info unavailable' });
+        return;
+      }
+      const result = this.resolveSharedSyncInfo({ project, docPath });
+      if (!result?.syncPort) {
+        this._send({ t: 'runtime-error', id, error: `Shared sync not found: ${project}/${docPath}` });
+        return;
+      }
+      this._send({ t: 'shared-sync-info', id, sync: result });
+    } catch (err) {
+      this._send({ t: 'runtime-error', id, error: err.message });
     }
   }
 
@@ -281,9 +322,21 @@ export class RuntimeTunnel {
   }
 
   async _handleStartRuntime(msg) {
-    const { id, language, name, cwd, venv, documentPath, projectRoot } = msg;
+    let { id, language, name, cwd, venv, documentPath, projectRoot, sharedProject, sharedDocPath } = msg;
     try {
       let result;
+
+      // Shared collaboration path: resolve relay project/doc into the owner's
+      // actual local paths before starting runtimes.
+      if ((!documentPath || !projectRoot) && sharedProject && sharedDocPath && this.resolveSharedDocument) {
+        const resolved = this.resolveSharedDocument({ project: sharedProject, docPath: sharedDocPath });
+        if (!resolved?.documentPath || !resolved?.projectRoot) {
+          throw new Error(`Shared document not found locally: ${sharedProject}/${sharedDocPath}`);
+        }
+        documentPath = resolved.documentPath;
+        projectRoot = resolved.projectRoot;
+      }
+
       if (documentPath) {
         if (language) {
           // Single language for document
@@ -501,6 +554,7 @@ export class RuntimeTunnel {
   stop() {
     this._destroyed = true;
     clearTimeout(this._reconnectTimer);
+    this._stopPing();
     this._cleanupAll();
     try { this.ws?.close(); } catch { /* ignore */ }
     console.log('[runtime-tunnel] Stopped');

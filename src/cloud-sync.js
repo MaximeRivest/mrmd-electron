@@ -55,16 +55,7 @@ class DocBridge {
     this._localBuffer = [];   // messages from remote waiting for local
     this._remoteBuffer = [];  // messages from local waiting for remote
 
-    // ── Guard against stale cloud state overwriting local edits ──────
-    // When true, the initial Yjs sync handshake from remote→local has
-    // completed.  After that, only incremental updates flow.  The flag
-    // lets us block the very first remote→local sync-step-2 when the
-    // cloud doc looks stale compared to the local state.
-    this._initialSyncDone = false;
-    // Number of bytes received from remote during initial sync.
-    // Very large payloads (>0) on a reconnect indicate the cloud has
-    // divergent state — exactly the scenario that causes the snap-back.
-    this._remoteSyncBytes = 0;
+
   }
 
   start() {
@@ -138,52 +129,12 @@ class DocBridge {
     this.remoteWs.on('message', (data, isBinary) => {
       this._lastMessageAt = Date.now();
 
-      // ── Guard: block stale remote state from overwriting local ──
-      // Yjs sync protocol: byte[0]=messageType (0=sync, 1=awareness)
-      // For sync: byte[1]=syncStep (0=step1/request, 1=step2/response, 2=update)
-      //
-      // Step 1 (state-vector request) is always safe — it just asks
-      //   "what do you have?"  We forward it so the local sync server
-      //   can reply with its updates.
-      // Step 2 (bulk state response) is dangerous on reconnect — it may
-      //   contain stale cloud state that overwrites local edits.
-      // Update (type 2) messages are incremental and safe.
-      //
-      // Strategy: allow sync step 1 and updates through, but block
-      // sync step 2 from remote on reconnect.  After the first
-      // successful handshake the guard is lowered.
-      if (isBinary && !this._initialSyncDone) {
-        try {
-          // data may be Buffer, ArrayBuffer, or Uint8Array depending on ws config
-          const bytes = Buffer.isBuffer(data) ? data
-            : data instanceof ArrayBuffer ? new Uint8Array(data)
-            : new Uint8Array(data.buffer || data);
-
-          if (bytes.length >= 2) {
-            const msgType = bytes[0];  // 0=sync, 1=awareness
-            const subType = bytes[1];  // 0=step1, 1=step2, 2=update
-
-            if (msgType === 0 && subType === 1) {
-              // Sync step 2 from remote — bulk state push.
-              // Block it: local Electron is authoritative.
-              this._remoteSyncBytes += bytes.length;
-              this.log(`[cloud-bridge] Blocked remote sync-step-2 (${bytes.length}B) for ${this.docName} — local is authoritative`);
-              this._initialSyncDone = true;
-              return; // Do NOT forward to local
-            }
-
-            // Sync step 1 (state-vector request) is safe — it asks
-            // local what it has.  Let it through so local can reply
-            // with its updates (pushing local state TO cloud).
-            if (msgType === 0 && (subType === 0 || subType === 2)) {
-              // step1 or incremental update — safe to forward
-              this._initialSyncDone = true;
-            }
-          }
-        } catch { /* If parsing fails, let the message through */ }
-      }
-
-      // Forward to local mrmd-sync
+      // Simple collaboration mode: forward all Yjs traffic both ways.
+      // We intentionally avoid special-casing sync step 2 here because it
+      // can prevent the initial handshake from completing for browser
+      // collaborators. If cloud/local divergence ever becomes a problem again,
+      // we should solve it explicitly at the product level instead of hiding
+      // protocol messages in this bridge.
       if (this._localReady && this.localWs?.readyState === WebSocket.OPEN) {
         try { this.localWs.send(data, { binary: isBinary }); } catch { /* ignore */ }
       } else {
@@ -194,9 +145,6 @@ class DocBridge {
     this.remoteWs.on('close', () => {
       this._remoteReady = false;
       this._remoteBuffer = [];
-      // Reset sync guard so next reconnect is also protected
-      this._initialSyncDone = false;
-      this._remoteSyncBytes = 0;
       if (!this._destroyed) this._scheduleReconnect('remote');
     });
 
@@ -332,6 +280,12 @@ export class CloudSync {
         onBridgeRequest: ({ project, docPath }) => {
           this._handleBridgeRequest(project, docPath);
         },
+        resolveSharedDocument: ({ project, docPath }) => {
+          return this._resolveSharedDocument(project, docPath);
+        },
+        resolveSharedSyncInfo: ({ project, docPath }) => {
+          return this._resolveSharedSyncInfo(project, docPath);
+        },
         onVoiceTranscribe: this._onVoiceTranscribe,
       });
       this._runtimeTunnel.start();
@@ -424,6 +378,40 @@ export class CloudSync {
       }
     }
     this.log(`[cloud-sync] Bridge request for unknown project: ${project}`);
+  }
+
+  /**
+   * Resolve a shared project/doc reference from the relay into the owner's
+   * real local paths so runtimes start in the correct working directory.
+   */
+  _resolveSharedDocument(project, docPath) {
+    for (const [dir, info] of this._projects) {
+      if (info.projectName === project) {
+        const safeDocPath = String(docPath || '').replace(/^\/+/, '');
+        const relativeWithExt = /\.(md|qmd)$/i.test(safeDocPath)
+          ? safeDocPath
+          : `${safeDocPath}.md`;
+        return {
+          projectRoot: dir,
+          documentPath: `${dir}/${relativeWithExt}`,
+        };
+      }
+    }
+    return null;
+  }
+
+  _resolveSharedSyncInfo(project, docPath) {
+    for (const [dir, info] of this._projects) {
+      if (info.projectName === project) {
+        const safeDocPath = String(docPath || '').replace(/^\/+/, '');
+        return {
+          projectRoot: dir,
+          syncPort: info.port,
+          docPath: safeDocPath,
+        };
+      }
+    }
+    return null;
   }
 
   /**

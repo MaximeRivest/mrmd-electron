@@ -311,9 +311,11 @@ import { CloudSync } from './src/cloud-sync.js';
 const cloudAuth = new CloudAuth(settingsService);
 let cloudSync = null; // Initialized after sign-in
 
-// Machine Hub mode: keep background sync/runtime available even when no UI
-// window is open. This turns the desktop into a headless collaboration host.
-const MACHINE_HUB_MODE = !['0', 'false', 'off'].includes(
+// Machine Hub mode is now EXPLICIT opt-in only.
+// Default is OFF because scanning/hosting an entire ~/Projects tree creates
+// too much background complexity for the normal "share the current notebook"
+// workflow.
+const MACHINE_HUB_MODE = ['1', 'true', 'on'].includes(
   String(process.env.MRMD_MACHINE_HUB || '').toLowerCase()
 );
 const MACHINE_HUB_ROOTS = (process.env.MRMD_MACHINE_HUB_ROOTS || path.join(os.homedir(), 'Projects'))
@@ -1085,6 +1087,46 @@ ipcMain.handle('get-home-dir', () => {
   return os.homedir();
 });
 
+function listInstalledFontsSync() {
+  const families = new Set();
+  try {
+    if (process.platform === 'linux') {
+      const out = execSync("fc-list : family 2>/dev/null || true", { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      for (const line of String(out || '').split(/\r?\n/)) {
+        for (const part of line.split(',')) {
+          const family = part.trim();
+          if (family) families.add(family);
+        }
+      }
+    } else if (process.platform === 'darwin') {
+      const out = execSync("system_profiler SPFontsDataType -json 2>/dev/null || true", { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 12 * 1024 * 1024 });
+      const data = JSON.parse(String(out || '{}'));
+      const items = Array.isArray(data.SPFontsDataType) ? data.SPFontsDataType : [];
+      for (const item of items) {
+        const family = item.family || item['family'] || item.fullname || item['full name'];
+        if (family) families.add(String(family).trim());
+      }
+    } else if (process.platform === 'win32') {
+      const script = [
+        "$p1='HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts'",
+        "$p2='HKCU:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts'",
+        "$props=@()",
+        "if (Test-Path $p1) { $props += (Get-ItemProperty $p1).PSObject.Properties }",
+        "if (Test-Path $p2) { $props += (Get-ItemProperty $p2).PSObject.Properties }",
+        "$props | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object { $_.Name -replace '\\s*\\(TrueType\\)|\\s*\\(OpenType\\)|\\s*\\(All Res\\)|\\s*\\(Variable\\)','' }",
+      ].join('; ');
+      const out = execSync(`powershell -NoProfile -Command "${script}"`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      for (const line of String(out || '').split(/\r?\n/)) {
+        const family = line.trim();
+        if (family) families.add(family);
+      }
+    }
+  } catch (err) {
+    console.warn('[fonts] Failed to list installed fonts:', err?.message || err);
+  }
+  return Array.from(families).sort((a, b) => a.localeCompare(b));
+}
+
 // Get system/app info
 ipcMain.handle('system:info', async () => {
   const { findUv, getUvVersion } = await import('./src/utils/uv-installer.js');
@@ -1106,6 +1148,10 @@ ipcMain.handle('system:info', async () => {
       version: null
     }
   };
+});
+
+ipcMain.handle('system:listFonts', async () => {
+  return { fonts: listInstalledFontsSync() };
 });
 
 // Ensure uv is installed (trigger auto-install from renderer)
@@ -2546,13 +2592,16 @@ function createWindow(options = {}) {
     cleanupWindow(win.id);
   });
 
-  // ---- Spellcheck context menu ----
-  // When the user right-clicks a misspelled word, show spelling suggestions
-  // at the top of the context menu, followed by standard Edit actions.
-  win.webContents.on('context-menu', (_event, params) => {
+  // ---- Unified spellcheck + grammar context menu ----
+  // When the user right-clicks text, merge:
+  // - native spellcheck suggestions from Chromium/Electron
+  // - grammar suggestions from MRMD's LanguageTool diagnostics in the renderer
+  // - standard Edit actions
+  win.webContents.on('context-menu', async (_event, params) => {
     const menu = new Menu();
+    let hasTopSection = false;
 
-    // Spelling suggestions (only when the spellchecker flagged a word)
+    // Spelling suggestions (Chromium / OS spellchecker)
     if (params.misspelledWord) {
       if (params.dictionarySuggestions.length > 0) {
         for (const suggestion of params.dictionarySuggestions) {
@@ -2562,7 +2611,7 @@ function createWindow(options = {}) {
           }));
         }
       } else {
-        menu.append(new MenuItem({ label: 'No suggestions', enabled: false }));
+        menu.append(new MenuItem({ label: 'No spelling suggestions', enabled: false }));
       }
 
       menu.append(new MenuItem({ type: 'separator' }));
@@ -2581,6 +2630,116 @@ function createWindow(options = {}) {
           }
         },
       }));
+      hasTopSection = true;
+    }
+
+    // Grammar suggestions from renderer diagnostics at click position
+    try {
+      const grammar = await win.webContents.executeJavaScript(
+        `window.__mrmdGetGrammarContextMenuData?.(${JSON.stringify(params.x)}, ${JSON.stringify(params.y)}) ?? null`,
+        true,
+      );
+
+      if (grammar?.suggestions?.length || grammar?.message) {
+        if (hasTopSection) menu.append(new MenuItem({ type: 'separator' }));
+
+        // Suggestion replacements
+        if (grammar.suggestions?.length) {
+          for (const suggestion of grammar.suggestions.slice(0, 5)) {
+            menu.append(new MenuItem({
+              label: suggestion.label,
+              click: () => {
+                win.webContents.executeJavaScript(
+                  `window.__mrmdApplyGrammarContextMenuSuggestion?.(${JSON.stringify(params.x)}, ${JSON.stringify(params.y)}, ${JSON.stringify(suggestion.index)})`,
+                  true,
+                ).catch((error) => {
+                  console.warn('[languagetool] Failed to apply grammar suggestion from context menu:', error);
+                });
+              },
+            }));
+          }
+        }
+
+        // Grammar message (disabled info item)
+        if (grammar.message) {
+          menu.append(new MenuItem({ type: 'separator' }));
+          const cleanMsg = grammar.ruleId
+            ? grammar.message.replace(` [${grammar.ruleId}]`, '')
+            : grammar.message;
+          menu.append(new MenuItem({
+            label: cleanMsg.length > 120 ? `${cleanMsg.slice(0, 117)}…` : cleanMsg,
+            enabled: false,
+          }));
+        }
+
+        menu.append(new MenuItem({ type: 'separator' }));
+
+        // Ignore rule
+        if (grammar.ruleId) {
+          menu.append(new MenuItem({
+            label: `Ignore Rule "${grammar.ruleId}"`,
+            click: () => {
+              win.webContents.executeJavaScript(
+                `(async () => {
+                  try {
+                    const currentPrefs = window.__mrmdState?.languageToolPrefs?.effective || {};
+                    const disabledRules = [...(currentPrefs.disabledRules || [])];
+                    if (!disabledRules.includes(${JSON.stringify(grammar.ruleId)})) {
+                      disabledRules.push(${JSON.stringify(grammar.ruleId)});
+                    }
+                    await window.electronAPI.languagetool.setPrefs(
+                      window.__mrmdState?.currentFile,
+                      { disabledRules },
+                      window.__mrmdState?.project?.root || window.__mrmdState?.projectDir || null,
+                    );
+                    const updated = await window.electronAPI.languagetool.getPrefs(
+                      window.__mrmdState?.currentFile,
+                      window.__mrmdState?.project?.root || window.__mrmdState?.projectDir || null,
+                    );
+                    if (window.__mrmdState) window.__mrmdState.languageToolPrefs = updated;
+                    window.__mrmdRefreshLanguageToolDiagnostics?.();
+                  } catch (e) { console.warn('[languagetool] Failed to ignore rule:', e); }
+                })()`,
+                true,
+              ).catch((error) => {
+                console.warn('[languagetool] Failed to ignore rule from context menu:', error);
+              });
+            },
+          }));
+        }
+
+        // Add to dictionary
+        if (grammar.matchedText) {
+          menu.append(new MenuItem({
+            label: `Add "${grammar.matchedText}" to Dictionary`,
+            click: () => {
+              win.webContents.executeJavaScript(
+                `(async () => {
+                  try {
+                    await window.electronAPI.languagetool.addToDictionary(${JSON.stringify(grammar.matchedText)});
+                    const updated = await window.electronAPI.languagetool.getPrefs(
+                      window.__mrmdState?.currentFile,
+                      window.__mrmdState?.project?.root || window.__mrmdState?.projectDir || null,
+                    );
+                    if (window.__mrmdState) window.__mrmdState.languageToolPrefs = updated;
+                    window.__mrmdRefreshLanguageToolDiagnostics?.();
+                  } catch (e) { console.warn('[languagetool] Failed to add to dictionary:', e); }
+                })()`,
+                true,
+              ).catch((error) => {
+                console.warn('[languagetool] Failed to add word to dictionary from context menu:', error);
+              });
+            },
+          }));
+        }
+
+        hasTopSection = true;
+      }
+    } catch (error) {
+      console.warn('[languagetool] Failed to load grammar context menu data:', error?.message || error);
+    }
+
+    if (hasTopSection) {
       menu.append(new MenuItem({ type: 'separator' }));
     }
 
@@ -2663,6 +2822,38 @@ app.whenReady().then(async () => {
 // CLOUD AUTH IPC HANDLERS
 // ============================================================================
 
+async function cloudApi(pathname, options = {}) {
+  const token = cloudAuth.getToken();
+  if (!token) {
+    throw new Error('Not signed in to markco.dev');
+  }
+
+  const base = (cloudAuth.cloudUrl || 'https://markco.dev').replace(/\/$/, '');
+  const res = await fetch(`${base}${pathname}`, {
+    method: options.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+    signal: AbortSignal.timeout(options.timeout || 15000),
+  });
+
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  if (!res.ok) {
+    const message = typeof data === 'string'
+      ? data.slice(0, 300)
+      : data?.error || data?.detail || `HTTP ${res.status}`;
+    throw new Error(`cloudApi ${pathname} failed: ${message}`);
+  }
+  return data;
+}
+
 ipcMain.handle('cloud:status', async () => {
   const user = cloudAuth.getUser();
   return {
@@ -2681,24 +2872,6 @@ ipcMain.handle('cloud:status', async () => {
 ipcMain.handle('cloud:signIn', async () => {
   const result = await cloudAuth.signIn();
   await startCloudSyncIfReady();
-
-  // Auto-install systemd service on first sign-in (Linux only).
-  // This ensures the machine-agent runs on boot without manual setup.
-  if (systemd.isSupported()) {
-    const status = systemd.getStatus();
-    if (!status.installed) {
-      const installResult = systemd.install({
-        roots: MACHINE_HUB_ROOTS.join(':'),
-        cloudUrl: cloudAuth.cloudUrl,
-      });
-      if (installResult.ok) {
-        console.log('[systemd] Machine agent service auto-installed and started');
-      } else {
-        console.warn('[systemd] Auto-install failed:', installResult.error);
-      }
-    }
-  }
-
   return result;
 });
 
@@ -2715,6 +2888,37 @@ ipcMain.handle('cloud:signOut', async () => {
 ipcMain.handle('cloud:validate', async () => {
   const user = await cloudAuth.validate();
   return { valid: Boolean(user), user };
+});
+
+ipcMain.handle('cloud:listShares', async () => {
+  return cloudApi('/api/shares');
+});
+
+ipcMain.handle('cloud:listSharedWithMe', async () => {
+  return cloudApi('/api/shares/shared-with-me');
+});
+
+ipcMain.handle('cloud:createShare', async (_event, payload = {}) => {
+  return cloudApi('/api/shares', {
+    method: 'POST',
+    body: payload,
+    timeout: 20000,
+  });
+});
+
+ipcMain.handle('cloud:updateShare', async (_event, { shareId, patch } = {}) => {
+  if (!shareId) throw new Error('shareId is required');
+  return cloudApi(`/api/shares/${encodeURIComponent(shareId)}`, {
+    method: 'PATCH',
+    body: patch || {},
+  });
+});
+
+ipcMain.handle('cloud:deleteShare', async (_event, { shareId } = {}) => {
+  if (!shareId) throw new Error('shareId is required');
+  return cloudApi(`/api/shares/${encodeURIComponent(shareId)}`, {
+    method: 'DELETE',
+  });
 });
 
 // ============================================================================
