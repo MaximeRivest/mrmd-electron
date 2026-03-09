@@ -965,6 +965,63 @@
       padding-bottom: 20px;
     }
 
+    .panel-search-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 16px 8px;
+      flex-wrap: wrap;
+    }
+
+    .panel-search-control-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.1s, background 0.1s, border-color 0.1s;
+    }
+
+    .panel-search-control-btn:hover {
+      color: var(--text);
+      background: var(--hover-bg);
+      border-color: var(--accent, var(--border));
+    }
+
+    .document-style-search-wrap {
+      position: relative;
+      padding: 0 16px 8px;
+    }
+
+    .document-style-search-input {
+      width: 100%;
+      padding: 7px 10px 7px 30px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .document-style-search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .document-style-search-icon {
+      position: absolute;
+      left: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
     .document-style-group {
       padding: 0 16px;
       margin-bottom: 4px;
@@ -1018,6 +1075,37 @@
       max-height: 0;
       opacity: 0;
       pointer-events: none;
+    }
+
+    /* During search: force groups open */
+    .document-style-search-active .document-style-group .document-style-group-body {
+      max-height: 1200px !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    .document-style-search-active .document-style-group .document-style-group-chevron {
+      transform: rotate(0deg) !important;
+    }
+
+    .document-style-search-active .document-style-field.search-hidden {
+      display: none;
+    }
+
+    .document-style-search-active .document-style-group.search-hidden {
+      display: none;
+    }
+
+    .document-style-no-results {
+      display: none;
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .document-style-search-active .document-style-no-results.visible {
+      display: block;
     }
 
     .document-style-field {
@@ -2712,6 +2800,169 @@
     .source-code .dec { color: var(--syntax-meta, #858585); }
     .source-code .type { color: var(--syntax-type, #4ec9b0); }
 
+    /* Linked-table workspace panel */
+    #panel-linked-table.rail-panel-wide {
+      width: min(640px, calc(100vw - 64px));
+    }
+    .table-workspace-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+    }
+    .table-workspace-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .table-workspace-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-size: 11px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      white-space: nowrap;
+    }
+    .table-workspace-badge.status-fresh { color: var(--text); }
+    .table-workspace-badge.status-running,
+    .table-workspace-badge.status-writing,
+    .table-workspace-badge.status-pending,
+    .table-workspace-badge.status-requested,
+    .table-workspace-badge.status-claimed {
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    }
+    .table-workspace-badge.status-stale {
+      color: var(--warning);
+      border-color: color-mix(in srgb, var(--warning) 35%, var(--border));
+    }
+    .table-workspace-badge.status-error {
+      color: var(--error);
+      border-color: color-mix(in srgb, var(--error) 35%, var(--border));
+    }
+    .table-workspace-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .table-workspace-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .table-workspace-btn:hover {
+      background: var(--hover-bg);
+    }
+    .table-workspace-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .table-workspace-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px 0;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+    }
+    .table-workspace-tab {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 8px 4px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .table-workspace-tab.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+    .table-workspace-body {
+      padding: 12px 16px 16px !important;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .table-workspace-empty {
+      padding: 18px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 12px;
+      background: color-mix(in srgb, var(--bg) 75%, transparent);
+    }
+    .table-workspace-meta-grid {
+      display: grid;
+      grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+      gap: 8px 12px;
+      align-items: start;
+      font-size: 12px;
+    }
+    .table-workspace-meta-grid dt {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .table-workspace-meta-grid dd {
+      margin: 0;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .table-workspace-path {
+      font-family: var(--widget-font-mono, var(--font-mono, monospace));
+      font-size: 11px;
+      color: var(--accent);
+    }
+    .table-workspace-grid-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      padding: 8px;
+    }
+    .table-workspace-grid-wrap .cm-table-widget {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+    .table-workspace-note {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .table-workspace-pre {
+      margin: 0;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      font-family: var(--widget-font-mono, var(--font-mono, monospace));
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
     /* Panel section */
     .rail-panel-section {
       padding: 0 16px;
@@ -2725,6 +2976,324 @@
       text-transform: uppercase;
       letter-spacing: 0.3px;
       margin-bottom: 8px;
+    }
+
+    /* Context panel */
+    #panel-context.rail-panel-wide {
+      width: min(360px, calc(100vw - 64px));
+    }
+    .context-panel-content {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .context-status {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .context-path {
+      font-family: var(--mrmd-code-font, 'SF Mono', Consolas, monospace);
+      font-size: 11px;
+      color: var(--accent);
+      word-break: break-all;
+      margin-top: 4px;
+    }
+    .context-source-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .context-source-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+    }
+    .context-source-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .context-source-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .context-source-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+    .context-token-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .context-tokenbar {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--hover-bg);
+      margin-top: 8px;
+    }
+    .context-tokenbar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+    }
+    .context-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .context-small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .context-actions-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .context-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .context-action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .context-config-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .context-config-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      overflow: hidden;
+    }
+    .context-config-card.is-disabled {
+      opacity: 0.7;
+    }
+    .context-config-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+    }
+    .context-config-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .context-config-title input[type="checkbox"] {
+      margin: 0;
+      accent-color: var(--accent);
+    }
+    .context-config-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .context-mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-tertiary);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+    }
+    .context-mini-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .context-mini-btn.context-danger:hover {
+      border-color: var(--danger, #ef4444);
+      color: var(--danger, #ef4444);
+    }
+    .context-config-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 12px 12px;
+    }
+    .context-inline-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+    }
+    .context-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 120px;
+      flex: 1 1 120px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .context-field input,
+    .context-field select,
+    .context-notes,
+    .context-inline-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+    }
+    .context-field input:focus,
+    .context-field select:focus,
+    .context-notes:focus,
+    .context-inline-input:focus {
+      border-color: var(--accent);
+    }
+    .context-subtoggles {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .context-subtoggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .context-subtoggle-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .context-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .context-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg-tertiary) 84%, transparent);
+    }
+    .context-item-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+      color: var(--text);
+      font-size: 12px;
+    }
+    .context-item-main input[type="checkbox"] {
+      margin: 0;
+      accent-color: var(--accent);
+    }
+    .context-item-value {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mrmd-code-font, 'SF Mono', Consolas, monospace);
+      font-size: 11px;
+    }
+    .context-item-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .context-empty {
+      padding: 8px 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .context-notes {
+      min-height: 110px;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.45;
+    }
+    .context-preview {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-tertiary) 88%, transparent);
+      color: var(--text);
+      border-radius: 10px;
+      font-family: var(--mrmd-code-font, 'SF Mono', Consolas, monospace);
+      font-size: 11px;
+      line-height: 1.45;
+      outline: none;
+      white-space: pre-wrap;
+    }
+    .context-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .context-help {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.45;
     }
 
     /* ── Settings panel: collapsible groups ──────────────────── */
@@ -8254,6 +8823,7 @@
         <div class="nav-context-separator"></div>
         <div class="nav-context-item" data-action="open-as-text">Open as Text</div>
         <div class="nav-context-item" data-action="open-as-markdown">Open as Markdown</div>
+        <div class="nav-context-item" data-action="insert-linked-table">Insert as Linked Table</div>
         <div class="nav-context-separator"></div>
         <div class="nav-context-item danger" data-action="delete">Delete</div>
       </div>
@@ -8456,6 +9026,7 @@
       <button class="rail-btn" data-panel="source" title="Source Explorer (follows cursor)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 00-1 1v11a1 1 0 001 1h8a1 1 0 001-1V5.5L9 1.5z"/><path d="M9 1.5v4h4"/><path d="M6 8l-1.5 1.5L6 11"/><path d="M10 8l1.5 1.5L10 11"/></svg></button>
       <button class="rail-btn" data-panel="artifact" title="Artifact Preview"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 5h12M5 5v9"/></svg></button>
       <button class="rail-btn" data-panel="ai" title="AI Commands"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="10" height="8" rx="2"/><circle cx="6" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
+      <button class="rail-btn" data-panel="context" title="AI Context"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h7l3 3v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M10 2.5v3h3"/><path d="M5 8h6"/><path d="M5 10.5h6"/></svg></button>
       <button class="rail-btn" data-panel="voice-history" title="Voice History"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5a2 2 0 012 2V8a2 2 0 11-4 0V4.5a2 2 0 012-2z"/><path d="M4.5 7.5v.5a3.5 3.5 0 007 0v-.5"/><path d="M8 11.5v2"/><path d="M6 13.5h4"/></svg></button>
       <button class="rail-btn" data-panel="help" title="Help"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 112 2v1M8 11v1"/></svg></button>
       <button class="rail-btn" data-panel="document-style" title="Document Style"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3.5h10"/><path d="M5 6.5h6"/><path d="M4 10.5h8"/><path d="M6 13.5h4"/></svg></button>
@@ -8543,6 +9114,19 @@
         <pre class="source-code" id="source-code"><code>Move cursor over code to inspect source here.
 Tip: Press F12 for manual jump to symbol under cursor.</code></pre>
       </div>
+    </div>
+
+    <!-- Panel: Linked table workspace -->
+    <div class="rail-panel rail-panel-wide" id="panel-linked-table">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title" id="linked-table-panel-title">Linked table</span>
+        <button class="rail-panel-refresh" id="linked-table-panel-refresh" title="Refresh linked table"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <button class="rail-panel-pin" data-pin-panel="linked-table" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button>
+        <button class="rail-panel-close" data-close-panel="linked-table">×</button>
+      </div>
+      <div class="table-workspace-toolbar" id="linked-table-workspace-toolbar"></div>
+      <div class="table-workspace-tabs" id="linked-table-workspace-tabs"></div>
+      <div class="rail-panel-content table-workspace-body" id="linked-table-workspace-body"></div>
     </div>
 
     <!-- Panel: Help -->
@@ -8663,6 +9247,10 @@ session:
         <div class="settings-search-wrap">
           <svg class="settings-search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
           <input class="settings-search-input" id="settings-search" type="text" placeholder="Search settings…" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="panel-search-controls">
+          <button class="panel-search-control-btn" type="button" onclick="collapseAllSettingsGroups()" title="Collapse all settings groups">Collapse all</button>
+          <button class="panel-search-control-btn" type="button" onclick="expandAllSettingsGroups()" title="Expand all settings groups">Expand all</button>
         </div>
 
         <!-- ─── Appearance ─── -->
@@ -8801,6 +9389,10 @@ session:
               <span class="rail-panel-item-label">Reasoning</span>
               <span class="rail-panel-item-meta" id="settings-default-reasoning">0</span>
             </div>
+            <div class="rail-panel-item" onclick="openPanel('context')" title="Open AI context panel" data-search="context linked pages runtime variables images ai context file">
+              <span class="rail-panel-item-label">Context</span>
+              <span class="rail-panel-item-meta">side rail</span>
+            </div>
           </div>
         </div>
 
@@ -8891,7 +9483,16 @@ session:
           <button class="document-style-toolbar-btn" id="page-view-toggle-btn" onclick="togglePageView()" title="Toggle page view">Page View</button>
           <button class="document-style-toolbar-btn" id="page-breaks-toggle-btn" onclick="togglePageBreaks()" title="Toggle page breaks while keeping page view">Page Breaks</button>
         </div>
+        <div class="document-style-search-wrap">
+          <svg class="document-style-search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+          <input class="document-style-search-input" id="document-style-search" type="text" placeholder="Search document style…" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="panel-search-controls">
+          <button class="panel-search-control-btn" type="button" onclick="collapseAllDocumentStyleGroups()" title="Collapse all style groups">Collapse all</button>
+          <button class="panel-search-control-btn" type="button" onclick="expandAllDocumentStyleGroups()" title="Expand all style groups">Expand all</button>
+        </div>
         <div class="document-style-grid" id="document-style-grid"></div>
+        <div class="document-style-no-results" id="document-style-no-results">No style controls match your search.</div>
       </div>
     </div>
 
@@ -9014,6 +9615,47 @@ session:
             <span class="ai-cmd-label">Address All</span>
             <span class="ai-cmd-hint">document</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Context -->
+    <div class="rail-panel rail-panel-wide" id="panel-context">
+      <div class="rail-panel-header">
+        <span class="rail-panel-title">AI Context</span>
+        <button class="rail-panel-refresh" id="context-refresh" title="Refresh"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5M2 3v3h3M14 13v-3h-3"/></svg></button>
+        <button class="rail-panel-btn" id="context-open-raw" title="Open raw context markdown">Open Raw</button>
+        <button class="rail-panel-btn" id="context-materialize" title="Create a document-specific context file">Make Local</button>
+        <button class="rail-panel-pin" data-pin-panel="context" title="Pin panel"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.146.146A.5.5 0 0 1 4.5 0h7a.5.5 0 0 1 .5.5c0 .68-.342 1.174-.646 1.479-.126.125-.25.224-.354.298v4.431l.078.048c.203.127.476.314.751.555C12.36 7.775 13 8.527 13 9.5a.5.5 0 0 1-.5.5h-4v4.5a.5.5 0 0 1-1 0V10h-4A.5.5 0 0 1 3 9.5c0-.973.64-1.725 1.17-2.189A5.9 5.9 0 0 1 5 6.708V2.277a2.8 2.8 0 0 1-.354-.298C4.342 1.674 4 1.179 4 .5a.5.5 0 0 1 .146-.354z"/></svg></button><button class="rail-panel-close" data-close-panel="context">×</button>
+      </div>
+      <div class="rail-panel-content context-panel-content">
+        <div class="context-status" id="context-status">Open a document to inspect its AI context.</div>
+        <div class="context-actions-row">
+          <button class="context-action-btn" id="context-open-default">Open Project Default</button>
+          <button class="context-action-btn" id="context-revert-default">Revert to Default</button>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Controls</div>
+          <div class="context-config-editor" id="context-config-editor"></div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Resolved Sources</div>
+          <div class="context-source-list" id="context-source-list"></div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Budget</div>
+          <div class="context-row"><span>Total</span><strong id="context-total-tokens">0 tokens</strong></div>
+          <div class="context-tokenbar"><div class="context-tokenbar-fill" id="context-tokenbar-fill"></div></div>
+          <div class="context-row context-small"><span>Reference budget</span><span>8k tokens</span></div>
+          <div class="context-small" id="context-image-count" style="margin-top:8px;"></div>
+        </div>
+        <div class="rail-panel-section">
+          <div class="rail-panel-section-title">Resolved Payload</div>
+          <div class="context-actions-row" style="margin-bottom:8px;">
+            <button class="context-action-btn" id="context-copy-resolved">Copy Payload</button>
+          </div>
+          <div class="context-help" id="context-last-sent-meta" style="margin-bottom:8px;">This is the exact text currently prepared for <code>document_context</code>.</div>
+          <textarea class="context-preview" id="context-preview" readonly placeholder="Resolve context to preview the exact payload sent to the AI."></textarea>
         </div>
       </div>
     </div>
@@ -12417,9 +13059,141 @@ session:
     /**
      * Get current file's relative path
      */
+    const LINKED_TABLE_IMPORT_EXTENSIONS = new Set(['csv', 'tsv']);
+
     function getCurrentRelativePath() {
       if (!state.currentFile || !state.project?.root) return null;
       return state.currentFile.replace(state.project.root + '/', '');
+    }
+
+    function canInsertLinkedTableIntoCurrentDocument() {
+      const relativePath = getCurrentRelativePath();
+      return !!(state.editor && relativePath && isDocFile(relativePath));
+    }
+
+    function isLinkedTableImportSourcePath(filePath) {
+      const ext = (String(filePath || '').match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
+      return LINKED_TABLE_IMPORT_EXTENSIONS.has(ext);
+    }
+
+    function normalizeLinkedTableBlockInsertion(docText, from, to, blockMarkdown) {
+      const fullText = String(docText || '');
+      const safeFrom = Math.max(0, Math.min(fullText.length, Number.isInteger(from) ? from : 0));
+      const safeTo = Math.max(safeFrom, Math.min(fullText.length, Number.isInteger(to) ? to : safeFrom));
+      const before = fullText.slice(0, safeFrom);
+      const after = fullText.slice(safeTo);
+      const block = String(blockMarkdown || '').trim();
+
+      if (!block) {
+        return {
+          from: safeFrom,
+          to: safeTo,
+          insert: '',
+          selectionAnchor: safeFrom,
+        };
+      }
+
+      const prefix = before.length > 0 ? (before.endsWith('\n\n') ? '' : (before.endsWith('\n') ? '\n' : '\n\n')) : '';
+      const suffix = after.length > 0 ? (after.startsWith('\n\n') ? '' : (after.startsWith('\n') ? '\n' : '\n\n')) : '';
+      const insert = `${prefix}${block}${suffix}`;
+
+      return {
+        from: safeFrom,
+        to: safeTo,
+        insert,
+        selectionAnchor: safeFrom + insert.length,
+      };
+    }
+
+    function insertLinkedTableBlockIntoEditor(blockMarkdown) {
+      if (!state.editor?.view?.dispatch) {
+        throw new Error('No active editor to receive linked-table insertion');
+      }
+
+      const selection = state.editor.view.state.selection.main;
+      const normalized = normalizeLinkedTableBlockInsertion(
+        state.editor.view.state.doc.toString(),
+        selection.from,
+        selection.to,
+        blockMarkdown
+      );
+
+      state.editor.view.dispatch({
+        changes: {
+          from: normalized.from,
+          to: normalized.to,
+          insert: normalized.insert,
+        },
+        selection: {
+          anchor: normalized.selectionAnchor,
+        },
+        scrollIntoView: true,
+      });
+
+      state.editor.view.focus();
+      return normalized;
+    }
+
+    function findReusableLinkedTableBlockForSource(sourceFilePath) {
+      const baseName = sourceFilePath.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
+      const desiredId = slugFromTitle(baseName);
+      if (!desiredId || !state.editor?.view || !mrmd?.linkedTablesModule?.findLinkedTableBlocksInState) {
+        return null;
+      }
+
+      const blocks = mrmd.linkedTablesModule.findLinkedTableBlocksInState(state.editor.view.state) || [];
+      return blocks.find((block) => block?.spec?.id === desiredId) || null;
+    }
+
+    async function insertLinkedTableFromPath(sourceFilePath) {
+      if (!electronAPI?.table?.importDelimited) {
+        throw new Error('This build does not expose the linked-table import host API');
+      }
+
+      if (!canInsertLinkedTableIntoCurrentDocument()) {
+        throw new Error('Open a markdown document inside a project before importing a linked table');
+      }
+
+      const documentPath = getCurrentRelativePath();
+      const projectRoot = state.project?.root;
+      if (!documentPath || !projectRoot) {
+        throw new Error('Linked-table import requires a project-backed markdown document');
+      }
+
+      const reusableBlock = findReusableLinkedTableBlockForSource(sourceFilePath);
+      const result = await electronAPI.table.importDelimited({
+        projectRoot,
+        documentPath,
+        sourceFilePath,
+        tableId: reusableBlock?.spec?.id || undefined,
+        reuseExisting: !!reusableBlock,
+        cacheFormat: 'csv',
+      });
+
+      if (reusableBlock) {
+        const replacement = normalizeLinkedTableBlockInsertion(
+          state.editor.view.state.doc.toString(),
+          reusableBlock.headerFrom,
+          reusableBlock.snapshotTo,
+          result.blockMarkdown
+        );
+        state.editor.view.dispatch({
+          changes: {
+            from: replacement.from,
+            to: replacement.to,
+            insert: replacement.insert,
+          },
+          selection: {
+            anchor: replacement.selectionAnchor,
+          },
+          scrollIntoView: true,
+        });
+        state.editor.view.focus();
+        return result;
+      }
+
+      insertLinkedTableBlockIntoEditor(result.blockMarkdown);
+      return result;
     }
 
     function humanTitleFromFilename(filename) {
@@ -13098,6 +13872,7 @@ session:
       // Show/hide items based on context
       const ext = (path.match(/\.([^.]+)$/) || [])[1]?.toLowerCase();
       const isMd = ext === 'md' || ext === 'qmd';
+      const isLinkedTableSource = !!ext && LINKED_TABLE_IMPORT_EXTENSIONS.has(ext);
 
       // "Open as Project" — only for folders (not empty space, not files)
       const showOpenProject = isFolder && !isEmptySpace;
@@ -13108,6 +13883,7 @@ session:
         // Empty space: only show New File / New Folder
         menu.querySelector('[data-action="open-as-text"]').style.display = 'none';
         menu.querySelector('[data-action="open-as-markdown"]').style.display = 'none';
+        menu.querySelector('[data-action="insert-linked-table"]').style.display = 'none';
         menu.querySelector('[data-action="copy-path"]').style.display = 'none';
         menu.querySelector('[data-action="copy-relative-path"]').style.display = 'none';
         menu.querySelector('[data-action="copy-item"]').style.display = 'none';
@@ -13118,6 +13894,7 @@ session:
         // Item context: show relevant actions
         menu.querySelector('[data-action="open-as-text"]').style.display = (!isFolder) ? '' : 'none';
         menu.querySelector('[data-action="open-as-markdown"]').style.display = (!isFolder && !isMd) ? '' : 'none';
+        menu.querySelector('[data-action="insert-linked-table"]').style.display = (!isFolder && isLinkedTableSource && canInsertLinkedTableIntoCurrentDocument()) ? '' : 'none';
         menu.querySelector('[data-action="copy-path"]').style.display = '';
         menu.querySelector('[data-action="copy-relative-path"]').style.display = '';
         menu.querySelector('[data-action="copy-item"]').style.display = '';
@@ -13228,6 +14005,14 @@ session:
           break;
         case 'open-as-markdown':
           await openFile(fullPath);
+          break;
+        case 'insert-linked-table':
+          try {
+            await insertLinkedTableFromPath(fullPath);
+          } catch (e) {
+            console.error('Linked table import failed:', e);
+            alert('Linked table import failed: ' + (e.message || String(e)));
+          }
           break;
         case 'delete':
           await deleteNavItem(target.path);
@@ -14137,6 +14922,7 @@ session:
 
         // Destroy existing editor
         if (state.editor) {
+          cleanupLinkedTableWorkspaceBindings();
           state.variablesCellCompleteUnsub?.();
           state.variablesCellCompleteUnsub = null;
           state.variablesCellErrorUnsub?.();
@@ -14783,6 +15569,7 @@ session:
 
         // Destroy existing editor
         if (state.editor) {
+          cleanupLinkedTableWorkspaceBindings();
           state.variablesCellCompleteUnsub?.();
           state.variablesCellCompleteUnsub = null;
           state.variablesCellErrorUnsub?.();
@@ -14852,6 +15639,7 @@ session:
 
         // Open document
         state.editor = await state.drive.open(docName, '#editor', editorOptions);
+        attachLinkedTableWorkspaceBindings();
         applySectionControlsToEditor();
         attachWysiwygSelectionWatcher();
         await restoreDocumentTemplateForCurrentFile();
@@ -14976,6 +15764,15 @@ session:
         initializeTOC();
 
         console.log('File opened successfully');
+        if (contextPanelState.refreshTimer) clearTimeout(contextPanelState.refreshTimer);
+        contextPanelState.refreshTimer = null;
+        contextPanelState.data = null;
+        contextPanelState.error = null;
+        contextPanelState.loading = false;
+        contextPanelState.config = null;
+        contextPanelState.effective = null;
+        contextPanelState.lastSent = null;
+        renderContextPanel();
 
         // Reset runtime warmup tracking for this document
         state.warmedRuntimeLanguages = new Set();
@@ -15187,6 +15984,7 @@ session:
         renderVoiceHistoryPanel();
       } else if (panelId === 'document-style') {
         renderDocumentStylePanel();
+        onDocumentStylePanelOpen();
       }
     }
 
@@ -15200,6 +15998,9 @@ session:
       if (panelId === 'comments') {
         setCommentViewMode('inline');
         updateCommentsToggleButton();
+      }
+      if (panelId === 'linked-table') {
+        clearLinkedTableWorkspaceState();
       }
 
       // Force-close regardless of current rail state
@@ -15220,6 +16021,7 @@ session:
 
     function forceCloseAllPanels() {
       const closingComments = railState.activePanel === 'comments' || railState.pinnedPanel === 'comments';
+      const closingLinkedTable = railState.activePanel === 'linked-table' || railState.pinnedPanel === 'linked-table';
       document.querySelectorAll('.rail-panel').forEach((p) => p.classList.remove('open', 'pinned'));
       document.querySelectorAll('.rail-btn.active').forEach((b) => b.classList.remove('active'));
       document.querySelector('.content')?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
@@ -15229,6 +16031,9 @@ session:
         setCommentViewMode('inline');
         updateCommentsToggleButton();
         applyCommentConfigToEditor();
+      }
+      if (closingLinkedTable) {
+        clearLinkedTableWorkspaceState();
       }
       removeMobileRailScrim();
     }
@@ -15254,7 +16059,7 @@ session:
       const isWide = panel?.classList.contains('rail-panel-wide') ||
                      panel?.classList.contains('rail-panel-artifact');
       content?.classList.remove('panel-pinned', 'panel-pinned-wide', 'panel-pinned-source');
-      if (panelId === 'source') {
+      if (panelId === 'source' || panelId === 'linked-table') {
         content?.classList.add('panel-pinned-source');
       } else {
         content?.classList.add(isWide ? 'panel-pinned-wide' : 'panel-pinned');
@@ -15281,6 +16086,8 @@ session:
     // Initialize rail on page load
     document.addEventListener('DOMContentLoaded', () => {
       initSideRail();
+      initLinkedTableWorkspacePanel();
+      initContextPanel();
       initDocumentStylePanel();
       initInlineSectionControlToggles();
       initCommentsToggle();
@@ -16282,6 +17089,497 @@ session:
       requestId: 0,
       lastCursorPos: null,
     };
+
+    const linkedTableWorkspaceState = {
+      tableId: null,
+      detail: null,
+      block: null,
+      activeTab: 'result',
+      paths: null,
+      sourcePreview: null,
+      transformPreview: null,
+      cachePreview: null,
+      sourcePreviewPath: null,
+      transformPreviewPath: null,
+      cachePreviewPath: null,
+      sortState: {
+        column: null,
+        direction: 'none',
+      },
+      refreshTimer: null,
+      renderToken: 0,
+    };
+
+    let linkedTableWorkspaceActionCleanup = null;
+    let linkedTableWorkspaceEditorChangeCleanup = null;
+    let linkedTableWorkspaceJobsObserverCleanup = null;
+
+    function resetLinkedTableWorkspaceCache() {
+      linkedTableWorkspaceState.paths = null;
+      linkedTableWorkspaceState.sourcePreview = null;
+      linkedTableWorkspaceState.transformPreview = null;
+      linkedTableWorkspaceState.cachePreview = null;
+      linkedTableWorkspaceState.sourcePreviewPath = null;
+      linkedTableWorkspaceState.transformPreviewPath = null;
+      linkedTableWorkspaceState.cachePreviewPath = null;
+    }
+
+    function clearLinkedTableWorkspaceState() {
+      linkedTableWorkspaceState.tableId = null;
+      linkedTableWorkspaceState.detail = null;
+      linkedTableWorkspaceState.block = null;
+      linkedTableWorkspaceState.sortState = { column: null, direction: 'none' };
+      resetLinkedTableWorkspaceCache();
+    }
+
+    function getCurrentLinkedTableBlock(tableId) {
+      if (!tableId || !state.editor?.view || !mrmd?.linkedTablesModule?.findLinkedTableBlocksInState) {
+        return null;
+      }
+
+      const blocks = mrmd.linkedTablesModule.findLinkedTableBlocksInState(state.editor.view.state) || [];
+      return blocks.find((block) => block?.spec?.id === tableId) || null;
+    }
+
+    function mergeLinkedTableWorkspaceDetail(detail) {
+      const tableId = detail?.tableId || detail?.spec?.id || linkedTableWorkspaceState.tableId;
+      if (!tableId) return null;
+
+      const block = getCurrentLinkedTableBlock(tableId);
+      linkedTableWorkspaceState.block = block;
+
+      if (block) {
+        linkedTableWorkspaceState.detail = {
+          ...detail,
+          ...block,
+          tableId: block.spec.id,
+          label: block.spec.label || block.spec.id,
+          spec: block.spec,
+        };
+      } else if (detail) {
+        linkedTableWorkspaceState.detail = {
+          ...linkedTableWorkspaceState.detail,
+          ...detail,
+          tableId,
+        };
+      }
+
+      linkedTableWorkspaceState.tableId = tableId;
+      return linkedTableWorkspaceState.detail;
+    }
+
+    function getLinkedTableWorkspaceStatus(detail) {
+      try {
+        return state.editor?.linkedTables?.summarizeTableStatus?.(
+          detail?.tableId,
+          detail?.spec?.snapshot?.materializedAt || ''
+        ) || {
+          status: 'fresh',
+          label: 'Fresh',
+          title: 'Linked-table snapshot is current',
+          busy: false,
+        };
+      } catch {
+        return {
+          status: 'fresh',
+          label: 'Fresh',
+          title: 'Linked-table snapshot is current',
+          busy: false,
+        };
+      }
+    }
+
+    async function resolveLinkedTableWorkspacePaths(detail) {
+      if (!detail?.spec || !electronAPI?.table?.resolvePaths || !state.project?.root) {
+        return null;
+      }
+
+      const documentPath = getCurrentRelativePath();
+      if (!documentPath) return null;
+
+      return electronAPI.table.resolvePaths({
+        projectRoot: state.project.root,
+        documentPath,
+        spec: detail.spec,
+      });
+    }
+
+    async function readLinkedTableWorkspaceText(fullPath) {
+      if (!fullPath || !electronAPI?.file?.read) return null;
+      const result = await electronAPI.file.read(fullPath);
+      return result?.success ? result.content : null;
+    }
+
+    function getPrimaryLinkedTableSourcePath(paths) {
+      return paths?.sourcePaths?.[0]?.path || null;
+    }
+
+    function getLinkedTableHeaderColumns(parsedTable) {
+      const headerRow = parsedTable?.rows?.find((row) => row.isHeader && !row.isDelimiter);
+      if (!headerRow) return [];
+      return headerRow.cells
+        .filter((cell) => !cell.hidden && cell.content.trim() !== '' && cell.content.trim() !== '>' && cell.content.trim() !== '^')
+        .map((cell) => cell.content.trim());
+    }
+
+    function dispatchLinkedTableWorkspaceAction(action, extra = {}) {
+      if (!state.editor?.view?.dom || !linkedTableWorkspaceState.detail) return false;
+      state.editor.view.dom.dispatchEvent(new CustomEvent('mrmd-linked-table-action', {
+        bubbles: true,
+        detail: {
+          ...linkedTableWorkspaceState.detail,
+          action,
+          ...extra,
+        },
+      }));
+      return true;
+    }
+
+    function getNextLinkedTableWorkspaceSortDirection(column) {
+      const last = linkedTableWorkspaceState.sortState;
+      if (last.column === column) {
+        return last.direction === 'asc' ? 'desc' : 'asc';
+      }
+      return 'asc';
+    }
+
+    function scheduleLinkedTableWorkspaceRefresh(options = {}) {
+      clearTimeout(linkedTableWorkspaceState.refreshTimer);
+      linkedTableWorkspaceState.refreshTimer = setTimeout(() => {
+        refreshLinkedTableWorkspace(options).catch((error) => {
+          console.warn('[linked-table-workspace] refresh failed:', error);
+        });
+      }, options.delay ?? 60);
+    }
+
+    function buildLinkedTableWorkspaceBadge(text, className = '') {
+      const span = document.createElement('span');
+      span.className = `table-workspace-badge ${className}`.trim();
+      span.textContent = text;
+      return span;
+    }
+
+    function renderLinkedTableWorkspaceResult(detail, container, statusInfo) {
+      const block = linkedTableWorkspaceState.block;
+      if (!block?.tableLines?.length || !mrmd?.parseTable || !mrmd?.TableWidget) {
+        const empty = document.createElement('div');
+        empty.className = 'table-workspace-empty';
+        empty.textContent = 'No rendered snapshot is available for this linked table yet.';
+        container.appendChild(empty);
+        return;
+      }
+
+      const parsed = mrmd.parseTable(block.tableLines || []);
+      if (!parsed || !parsed.rows?.length) {
+        const pre = document.createElement('pre');
+        pre.className = 'table-workspace-pre';
+        pre.textContent = block.snapshotText || '';
+        container.appendChild(pre);
+        return;
+      }
+
+      const note = document.createElement('div');
+      note.className = 'table-workspace-note';
+      note.textContent = statusInfo.busy
+        ? 'Materialization is in progress. Result interactions are temporarily disabled.'
+        : 'Click a column header to sort from the workspace.';
+      container.appendChild(note);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'table-workspace-grid-wrap';
+      const tableDom = new mrmd.TableWidget(parsed, `workspace-${detail.tableId}`).toDOM();
+      wrap.appendChild(tableDom);
+      container.appendChild(wrap);
+
+      const headerColumns = getLinkedTableHeaderColumns(parsed);
+      const domHeaders = Array.from(tableDom.querySelectorAll('thead th'));
+      const count = Math.min(domHeaders.length, headerColumns.length);
+
+      for (let index = 0; index < count; index++) {
+        const th = domHeaders[index];
+        const column = headerColumns[index];
+        th.classList.add('cm-linked-table-sortable');
+        th.title = statusInfo.busy ? `Busy: ${statusInfo.title || 'job running'}` : `Sort by ${column}`;
+        if (statusInfo.busy) {
+          th.setAttribute('aria-disabled', 'true');
+          continue;
+        }
+        th.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const next = getNextLinkedTableWorkspaceSortDirection(column);
+          linkedTableWorkspaceState.sortState = { column, direction: next };
+          dispatchLinkedTableWorkspaceAction('sort', { column, direction: next });
+          scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 20 });
+        });
+      }
+    }
+
+    function renderLinkedTableWorkspaceInfoSection(items, container) {
+      const list = document.createElement('dl');
+      list.className = 'table-workspace-meta-grid';
+      for (const [label, value] of items) {
+        const dt = document.createElement('dt');
+        dt.textContent = label;
+        const dd = document.createElement('dd');
+        if (value instanceof HTMLElement) {
+          dd.appendChild(value);
+        } else {
+          dd.textContent = value == null || value === '' ? '—' : String(value);
+        }
+        list.appendChild(dt);
+        list.appendChild(dd);
+      }
+      container.appendChild(list);
+    }
+
+    function renderLinkedTableWorkspaceTextTab(pathLabel, textContent, emptyMessage, container) {
+      if (pathLabel) {
+        const pathEl = document.createElement('div');
+        pathEl.className = 'table-workspace-path';
+        pathEl.textContent = pathLabel;
+        container.appendChild(pathEl);
+      }
+
+      if (!textContent) {
+        const empty = document.createElement('div');
+        empty.className = 'table-workspace-empty';
+        empty.textContent = emptyMessage;
+        container.appendChild(empty);
+        return;
+      }
+
+      const pre = document.createElement('pre');
+      pre.className = 'table-workspace-pre';
+      pre.textContent = textContent;
+      container.appendChild(pre);
+    }
+
+    function renderLinkedTableWorkspace() {
+      const detail = linkedTableWorkspaceState.detail;
+      const titleEl = document.getElementById('linked-table-panel-title');
+      const toolbarEl = document.getElementById('linked-table-workspace-toolbar');
+      const tabsEl = document.getElementById('linked-table-workspace-tabs');
+      const bodyEl = document.getElementById('linked-table-workspace-body');
+      const refreshBtn = document.getElementById('linked-table-panel-refresh');
+      if (!titleEl || !toolbarEl || !tabsEl || !bodyEl) return;
+
+      toolbarEl.innerHTML = '';
+      tabsEl.innerHTML = '';
+      bodyEl.innerHTML = '';
+
+      if (!detail) {
+        titleEl.textContent = 'Linked table';
+        const empty = document.createElement('div');
+        empty.className = 'table-workspace-empty';
+        empty.textContent = 'Open a linked table from the document view to inspect it here.';
+        bodyEl.appendChild(empty);
+        if (refreshBtn) refreshBtn.disabled = true;
+        return;
+      }
+
+      const statusInfo = getLinkedTableWorkspaceStatus(detail);
+      titleEl.textContent = detail.label || detail.tableId || 'Linked table';
+      if (refreshBtn) {
+        refreshBtn.disabled = !!statusInfo.busy;
+        refreshBtn.title = statusInfo.busy ? (statusInfo.title || 'Job running') : 'Refresh linked table';
+      }
+
+      const badges = document.createElement('div');
+      badges.className = 'table-workspace-badges';
+      badges.appendChild(buildLinkedTableWorkspaceBadge(statusInfo.label, `status-${statusInfo.status}`));
+      badges.appendChild(buildLinkedTableWorkspaceBadge('Linked'));
+      badges.appendChild(buildLinkedTableWorkspaceBadge(detail.spec?.engine || 'engine'));
+      badges.appendChild(buildLinkedTableWorkspaceBadge(`${(detail.spec?.sources || []).length} source${(detail.spec?.sources || []).length === 1 ? '' : 's'}`));
+      if (detail.spec?.snapshot?.materializedAt) {
+        badges.appendChild(buildLinkedTableWorkspaceBadge(`Updated ${new Date(detail.spec.snapshot.materializedAt).toLocaleString()}`));
+      }
+      toolbarEl.appendChild(badges);
+
+      const actions = document.createElement('div');
+      actions.className = 'table-workspace-actions';
+      const actionSpecs = [
+        { label: 'Back to document', onClick: () => closePanel('linked-table') },
+        { label: 'Open markdown', onClick: () => dispatchLinkedTableWorkspaceAction('open-markdown') },
+        { label: 'Open source', onClick: () => dispatchLinkedTableWorkspaceAction('open-source') },
+        { label: 'Reveal source', onClick: () => dispatchLinkedTableWorkspaceAction('reveal-source') },
+        { label: statusInfo.busy ? 'Working…' : 'Refresh', onClick: () => dispatchLinkedTableWorkspaceAction('refresh'), disabled: !!statusInfo.busy },
+      ];
+      for (const spec of actionSpecs) {
+        const button = document.createElement('button');
+        button.className = 'table-workspace-btn';
+        button.type = 'button';
+        button.textContent = spec.label;
+        button.disabled = !!spec.disabled;
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          spec.onClick();
+          if (spec.label !== 'Back to document') {
+            scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 20 });
+          }
+        });
+        actions.appendChild(button);
+      }
+      toolbarEl.appendChild(actions);
+
+      const tabs = [
+        { id: 'result', label: 'Result' },
+        { id: 'source', label: 'Source' },
+        { id: 'transform', label: 'Transform' },
+        { id: 'cache', label: 'Cache / Info' },
+      ];
+      for (const tab of tabs) {
+        const button = document.createElement('button');
+        button.className = `table-workspace-tab${linkedTableWorkspaceState.activeTab === tab.id ? ' active' : ''}`;
+        button.type = 'button';
+        button.textContent = tab.label;
+        button.addEventListener('click', () => {
+          linkedTableWorkspaceState.activeTab = tab.id;
+          scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 0 });
+        });
+        tabsEl.appendChild(button);
+      }
+
+      if (linkedTableWorkspaceState.activeTab === 'result') {
+        renderLinkedTableWorkspaceResult(detail, bodyEl, statusInfo);
+      } else if (linkedTableWorkspaceState.activeTab === 'source') {
+        const primarySourcePath = getPrimaryLinkedTableSourcePath(linkedTableWorkspaceState.paths);
+        renderLinkedTableWorkspaceInfoSection([
+          ['Primary source', primarySourcePath || '—'],
+          ['Format', linkedTableWorkspaceState.paths?.sourcePaths?.[0]?.format || '—'],
+          ['Role', linkedTableWorkspaceState.paths?.sourcePaths?.[0]?.role || 'primary'],
+        ], bodyEl);
+        renderLinkedTableWorkspaceTextTab(primarySourcePath, linkedTableWorkspaceState.sourcePreview, 'Primary source preview is not available yet.', bodyEl);
+      } else if (linkedTableWorkspaceState.activeTab === 'transform') {
+        renderLinkedTableWorkspaceTextTab(
+          linkedTableWorkspaceState.paths?.transformPath || '',
+          linkedTableWorkspaceState.transformPreview,
+          'Transform preview is not available yet.',
+          bodyEl
+        );
+      } else if (linkedTableWorkspaceState.activeTab === 'cache') {
+        renderLinkedTableWorkspaceInfoSection([
+          ['Cache path', linkedTableWorkspaceState.paths?.cachePath || '—'],
+          ['Cache format', detail.spec?.cache?.format || '—'],
+          ['Snapshot rows', detail.spec?.snapshot?.rowCount ?? '—'],
+          ['Materialized at', detail.spec?.snapshot?.materializedAt ? new Date(detail.spec.snapshot.materializedAt).toLocaleString() : '—'],
+          ['Status', statusInfo.title || statusInfo.label],
+        ], bodyEl);
+        renderLinkedTableWorkspaceTextTab(
+          linkedTableWorkspaceState.paths?.cachePath || '',
+          linkedTableWorkspaceState.cachePreview,
+          'Cache preview is not available yet.',
+          bodyEl
+        );
+      }
+    }
+
+    async function refreshLinkedTableWorkspace({ forceRead = false } = {}) {
+      const baseDetail = linkedTableWorkspaceState.detail;
+      const merged = mergeLinkedTableWorkspaceDetail(baseDetail || { tableId: linkedTableWorkspaceState.tableId });
+      if (!merged) {
+        renderLinkedTableWorkspace();
+        return;
+      }
+
+      const token = ++linkedTableWorkspaceState.renderToken;
+      const nextPaths = await resolveLinkedTableWorkspacePaths(merged);
+      if (token !== linkedTableWorkspaceState.renderToken) return;
+
+      const previousPaths = linkedTableWorkspaceState.paths;
+      linkedTableWorkspaceState.paths = nextPaths;
+
+      const primarySourcePath = getPrimaryLinkedTableSourcePath(nextPaths);
+      const transformPath = nextPaths?.transformPath || null;
+      const cachePath = nextPaths?.cachePath || null;
+
+      if (forceRead || primarySourcePath !== linkedTableWorkspaceState.sourcePreviewPath) {
+        linkedTableWorkspaceState.sourcePreviewPath = primarySourcePath;
+        linkedTableWorkspaceState.sourcePreview = await readLinkedTableWorkspaceText(primarySourcePath);
+        if (token !== linkedTableWorkspaceState.renderToken) return;
+      }
+      if (forceRead || transformPath !== linkedTableWorkspaceState.transformPreviewPath) {
+        linkedTableWorkspaceState.transformPreviewPath = transformPath;
+        linkedTableWorkspaceState.transformPreview = await readLinkedTableWorkspaceText(transformPath);
+        if (token !== linkedTableWorkspaceState.renderToken) return;
+      }
+      if (forceRead || cachePath !== linkedTableWorkspaceState.cachePreviewPath) {
+        linkedTableWorkspaceState.cachePreviewPath = cachePath;
+        linkedTableWorkspaceState.cachePreview = await readLinkedTableWorkspaceText(cachePath);
+        if (token !== linkedTableWorkspaceState.renderToken) return;
+      }
+
+      if (previousPaths && nextPaths && previousPaths.cachePath !== nextPaths.cachePath) {
+        linkedTableWorkspaceState.cachePreview = null;
+      }
+
+      renderLinkedTableWorkspace();
+    }
+
+    async function openLinkedTableWorkspace(detail) {
+      mergeLinkedTableWorkspaceDetail(detail);
+      openRail();
+      openPanel('linked-table');
+      await refreshLinkedTableWorkspace({ forceRead: true });
+    }
+
+    function cleanupLinkedTableWorkspaceBindings() {
+      linkedTableWorkspaceActionCleanup?.();
+      linkedTableWorkspaceActionCleanup = null;
+      linkedTableWorkspaceEditorChangeCleanup?.();
+      linkedTableWorkspaceEditorChangeCleanup = null;
+      linkedTableWorkspaceJobsObserverCleanup?.();
+      linkedTableWorkspaceJobsObserverCleanup = null;
+    }
+
+    function attachLinkedTableWorkspaceBindings() {
+      cleanupLinkedTableWorkspaceBindings();
+      if (!state.editor?.view?.dom) return;
+
+      const actionHandler = (event) => {
+        const detail = event?.detail || {};
+        if (!detail.tableId) return;
+        if (detail.action === 'open-grid') {
+          event.preventDefault?.();
+          openLinkedTableWorkspace(detail).catch((error) => {
+            console.error('[linked-table-workspace] open failed:', error);
+          });
+          return;
+        }
+
+        if (linkedTableWorkspaceState.tableId && detail.tableId === linkedTableWorkspaceState.tableId) {
+          scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 20 });
+        }
+      };
+
+      state.editor.view.dom.addEventListener('mrmd-linked-table-action', actionHandler);
+      linkedTableWorkspaceActionCleanup = () => {
+        state.editor?.view?.dom?.removeEventListener('mrmd-linked-table-action', actionHandler);
+      };
+
+      linkedTableWorkspaceEditorChangeCleanup = state.editor.onChange?.(() => {
+        if (!linkedTableWorkspaceState.tableId) return;
+        scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 120 });
+      }) || null;
+
+      const jobsMap = state.editor.ydoc?.getMap?.('tableJobs');
+      if (jobsMap?.observe) {
+        const jobsObserver = () => {
+          if (!linkedTableWorkspaceState.tableId) return;
+          scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 20 });
+        };
+        jobsMap.observe(jobsObserver);
+        linkedTableWorkspaceJobsObserverCleanup = () => jobsMap.unobserve(jobsObserver);
+      }
+    }
+
+    function initLinkedTableWorkspacePanel() {
+      document.getElementById('linked-table-panel-refresh')?.addEventListener('click', () => {
+        dispatchLinkedTableWorkspaceAction('refresh');
+        scheduleLinkedTableWorkspaceRefresh({ forceRead: false, delay: 20 });
+      });
+    }
 
     /**
      * Show source code in the panel
@@ -17848,7 +19146,17 @@ session:
 
       let recentFiles = [];
       try {
-        recentFiles = await electronAPI.getRecentFiles?.() || [];
+        // Try dedicated API first, fall back to getRecent().files
+        if (electronAPI.getRecentFiles) {
+          recentFiles = await electronAPI.getRecentFiles() || [];
+        } else {
+          const recent = await electronAPI.getRecent();
+          recentFiles = (recent.files || []).map(f => ({
+            path: f.path,
+            name: f.path?.split('/').pop() || 'untitled',
+            lastOpened: f.opened,
+          }));
+        }
       } catch (e) {
         console.warn('Failed to get recent files:', e);
       }
@@ -17862,7 +19170,7 @@ session:
         const name = file.name || file.path?.split('/').pop() || 'untitled';
         const displayName = name.replace(/\.md$/, '');
         const relativePath = file.path || '';
-        const timeAgo = file.lastOpened ? formatTimeAgo(file.lastOpened) : '';
+        const timeAgo = (file.lastOpened || file.opened) ? formatTimeAgo(file.lastOpened || file.opened) : '';
 
         return `
           <div class="home-file-item" onclick="openFileFromHome('${escapeAttr(file.path)}')" title="${escapeAttr(file.path)}">
@@ -17885,7 +19193,22 @@ session:
 
       let recentProjects = [];
       try {
-        recentProjects = await electronAPI.getRecentProjects?.() || [];
+        // Try dedicated API first, fall back to deriving from getRecent().files
+        if (electronAPI.getRecentProjects) {
+          recentProjects = await electronAPI.getRecentProjects() || [];
+        } else {
+          const recent = await electronAPI.getRecent();
+          const seen = new Map();
+          for (const f of (recent.files || [])) {
+            const parts = f.path.split('/');
+            parts.pop();
+            const dir = parts.join('/');
+            if (!seen.has(dir)) {
+              seen.set(dir, { path: dir, name: parts.pop() || dir, lastOpened: f.opened });
+            }
+          }
+          recentProjects = [...seen.values()];
+        }
       } catch (e) {
         console.warn('Failed to get recent projects:', e);
       }
@@ -18272,6 +19595,1379 @@ session:
         },
       },
     };
+
+    const CONTEXT_DEFAULT_TEMPLATE = `# Context Configuration
+
+<!-- This file controls what context is sent to AI commands. -->
+<!-- Edit it directly or use the Context panel in the editor. -->
+<!-- AI agents can also modify this file to adjust their own context. -->
+
+## Document
+<!-- context:document mode="full" -->
+
+## Linked Pages
+<!-- context:links depth="1" -->
+
+## Images
+<!-- context:images -->
+
+## Runtime State
+<!-- context:runtime -->
+<!-- context:runtime-variables -->
+<!-- context:runtime-docstrings symbols="auto" -->
+
+## Pinned Files
+<!-- context:files -->
+
+## Notes
+
+(Add project conventions, domain knowledge, or constraints here.)
+`;
+
+    const contextPanelState = {
+      loading: false,
+      data: null,
+      error: null,
+      config: null,
+      effective: null,
+      saving: false,
+      refreshTimer: null,
+      lastSent: null,
+    };
+
+    function contextDeepClone(value) {
+      return value == null ? value : JSON.parse(JSON.stringify(value));
+    }
+
+    function contextDefaultsConfig() {
+      return {
+        document: { enabled: true, mode: 'full', budget: null },
+        links: { enabled: true, depth: 1, items: [] },
+        images: { enabled: false, items: [] },
+        runtime: { enabled: true },
+        'runtime-variables': { enabled: true },
+        'runtime-docstrings': { enabled: true, symbols: 'auto', items: [] },
+        'runtime-source': { enabled: false, symbols: null, items: [] },
+        'runtime-paths': { enabled: false, items: [] },
+        files: { enabled: false, items: [] },
+        urls: { enabled: false, items: [], 'max-size': '50kb' },
+        notes: { enabled: true, content: '' },
+      };
+    }
+
+    function contextNormalizeConfig(config) {
+      const merged = { ...contextDefaultsConfig(), ...(config || {}) };
+      merged.document = { ...contextDefaultsConfig().document, ...(config?.document || {}) };
+      merged.links = { ...contextDefaultsConfig().links, ...(config?.links || {}), items: Array.isArray(config?.links?.items) ? config.links.items : [] };
+      merged.images = { ...contextDefaultsConfig().images, ...(config?.images || {}), items: Array.isArray(config?.images?.items) ? config.images.items : [] };
+      merged.runtime = { ...contextDefaultsConfig().runtime, ...(config?.runtime || {}) };
+      merged['runtime-variables'] = { ...contextDefaultsConfig()['runtime-variables'], ...(config?.['runtime-variables'] || {}) };
+      merged['runtime-docstrings'] = { ...contextDefaultsConfig()['runtime-docstrings'], ...(config?.['runtime-docstrings'] || {}), items: Array.isArray(config?.['runtime-docstrings']?.items) ? config['runtime-docstrings'].items : [] };
+      merged['runtime-source'] = { ...contextDefaultsConfig()['runtime-source'], ...(config?.['runtime-source'] || {}), items: Array.isArray(config?.['runtime-source']?.items) ? config['runtime-source'].items : [] };
+      merged['runtime-paths'] = { ...contextDefaultsConfig()['runtime-paths'], ...(config?.['runtime-paths'] || {}), items: Array.isArray(config?.['runtime-paths']?.items) ? config['runtime-paths'].items : [] };
+      merged.files = { ...contextDefaultsConfig().files, ...(config?.files || {}), items: Array.isArray(config?.files?.items) ? config.files.items : [] };
+      merged.urls = { ...contextDefaultsConfig().urls, ...(config?.urls || {}), items: Array.isArray(config?.urls?.items) ? config.urls.items : [] };
+      merged.notes = { ...contextDefaultsConfig().notes, ...(config?.notes || {}) };
+      return merged;
+    }
+
+    function contextEstimateTokens(text) {
+      return Math.max(1, Math.ceil(String(text || '').length / 4));
+    }
+
+    function contextCurrentRelativePath() {
+      return getCurrentRelativePath();
+    }
+
+    function contextIsInfraDocument() {
+      const rel = contextCurrentRelativePath();
+      return !!(rel && rel.startsWith('_assets/context/'));
+    }
+
+    function contextDocAbsPathForRelative(relativePath) {
+      if (!state.project?.root || !relativePath) return null;
+      return `${state.project.root}/${relativePath}`.replace(/\/+/g, '/').replace(/\\/g, '/');
+    }
+
+    function contextPathForCurrentDoc() {
+      const rel = contextCurrentRelativePath();
+      if (!state.project?.root || !rel) return null;
+      return contextDocAbsPathForRelative(`_assets/context/${rel}`);
+    }
+
+    function contextDefaultPath() {
+      if (!state.project?.root) return null;
+      return contextDocAbsPathForRelative('_assets/context/_default.md');
+    }
+
+    async function readTextFileSafe(filePath) {
+      if (!filePath) return null;
+      try {
+        const response = await electronAPI.file.read(filePath);
+        if (response?.success === false) return null;
+        if (typeof response?.content === 'string') return response.content;
+        return typeof response === 'string' ? response : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function writeTextFileSafe(filePath, content) {
+      if (!filePath) return false;
+      try {
+        const response = await electronAPI.file.write(filePath, content);
+        if (response?.success === false) {
+          console.warn('[context] Failed to write file:', filePath, response?.error || 'unknown error');
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.warn('[context] Failed to write file:', filePath, e?.message || e);
+        return false;
+      }
+    }
+
+    function contextBaseDir(relativePath) {
+      if (!relativePath) return '';
+      const idx = relativePath.lastIndexOf('/');
+      return idx >= 0 ? relativePath.slice(0, idx) : '';
+    }
+
+    function contextJoin(baseDir, relativePath) {
+      if (!relativePath) return baseDir || '';
+      if (relativePath.startsWith('/')) return relativePath.replace(/^\/+/, '');
+      const parts = (baseDir ? `${baseDir}/${relativePath}` : relativePath).split('/');
+      const out = [];
+      for (const part of parts) {
+        if (!part || part === '.') continue;
+        if (part === '..') out.pop();
+        else out.push(part);
+      }
+      return out.join('/');
+    }
+
+    function contextOutline(content, maxLevel = 3) {
+      return String(content || '').split('\n').filter(line => {
+        const m = /^(#{1,6})\s+/.exec(line);
+        return m && m[1].length <= maxLevel;
+      }).join('\n').trim();
+    }
+
+    function contextSliceAround(content, cursorPos, windowChars = 2500) {
+      const text = String(content || '');
+      if (!text) return '';
+      if (typeof cursorPos !== 'number' || cursorPos < 0 || cursorPos > text.length) return text.slice(0, windowChars);
+      const half = Math.max(200, Math.floor(windowChars / 2));
+      const start = Math.max(0, cursorPos - half);
+      const end = Math.min(text.length, cursorPos + half);
+      return text.slice(start, end);
+    }
+
+    function contextResolveDocumentBlock(content, mode, budget, cursorPos) {
+      const text = String(content || '');
+      const normalizedMode = String(mode || 'full').toLowerCase();
+      if (normalizedMode === 'local') return contextSliceAround(text, cursorPos, 2500);
+      if (normalizedMode === 'outline+local') {
+        const outline = contextOutline(text);
+        const local = contextSliceAround(text, cursorPos, 2500);
+        return [outline ? `## Outline\n${outline}` : '', local ? `## Local Context\n${local}` : ''].filter(Boolean).join('\n\n');
+      }
+      if (normalizedMode === 'budget') {
+        const chars = Math.max(800, (Number(budget) || 2000) * 4);
+        return contextSliceAround(text, cursorPos, chars);
+      }
+      if (budget && text.length > Number(budget) * 4) {
+        return contextSliceAround(text, cursorPos, Number(budget) * 4);
+      }
+      return text;
+    }
+
+    function contextParseAttrs(raw) {
+      const attrs = {};
+      const regex = /([a-zA-Z0-9_-]+)="([^"]*)"|([a-zA-Z0-9_-]+)=([^\s]+)/g;
+      let match;
+      while ((match = regex.exec(raw || '')) !== null) {
+        const key = match[1] || match[3];
+        const value = match[2] || match[4] || '';
+        attrs[key] = value;
+      }
+      return attrs;
+    }
+
+    function contextParseBoolish(value, fallback = true) {
+      if (value == null) return fallback;
+      const text = String(value).trim().toLowerCase();
+      if (['1', 'true', 'yes', 'on', 'enabled'].includes(text)) return true;
+      if (['0', 'false', 'no', 'off', 'disabled'].includes(text)) return false;
+      return fallback;
+    }
+
+    function contextSectionTypeForHeading(section) {
+      const mapping = {
+        'linked-pages': 'links',
+        'links': 'links',
+        'images': 'images',
+        'pinned-files': 'files',
+        'files': 'files',
+        'web-pages': 'urls',
+        'urls': 'urls',
+        'notes': 'notes',
+        'docstrings': 'runtime-docstrings',
+        'source-code': 'runtime-source',
+        'source-paths': 'runtime-paths',
+      };
+      return mapping[section] || null;
+    }
+
+    function contextParseMarkdown(markdown) {
+      const config = contextDefaultsConfig();
+
+      const directiveRe = /<!--\s*context:([a-zA-Z0-9_-]+)(.*?)-->/;
+      const itemRe = /^\s*[-*+]\s+(.*?)(?:\s+<!--\s*(enabled|disabled).*?-->)?\s*$/;
+      let currentSection = null;
+      let currentTargetType = null;
+      const notesLines = [];
+
+      for (const rawLine of String(markdown || '').split('\n')) {
+        const headingMatch = /^(#+)\s+(.*)$/.exec(rawLine);
+        if (headingMatch) {
+          currentSection = headingMatch[2].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          currentTargetType = contextSectionTypeForHeading(currentSection);
+          continue;
+        }
+
+        const directiveMatch = directiveRe.exec(rawLine);
+        if (directiveMatch) {
+          const dtype = directiveMatch[1].trim().toLowerCase();
+          const attrs = contextParseAttrs(directiveMatch[2]);
+          const entry = config[dtype] || (config[dtype] = { enabled: false });
+          Object.assign(entry, attrs);
+          entry.enabled = contextParseBoolish(entry.enabled, true);
+          currentTargetType = dtype;
+          continue;
+        }
+
+        const itemMatch = itemRe.exec(rawLine);
+        if (itemMatch) {
+          const targetType = currentTargetType || contextSectionTypeForHeading(currentSection);
+          if (targetType) {
+            let value = itemMatch[1].replace(/\s*<!--.*?-->\s*$/, '').trim();
+            if (value.startsWith('`') && value.endsWith('`')) value = value.slice(1, -1);
+            if (value) {
+              (config[targetType].items || (config[targetType].items = [])).push({
+                value,
+                enabled: itemMatch[2] === 'disabled' ? false : true,
+              });
+            }
+          }
+          continue;
+        }
+
+        if (currentSection === 'notes') {
+          if (rawLine.trim().startsWith('<!--') && rawLine.trim().endsWith('-->')) continue;
+          notesLines.push(rawLine);
+        }
+      }
+
+      const noteText = notesLines.join('\n').trim();
+      config.notes.content = noteText === '(Add project conventions, domain knowledge, or constraints here.)' ? '' : noteText;
+      config.document.enabled = contextParseBoolish(config.document.enabled, false);
+      config.document.budget = config.document.budget != null ? Number(config.document.budget) : null;
+      config.links.depth = Number(config.links.depth || 0) || 0;
+      return contextNormalizeConfig(config);
+    }
+
+    function contextSerializeDirective(type, attrs = {}) {
+      const parts = [`context:${type}`];
+      for (const [key, value] of Object.entries(attrs)) {
+        if (value == null || value === '') continue;
+        parts.push(`${key}="${String(value).replace(/"/g, '&quot;')}"`);
+      }
+      return `<!-- ${parts.join(' ')} -->`;
+    }
+
+    function contextFormatItem(section, value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      if (section === 'runtime-docstrings' || section === 'runtime-source' || section === 'runtime-paths') {
+        return text.startsWith('`') && text.endsWith('`') ? text : `\`${text}\``;
+      }
+      if (section === 'images' && !(text.startsWith('`') && text.endsWith('`')) && !/^https?:\/\//i.test(text)) {
+        return `\`${text}\``;
+      }
+      return text;
+    }
+
+    function contextSerializeItems(section, items = []) {
+      const enabledItems = Array.isArray(items) ? items : [];
+      if (!enabledItems.length) return [];
+      return enabledItems.map(item => {
+        const value = contextFormatItem(section, item?.value);
+        const enabled = item?.enabled !== false ? 'enabled' : 'disabled';
+        return `- ${value} <!-- ${enabled} -->`;
+      });
+    }
+
+    function contextSerializeMarkdown(config) {
+      const cfg = contextNormalizeConfig(config);
+      const lines = [
+        '# Context Configuration',
+        '',
+        '<!-- This file controls what context is sent to AI commands. -->',
+        '<!-- Edit it directly or use the Context panel in the editor. -->',
+        '<!-- AI agents can also modify this file to adjust their own context. -->',
+        '',
+        '## Document',
+        contextSerializeDirective('document', {
+          enabled: cfg.document.enabled ? 'true' : 'false',
+          mode: cfg.document.mode || 'full',
+          budget: cfg.document.budget != null && cfg.document.budget !== '' ? String(cfg.document.budget) : null,
+        }),
+        '',
+        '## Linked Pages',
+        contextSerializeDirective('links', {
+          enabled: cfg.links.enabled ? 'true' : 'false',
+          depth: String(cfg.links.depth ?? 0),
+        }),
+        ...contextSerializeItems('links', cfg.links.items),
+        '',
+        '## Images',
+        contextSerializeDirective('images', {
+          enabled: cfg.images.enabled ? 'true' : 'false',
+        }),
+        ...contextSerializeItems('images', cfg.images.items),
+        '',
+        '## Runtime State',
+        contextSerializeDirective('runtime', {
+          enabled: cfg.runtime.enabled ? 'true' : 'false',
+        }),
+        contextSerializeDirective('runtime-variables', {
+          enabled: cfg['runtime-variables'].enabled ? 'true' : 'false',
+        }),
+        contextSerializeDirective('runtime-docstrings', {
+          enabled: cfg['runtime-docstrings'].enabled ? 'true' : 'false',
+          symbols: cfg['runtime-docstrings'].symbols || 'auto',
+        }),
+        ...contextSerializeItems('runtime-docstrings', cfg['runtime-docstrings'].items),
+        contextSerializeDirective('runtime-source', {
+          enabled: cfg['runtime-source'].enabled ? 'true' : 'false',
+          symbols: cfg['runtime-source'].symbols || null,
+        }),
+        ...contextSerializeItems('runtime-source', cfg['runtime-source'].items),
+        contextSerializeDirective('runtime-paths', {
+          enabled: cfg['runtime-paths'].enabled ? 'true' : 'false',
+        }),
+        ...contextSerializeItems('runtime-paths', cfg['runtime-paths'].items),
+        '',
+        '## Pinned Files',
+        contextSerializeDirective('files', {
+          enabled: cfg.files.enabled ? 'true' : 'false',
+        }),
+        ...contextSerializeItems('files', cfg.files.items),
+        '',
+        '## Web Pages',
+        contextSerializeDirective('urls', {
+          enabled: cfg.urls.enabled ? 'true' : 'false',
+          'max-size': cfg.urls['max-size'] || '50kb',
+        }),
+        ...contextSerializeItems('urls', cfg.urls.items),
+        '',
+        '## Notes',
+        '',
+        String(cfg.notes.content || '').trim() || '(Add project conventions, domain knowledge, or constraints here.)',
+        '',
+      ];
+      return lines.join('\n').replace(/\n{3,}/g, '\n\n');
+    }
+
+    async function loadContextEditorState(options = {}) {
+      const { materialize = false } = options;
+      let effective = await getEffectiveContextMarkdownForCurrentDoc();
+      if (materialize && !effective.exists) {
+        const target = contextPathForCurrentDoc();
+        await writeTextFileSafe(target, effective.content);
+        effective = { content: effective.content, path: target, source: 'document', exists: true };
+      }
+      contextPanelState.effective = effective;
+      contextPanelState.config = contextParseMarkdown(effective.content);
+      return { effective: contextPanelState.effective, config: contextPanelState.config };
+    }
+
+    async function ensureContextEditorState(options = {}) {
+      if (contextPanelState.config && contextPanelState.effective && !options.force) {
+        return { effective: contextPanelState.effective, config: contextPanelState.config };
+      }
+      return loadContextEditorState(options);
+    }
+
+    async function saveContextConfigForCurrentDoc(config) {
+      const target = contextPathForCurrentDoc();
+      if (!target) return false;
+      const markdown = contextSerializeMarkdown(config);
+      contextPanelState.saving = true;
+      renderContextPanel();
+      const ok = await writeTextFileSafe(target, markdown);
+      contextPanelState.saving = false;
+      if (!ok) {
+        renderContextPanel();
+        return false;
+      }
+      contextPanelState.effective = { content: markdown, path: target, source: 'document', exists: true };
+      contextPanelState.config = contextParseMarkdown(markdown);
+      renderContextPanel();
+      scheduleContextRefresh();
+      return true;
+    }
+
+    async function mutateCurrentContextConfig(mutator) {
+      const { config } = await ensureContextEditorState();
+      const next = contextDeepClone(config);
+      await mutator(next);
+      return saveContextConfigForCurrentDoc(next);
+    }
+
+    function scheduleContextRefresh(delay = 120) {
+      if (contextPanelState.refreshTimer) clearTimeout(contextPanelState.refreshTimer);
+      contextPanelState.refreshTimer = setTimeout(() => {
+        contextPanelState.refreshTimer = null;
+        refreshContextPanel({ silent: true }).catch((e) => {
+          console.warn('[context] scheduled refresh failed:', e?.message || e);
+        });
+      }, delay);
+    }
+
+    function contextResolvePathForItem(section, rawValue) {
+      const value = String(rawValue || '').trim();
+      if (!value) return null;
+      const currentRel = contextCurrentRelativePath();
+      const currentDir = contextBaseDir(currentRel);
+      if (section === 'images') {
+        if (value.startsWith('http://') || value.startsWith('https://')) return value;
+        if (value.startsWith('/')) return value;
+        return contextDocAbsPathForRelative(contextJoin(currentDir, value));
+      }
+      if (section === 'files') {
+        if (value.startsWith('/')) return value;
+        return contextDocAbsPathForRelative(value);
+      }
+      if (section === 'links') {
+        if (value.startsWith('[[') && value.endsWith(']]')) {
+          const target = value.slice(2, -2).split('|')[0].split('#')[0].trim().toLowerCase();
+          const docFiles = parseProjectFiles(state.project?.files || []);
+          const exact = docFiles.find(file => String(file.name || '').toLowerCase() === target);
+          return exact ? contextDocAbsPathForRelative(exact.path) : null;
+        }
+        const target = value.split('#')[0].trim();
+        if (!target) return null;
+        const rel = /\.(md|qmd)$/i.test(target) ? target : `${target}.md`;
+        return contextDocAbsPathForRelative(contextJoin(currentDir, rel));
+      }
+      if (section === 'urls') {
+        return /^https?:\/\//i.test(value) ? value : null;
+      }
+      return null;
+    }
+
+    async function contextOpenItem(section, rawValue) {
+      const resolved = contextResolvePathForItem(section, rawValue);
+      if (!resolved) return;
+      if (/^https?:\/\//i.test(resolved)) {
+        window.open(resolved, '_blank', 'noopener');
+        return;
+      }
+      await openFile(resolved);
+    }
+
+    function contextExtractManualItemValues(items = []) {
+      return (Array.isArray(items) ? items : []).filter(item => item?.enabled !== false).map(item => String(item.value || '').trim()).filter(Boolean);
+    }
+
+    function contextAutoLabelForSection(section, config) {
+      if (section === 'links') return 'Auto-discovers links from the current document when the explicit list is empty.';
+      if (section === 'images') return 'Auto-discovers markdown image references from the current document when the explicit list is empty.';
+      if (section === 'runtime-docstrings' || section === 'runtime-source' || section === 'runtime-paths') return 'Uses symbols auto-detected from Python code blocks when the explicit list is empty.';
+      if (section === 'files') return 'Pinned files are included as raw text/code in AI context.';
+      if (section === 'urls') return 'Fetched lazily from the network and truncated to the configured max size.';
+      return '';
+    }
+
+    function contextExtractWikiLinks(content) {
+      const refs = [];
+      const seen = new Set();
+      const regex = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
+      let match;
+      while ((match = regex.exec(String(content || ''))) !== null) {
+        const target = match[1].trim();
+        if (target && !seen.has(`wiki:${target}`)) {
+          seen.add(`wiki:${target}`);
+          refs.push({ type: 'wiki', target });
+        }
+      }
+      return refs;
+    }
+
+    function contextExtractMarkdownLinks(content) {
+      const refs = [];
+      const seen = new Set();
+      const regex = /(?<!!)\[[^\]]+\]\(([^)]+)\)/g;
+      let match;
+      while ((match = regex.exec(String(content || ''))) !== null) {
+        const target = String(match[1] || '').trim();
+        if (!target || /^https?:\/\//i.test(target) || /^#/.test(target)) continue;
+        if (/\.(png|jpg|jpeg|gif|webp|svg|pdf)(?:[#?].*)?$/i.test(target)) continue;
+        if (!seen.has(`md:${target}`)) {
+          seen.add(`md:${target}`);
+          refs.push({ type: 'markdown', target });
+        }
+      }
+      return refs;
+    }
+
+    function contextExtractImages(content) {
+      const refs = [];
+      const seen = new Set();
+      const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      let match;
+      while ((match = regex.exec(String(content || ''))) !== null) {
+        const alt = String(match[1] || '').trim();
+        const src = String(match[2] || '').trim();
+        if (src && !seen.has(src)) {
+          seen.add(src);
+          refs.push({ alt, src });
+        }
+      }
+      return refs;
+    }
+
+    function contextExtractPythonSymbols(content, limit = 20) {
+      const symbols = [];
+      const seen = new Set();
+      const add = (name) => {
+        if (!name || seen.has(name)) return;
+        if (['print', 'len', 'range', 'str', 'int', 'float', 'list', 'dict', 'set'].includes(name)) return;
+        seen.add(name);
+        symbols.push(name);
+      };
+      const blockRe = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
+      let match;
+      while ((match = blockRe.exec(String(content || ''))) !== null) {
+        const lang = String(match[1] || '').trim().toLowerCase();
+        if (lang && lang !== 'python' && lang !== 'py') continue;
+        const code = match[2] || '';
+        for (const def of code.matchAll(/^\s*(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)/gm)) add(def[1]);
+        for (const assn of code.matchAll(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/gm)) add(assn[1]);
+        for (const ident of code.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)) add(ident[1]);
+        if (symbols.length >= limit) break;
+      }
+      return symbols.slice(0, limit);
+    }
+
+    async function contextInspectSymbol(port, symbol, detail = 1) {
+      try {
+        const response = await fetch(`http://127.0.0.1:${port}/mrp/v1/inspect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: symbol, cursor: symbol.length, detail }),
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.found ? data : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function contextFetchVariables(port) {
+      try {
+        const response = await fetch(`http://127.0.0.1:${port}/mrp/v1/variables`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filter: { excludePrivate: true } }),
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.variables || [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function getEffectiveContextMarkdownForCurrentDoc() {
+      const docPath = contextPathForCurrentDoc();
+      const defaultPath = contextDefaultPath();
+      const docContent = await readTextFileSafe(docPath);
+      if (docContent != null) {
+        return { content: docContent, path: docPath, source: 'document', exists: true };
+      }
+      const defaultContent = await readTextFileSafe(defaultPath);
+      if (defaultContent != null) {
+        return { content: defaultContent, path: defaultPath, source: 'default', exists: false };
+      }
+      return { content: CONTEXT_DEFAULT_TEMPLATE, path: docPath, source: 'builtin', exists: false };
+    }
+
+    async function resolveContextForCurrentDocument(options = {}) {
+      const { materialize = false, baseContext = null } = options;
+      const currentRelative = contextCurrentRelativePath();
+      if (!state.project?.root || !state.currentFile || !currentRelative || contextIsInfraDocument()) {
+        return {
+          contextText: baseContext?.documentContext || state.editor?.view?.state?.doc?.toString?.() || '',
+          tokenEstimate: 0,
+          sources: [],
+          images: [],
+          contextFilePath: currentRelative || '_assets/context',
+          contextFileSource: 'document',
+          usingDefault: false,
+          contextMarkdown: CONTEXT_DEFAULT_TEMPLATE,
+        };
+      }
+
+      let effective = await getEffectiveContextMarkdownForCurrentDoc();
+      if (materialize && !effective.exists) {
+        const target = contextPathForCurrentDoc();
+        await writeTextFileSafe(target, effective.content);
+        effective = { content: effective.content, path: target, source: 'document', exists: true };
+      }
+
+      const config = contextParseMarkdown(effective.content);
+      const editorContext = baseContext || (state.editor?.view ? mrmd.default.ai.getAiContext(state.editor.view) : null);
+      const currentContent = editorContext?.documentContext || state.editor?.view?.state?.doc?.toString?.() || await readTextFileSafe(state.currentFile) || '';
+      const cursorPos = editorContext?.cursorPos;
+      const currentDir = contextBaseDir(currentRelative);
+      const docFiles = parseProjectFiles(state.project?.files || []);
+      const nameToPaths = new Map();
+      for (const file of docFiles) {
+        const key = String(file.name || '').toLowerCase();
+        if (!nameToPaths.has(key)) nameToPaths.set(key, []);
+        nameToPaths.get(key).push(file.path);
+      }
+
+      const blocks = [];
+      const sources = [];
+      const images = [];
+
+      if (config.document?.enabled) {
+        const docBlock = contextResolveDocumentBlock(currentContent, config.document.mode, config.document.budget, cursorPos);
+        if (docBlock) {
+          blocks.push(`=== DOCUMENT ===\n${docBlock}`);
+          sources.push({ type: 'document', mode: config.document.mode || 'full', tokens: contextEstimateTokens(docBlock) });
+        }
+      }
+
+      if (config.links?.enabled) {
+        const explicit = (config.links.items || []).filter(item => item.enabled !== false);
+        const depth = Math.max(0, Number(config.links.depth || 0));
+        const queue = [];
+        const visited = new Set();
+        if (explicit.length) {
+          for (const item of explicit) {
+            const value = String(item.value || '').trim();
+            if (value.startsWith('[[') && value.endsWith(']]')) queue.push({ depth: 1, relBase: currentRelative, ref: { type: 'wiki', target: value.slice(2, -2) } });
+            else queue.push({ depth: 1, relBase: currentRelative, ref: { type: 'markdown', target: value } });
+          }
+        } else if (depth > 0) {
+          for (const ref of [...contextExtractWikiLinks(currentContent), ...contextExtractMarkdownLinks(currentContent)]) {
+            queue.push({ depth: 1, relBase: currentRelative, ref });
+          }
+        }
+
+        while (queue.length) {
+          const { depth: hop, relBase, ref } = queue.shift();
+          if (hop > depth) continue;
+          let resolvedRel = null;
+          if (ref.type === 'wiki') {
+            const candidates = nameToPaths.get(String(ref.target || '').toLowerCase()) || [];
+            resolvedRel = candidates.find(p => contextBaseDir(p) === currentDir) || candidates[0] || null;
+          } else {
+            let target = String(ref.target || '').split('#')[0].trim();
+            if (!target) continue;
+            if (!/\.(md|qmd)$/i.test(target)) target += '.md';
+            resolvedRel = contextJoin(contextBaseDir(relBase), target);
+          }
+          if (!resolvedRel || visited.has(resolvedRel) || !isDocFile(resolvedRel)) continue;
+          if (resolvedRel.startsWith('_')) continue;
+          visited.add(resolvedRel);
+          const abs = contextDocAbsPathForRelative(resolvedRel);
+          const linkedContent = await readTextFileSafe(abs);
+          if (!linkedContent) continue;
+          blocks.push(`=== LINKED PAGE: ${resolvedRel.replace(/\.md$/i, '')} (${resolvedRel}) ===\n${linkedContent}`);
+          sources.push({ type: 'linked-page', name: resolvedRel.split('/').pop().replace(/\.md$/i, ''), path: resolvedRel, depth: hop, tokens: contextEstimateTokens(linkedContent) });
+          if (hop < depth) {
+            for (const child of [...contextExtractWikiLinks(linkedContent), ...contextExtractMarkdownLinks(linkedContent)]) {
+              queue.push({ depth: hop + 1, relBase: resolvedRel, ref: child });
+            }
+          }
+        }
+      }
+
+      if (config.images?.enabled) {
+        const explicit = (config.images.items || []).filter(item => item.enabled !== false).map(item => ({ alt: '', src: item.value }));
+        const refs = explicit.length ? explicit : contextExtractImages(currentContent);
+        const lines = [];
+        for (const ref of refs) {
+          const src = String(ref.src || '').trim();
+          if (!src) continue;
+          let resolved = src;
+          let size = null;
+          let origin = /^https?:\/\//i.test(src) ? 'external' : 'local';
+          if (origin === 'local') {
+            const relAsset = contextJoin(currentDir, src.split('#')[0]);
+            resolved = relAsset;
+            const abs = contextDocAbsPathForRelative(relAsset);
+            try {
+              const info = await electronAPI.getFileInfo(abs);
+              size = info?.size || null;
+            } catch {}
+          }
+          lines.push(`- ${src}${resolved !== src ? ` | local=${resolved}` : ''}${size != null ? ` | size=${size} bytes` : ''}`);
+          images.push({ src, path: resolved, sizeBytes: size, origin });
+        }
+        if (lines.length) {
+          const block = `Images referenced in the document:\n${lines.join('\n')}`;
+          blocks.push(`=== IMAGES ===\n${block}`);
+          sources.push({ type: 'images', count: lines.length, tokens: contextEstimateTokens(block) });
+        }
+      }
+
+      if (config.runtime?.enabled) {
+        const sections = [];
+        const port = state.pythonPort;
+        sections.push(port ? `Runtime Port: ${port}` : 'No Python runtime attached to this document.');
+        sources.push({ type: 'runtime', available: !!port, runtimePort: port, tokens: contextEstimateTokens(String(port || '')) });
+
+        if (port && config['runtime-variables']?.enabled) {
+          const vars = (await contextFetchVariables(port)).slice(0, 30);
+          const lines = vars.map(v => `- ${v.name}: ${v.type} = ${v.value}${v.shape ? ` (shape=${v.shape.join('×')})` : ''}`);
+          if (lines.length) {
+            sections.push(`## Variables\n${lines.join('\n')}`);
+            sources.push({ type: 'runtime-variables', count: lines.length, tokens: contextEstimateTokens(lines.join('\n')) });
+          }
+        }
+
+        const autoSymbols = contextExtractPythonSymbols(currentContent, 12);
+        const explicitDocSymbols = (config['runtime-docstrings']?.items || []).filter(i => i.enabled !== false).map(i => i.value);
+        const explicitSourceSymbols = (config['runtime-source']?.items || []).filter(i => i.enabled !== false).map(i => i.value);
+        const explicitPathSymbols = (config['runtime-paths']?.items || []).filter(i => i.enabled !== false).map(i => i.value);
+        const docSymbols = config['runtime-docstrings']?.enabled ? (explicitDocSymbols.length ? explicitDocSymbols : autoSymbols) : [];
+        const sourceSymbols = config['runtime-source']?.enabled ? (explicitSourceSymbols.length ? explicitSourceSymbols : autoSymbols) : [];
+        const pathSymbols = config['runtime-paths']?.enabled ? (explicitPathSymbols.length ? explicitPathSymbols : autoSymbols) : [];
+
+        if (port && (docSymbols.length || sourceSymbols.length || pathSymbols.length)) {
+          const inspectMap = new Map();
+          const allSymbols = [...new Set([...docSymbols, ...sourceSymbols, ...pathSymbols])].slice(0, 16);
+          const inspectDetail = sourceSymbols.length ? 2 : 1;
+          for (const symbol of allSymbols) {
+            const inspected = await contextInspectSymbol(port, symbol, inspectDetail);
+            if (inspected) inspectMap.set(symbol, inspected);
+          }
+
+          if (docSymbols.length) {
+            const lines = [];
+            for (const symbol of docSymbols) {
+              const info = inspectMap.get(symbol);
+              if (!info) continue;
+              const doc = String(info.docstring || '').trim();
+              lines.push(`- ${symbol}${info.signature ? ` ${info.signature}` : ''}${doc ? `\n  ${doc.slice(0, 500)}${doc.length > 500 ? '…' : ''}` : ''}`);
+            }
+            if (lines.length) {
+              sections.push(`## Docstrings\n${lines.join('\n')}`);
+              sources.push({ type: 'runtime-docstrings', count: lines.length, tokens: contextEstimateTokens(lines.join('\n')) });
+            }
+          }
+
+          if (pathSymbols.length) {
+            const lines = [];
+            for (const symbol of pathSymbols) {
+              const info = inspectMap.get(symbol);
+              if (!info?.file) continue;
+              lines.push(`- ${symbol}: ${info.file}${info.line != null ? `:${info.line}` : ''}`);
+            }
+            if (lines.length) {
+              sections.push(`## Source Paths\n${lines.join('\n')}`);
+              sources.push({ type: 'runtime-paths', count: lines.length, tokens: contextEstimateTokens(lines.join('\n')) });
+            }
+          }
+
+          if (sourceSymbols.length) {
+            const blocksList = [];
+            for (const symbol of sourceSymbols.slice(0, 5)) {
+              const info = inspectMap.get(symbol);
+              if (!info?.sourceCode) continue;
+              blocksList.push(`### ${symbol}\n\n\`\`\`python\n${info.sourceCode}\n\`\`\``);
+            }
+            if (blocksList.length) {
+              sections.push(`## Source Code\n${blocksList.join('\n\n')}`);
+              sources.push({ type: 'runtime-source', count: blocksList.length, tokens: contextEstimateTokens(blocksList.join('\n\n')) });
+            }
+          }
+        }
+
+        if (sections.length) {
+          blocks.push(`=== RUNTIME STATE ===\n${sections.join('\n\n')}`);
+        }
+      }
+
+      if (config.files?.enabled) {
+        const items = (config.files.items || []).filter(item => item.enabled !== false).slice(0, 10);
+        for (const item of items) {
+          const raw = String(item.value || '').trim();
+          const absolute = raw.startsWith('/') ? raw : `${state.project.root}/${raw}`.replace(/\\/g, '/');
+          const text = await readTextFileSafe(absolute);
+          if (!text) continue;
+          const rel = absolute.startsWith(`${state.project.root}/`) ? absolute.slice(state.project.root.length + 1) : absolute;
+          const trimmed = text.slice(0, 12000);
+          blocks.push(`=== FILE: ${rel} ===\n${trimmed}`);
+          sources.push({ type: 'file', path: rel, tokens: contextEstimateTokens(trimmed) });
+        }
+      }
+
+      if (config.notes?.content) {
+        blocks.push(`=== NOTES ===\n${config.notes.content}`);
+        sources.push({ type: 'notes', tokens: contextEstimateTokens(config.notes.content) });
+      }
+
+      const contextText = blocks.join('\n\n').trim();
+      return {
+        contextText,
+        tokenEstimate: sources.reduce((sum, src) => sum + Number(src.tokens || 0), 0),
+        sources,
+        images,
+        contextFilePath: effective.path?.startsWith(`${state.project.root}/`) ? effective.path.slice(state.project.root.length + 1) : effective.path,
+        contextFileSource: effective.source,
+        usingDefault: effective.source === 'default',
+        contextMarkdown: effective.content,
+      };
+    }
+
+    function contextTitleForSource(source) {
+      switch (source?.type) {
+        case 'document': return '📄 Document';
+        case 'linked-page': return `🔗 ${source.name || 'Linked Page'}`;
+        case 'images': return '🖼️ Images';
+        case 'runtime': return '🐍 Runtime';
+        case 'runtime-variables': return '🐍 Variables';
+        case 'runtime-docstrings': return '📚 Docstrings';
+        case 'runtime-paths': return '📍 Source Paths';
+        case 'runtime-source': return '💾 Source Code';
+        case 'file': return `📎 ${source.path || 'File'}`;
+        case 'notes': return '📝 Notes';
+        default: return source?.type || 'Source';
+      }
+    }
+
+    function contextMetaForSource(source) {
+      if (!source) return '';
+      if (source.type === 'document') return `mode=${source.mode || 'full'}`;
+      if (source.type === 'linked-page') return [source.path, source.depth != null ? `depth ${source.depth}` : null].filter(Boolean).join(' · ');
+      if (source.type === 'runtime') return source.available ? `port ${source.runtimePort}` : 'No runtime attached';
+      if (source.type === 'images') return source.count != null ? `${source.count} image${source.count === 1 ? '' : 's'}` : '';
+      if (source.type === 'file') return source.path || '';
+      if (source.count != null) return `${source.count} item${source.count === 1 ? '' : 's'}`;
+      return '';
+    }
+
+    function contextItemRowMarkup(section, item, index, options = {}) {
+      const value = String(item?.value || '');
+      const title = options.title || value;
+      const openable = !!options.openable;
+      return `
+        <div class="context-item-row">
+          <label class="context-item-main" title="${escapeHtml(title)}">
+            <input type="checkbox" data-action="toggle-item" data-section="${escapeHtml(section)}" data-index="${index}" ${item?.enabled !== false ? 'checked' : ''}>
+            <span class="context-item-value">${escapeHtml(value)}</span>
+          </label>
+          <div class="context-item-actions">
+            ${openable ? `<button class="context-mini-btn" data-action="open-item" data-section="${escapeHtml(section)}" data-index="${index}">Open</button>` : ''}
+            <button class="context-mini-btn context-danger" data-action="remove-item" data-section="${escapeHtml(section)}" data-index="${index}">Remove</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function contextDocumentCardMarkup(config) {
+      return `
+        <div class="context-config-card ${config.document.enabled ? '' : 'is-disabled'}">
+          <div class="context-config-head">
+            <label class="context-config-title"><input type="checkbox" data-action="toggle-section" data-section="document" ${config.document.enabled ? 'checked' : ''}> 📄 Document</label>
+            <div class="context-config-head-actions"><span class="context-badge">always available</span></div>
+          </div>
+          <div class="context-config-body">
+            <div class="context-inline-controls">
+              <label class="context-field">Mode
+                <select data-action="set-field" data-section="document" data-field="mode">
+                  <option value="full" ${config.document.mode === 'full' ? 'selected' : ''}>Full</option>
+                  <option value="local" ${config.document.mode === 'local' ? 'selected' : ''}>Local</option>
+                  <option value="outline+local" ${config.document.mode === 'outline+local' ? 'selected' : ''}>Outline + Local</option>
+                  <option value="budget" ${config.document.mode === 'budget' ? 'selected' : ''}>Budget</option>
+                </select>
+              </label>
+              <label class="context-field">Budget
+                <input type="number" min="0" step="1" data-action="set-field" data-section="document" data-field="budget" value="${escapeHtml(config.document.budget != null ? String(config.document.budget) : '')}" placeholder="optional token budget">
+              </label>
+              <div class="context-config-head-actions"><button class="context-mini-btn" data-action="clear-budget">Clear</button></div>
+            </div>
+            <div class="context-help">Choose how much of the current document becomes AI context.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function contextSimpleItemsCardMarkup({ section, title, icon, configSection, addLabel, emptyText, helpText, openable = false, extraControls = '' }) {
+      const items = Array.isArray(configSection.items) ? configSection.items : [];
+      return `
+        <div class="context-config-card ${configSection.enabled ? '' : 'is-disabled'}">
+          <div class="context-config-head">
+            <label class="context-config-title"><input type="checkbox" data-action="toggle-section" data-section="${escapeHtml(section)}" ${configSection.enabled ? 'checked' : ''}> ${icon} ${escapeHtml(title)}</label>
+            <div class="context-config-head-actions">
+              <button class="context-mini-btn" data-action="add-item" data-section="${escapeHtml(section)}">${escapeHtml(addLabel)}</button>
+            </div>
+          </div>
+          <div class="context-config-body">
+            ${extraControls}
+            <div class="context-item-list">
+              ${items.length ? items.map((item, index) => contextItemRowMarkup(section, item, index, { openable })).join('') : `<div class="context-empty">${escapeHtml(emptyText)}</div>`}
+            </div>
+            <div class="context-help">${escapeHtml(helpText || contextAutoLabelForSection(section, configSection))}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function contextRuntimeCardMarkup(config) {
+      const docItems = config['runtime-docstrings'].items || [];
+      const sourceItems = config['runtime-source'].items || [];
+      const pathItems = config['runtime-paths'].items || [];
+      const manualOrAuto = (items, fallback) => items.length ? `${items.length} explicit symbol${items.length === 1 ? '' : 's'}` : fallback;
+      return `
+        <div class="context-config-card ${config.runtime.enabled ? '' : 'is-disabled'}">
+          <div class="context-config-head">
+            <label class="context-config-title"><input type="checkbox" data-action="toggle-section" data-section="runtime" ${config.runtime.enabled ? 'checked' : ''}> 🐍 Runtime</label>
+            <div class="context-config-head-actions">${state.pythonPort ? `<span class="context-badge">port ${escapeHtml(String(state.pythonPort))}</span>` : '<span class="context-badge">no runtime</span>'}</div>
+          </div>
+          <div class="context-config-body">
+            <div class="context-subtoggles">
+              <label class="context-subtoggle"><span class="context-subtoggle-left"><input type="checkbox" data-action="toggle-section" data-section="runtime-variables" ${config['runtime-variables'].enabled ? 'checked' : ''}> <span>Variables</span></span><span class="context-badge">summary</span></label>
+              <label class="context-subtoggle"><span class="context-subtoggle-left"><input type="checkbox" data-action="toggle-section" data-section="runtime-docstrings" ${config['runtime-docstrings'].enabled ? 'checked' : ''}> <span>Docstrings</span></span><span class="context-badge">${escapeHtml(manualOrAuto(docItems, 'auto'))}</span></label>
+              <label class="context-subtoggle"><span class="context-subtoggle-left"><input type="checkbox" data-action="toggle-section" data-section="runtime-paths" ${config['runtime-paths'].enabled ? 'checked' : ''}> <span>Source Paths</span></span><span class="context-badge">${escapeHtml(manualOrAuto(pathItems, 'auto'))}</span></label>
+              <label class="context-subtoggle"><span class="context-subtoggle-left"><input type="checkbox" data-action="toggle-section" data-section="runtime-source" ${config['runtime-source'].enabled ? 'checked' : ''}> <span>Source Code</span></span><span class="context-badge">${escapeHtml(manualOrAuto(sourceItems, 'auto'))}</span></label>
+            </div>
+            <div class="context-inline-controls">
+              <button class="context-mini-btn" data-action="add-item" data-section="runtime-docstrings">Add Docstring Symbol</button>
+              <button class="context-mini-btn" data-action="add-item" data-section="runtime-paths">Add Path Symbol</button>
+              <button class="context-mini-btn" data-action="add-item" data-section="runtime-source">Add Source Symbol</button>
+            </div>
+            <div class="context-item-list">
+              ${docItems.length ? `<div class="context-help">Docstrings</div>${docItems.map((item, index) => contextItemRowMarkup('runtime-docstrings', item, index)).join('')}` : ''}
+              ${pathItems.length ? `<div class="context-help">Source Paths</div>${pathItems.map((item, index) => contextItemRowMarkup('runtime-paths', item, index)).join('')}` : ''}
+              ${sourceItems.length ? `<div class="context-help">Source Code</div>${sourceItems.map((item, index) => contextItemRowMarkup('runtime-source', item, index)).join('')}` : ''}
+              ${!docItems.length && !pathItems.length && !sourceItems.length ? '<div class="context-empty">No explicit symbols yet. When enabled, the panel auto-detects symbols from Python code blocks.</div>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function contextNotesCardMarkup(config) {
+      return `
+        <div class="context-config-card">
+          <div class="context-config-head">
+            <div class="context-config-title">📝 Notes</div>
+            <div class="context-config-head-actions">
+              <button class="context-mini-btn" data-action="save-notes">Save Notes</button>
+            </div>
+          </div>
+          <div class="context-config-body">
+            <textarea class="context-notes" id="context-notes-input" placeholder="Project conventions, domain knowledge, constraints…">${escapeHtml(String(config.notes?.content || ''))}</textarea>
+            <div class="context-help">Notes are included verbatim in AI context and are the best place for human guidance.</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderContextConfigEditor() {
+      const editorEl = document.getElementById('context-config-editor');
+      if (!editorEl) return;
+      if (!state.currentFile || contextIsInfraDocument()) {
+        editorEl.innerHTML = '';
+        return;
+      }
+      const config = contextPanelState.config;
+      const effective = contextPanelState.effective;
+      if (!config || !effective) {
+        editorEl.innerHTML = '<div class="context-empty">Open this panel to load the current context controls.</div>';
+        return;
+      }
+
+      const linksControls = `
+        <div class="context-inline-controls">
+          <label class="context-field">Recursion Depth
+            <select data-action="set-field" data-section="links" data-field="depth">
+              <option value="0" ${Number(config.links.depth || 0) === 0 ? 'selected' : ''}>0 — off</option>
+              <option value="1" ${Number(config.links.depth || 0) === 1 ? 'selected' : ''}>1 — direct links</option>
+              <option value="2" ${Number(config.links.depth || 0) === 2 ? 'selected' : ''}>2 — links of links</option>
+              <option value="3" ${Number(config.links.depth || 0) === 3 ? 'selected' : ''}>3 — deep</option>
+            </select>
+          </label>
+        </div>
+      `;
+
+      const urlControls = `
+        <div class="context-inline-controls">
+          <label class="context-field">Max fetch size
+            <input class="context-inline-input" type="text" data-action="set-field" data-section="urls" data-field="max-size" value="${escapeHtml(String(config.urls['max-size'] || '50kb'))}" placeholder="50kb">
+          </label>
+        </div>
+      `;
+
+      editorEl.innerHTML = [
+        contextDocumentCardMarkup(config),
+        contextSimpleItemsCardMarkup({ section: 'links', title: 'Linked Pages', icon: '🔗', configSection: config.links, addLabel: 'Add Link', emptyText: 'No explicit links yet. When enabled, links are auto-discovered from the current document.', helpText: 'Add explicit wiki-links or markdown document paths, or leave empty to auto-discover from the current document.', openable: true, extraControls: linksControls }),
+        contextSimpleItemsCardMarkup({ section: 'images', title: 'Images', icon: '🖼️', configSection: config.images, addLabel: 'Add Image', emptyText: 'No explicit image refs yet. When enabled, markdown image refs are auto-discovered.', helpText: 'Use explicit image refs only when you want to force-include specific local or remote images.', openable: true }),
+        contextRuntimeCardMarkup(config),
+        contextSimpleItemsCardMarkup({ section: 'files', title: 'Pinned Files', icon: '📎', configSection: config.files, addLabel: 'Add File', emptyText: 'No pinned files yet.', helpText: 'Pin source files, configs, schemas, or docs that should always be part of AI context.', openable: true }),
+        contextSimpleItemsCardMarkup({ section: 'urls', title: 'Web Pages', icon: '🌐', configSection: config.urls, addLabel: 'Add URL', emptyText: 'No web pages pinned yet.', helpText: 'URLs are fetched lazily and trimmed to the configured maximum size.', openable: true, extraControls: urlControls }),
+        contextNotesCardMarkup(config),
+        `<div class="context-help">${effective.source === 'document' ? 'Edits save to this document-specific context file.' : 'Edits here automatically materialize a document-specific context file so you can override the project default safely.'}${contextPanelState.saving ? ' Saving…' : ''}</div>`,
+      ].join('');
+    }
+
+    function renderContextPanel() {
+      const statusEl = document.getElementById('context-status');
+      const listEl = document.getElementById('context-source-list');
+      const totalEl = document.getElementById('context-total-tokens');
+      const fillEl = document.getElementById('context-tokenbar-fill');
+      const imgEl = document.getElementById('context-image-count');
+      const materializeBtn = document.getElementById('context-materialize');
+      const openRawBtn = document.getElementById('context-open-raw');
+      const revertBtn = document.getElementById('context-revert-default');
+      const previewEl = document.getElementById('context-preview');
+      const lastSentMetaEl = document.getElementById('context-last-sent-meta');
+      const data = contextPanelState.data;
+      const effective = contextPanelState.effective;
+
+      if (!statusEl || !listEl || !totalEl || !fillEl || !imgEl) return;
+      renderContextConfigEditor();
+
+      const previewText = String(data?.contextText || '');
+      if (previewEl) previewEl.value = previewText;
+      if (lastSentMetaEl) {
+        const sent = contextPanelState.lastSent;
+        if (sent?.at) {
+          const stamp = new Date(sent.at).toLocaleTimeString();
+          const cmd = sent.command ? `Last sent for ${sent.command}` : 'Last sent';
+          lastSentMetaEl.innerHTML = `${escapeHtml(cmd)} at ${escapeHtml(stamp)} · ${escapeHtml(String(sent.tokens || 0))} tokens`;
+        } else if (data?.contextText) {
+          lastSentMetaEl.innerHTML = `Current resolved <code>document_context</code> preview · ${escapeHtml(String(data?.tokenEstimate || 0))} tokens`;
+        } else {
+          lastSentMetaEl.innerHTML = 'Resolve context to preview the exact payload sent to the AI.';
+        }
+      }
+
+      if (!state.currentFile) {
+        statusEl.textContent = 'Open a document to inspect its AI context.';
+        listEl.innerHTML = '';
+        totalEl.textContent = '0 tokens';
+        fillEl.style.width = '0%';
+        imgEl.textContent = '';
+        if (previewEl) previewEl.value = '';
+        if (materializeBtn) materializeBtn.disabled = true;
+        if (openRawBtn) openRawBtn.disabled = true;
+        if (revertBtn) revertBtn.disabled = true;
+        return;
+      }
+
+      if (contextIsInfraDocument()) {
+        statusEl.innerHTML = 'Context rail is disabled for infrastructure files like <code>_assets/context/*.md</code>. Edit this file directly in the editor.';
+        listEl.innerHTML = '';
+        totalEl.textContent = '0 tokens';
+        fillEl.style.width = '0%';
+        imgEl.textContent = '';
+        if (previewEl) previewEl.value = '';
+        if (materializeBtn) materializeBtn.disabled = true;
+        if (openRawBtn) openRawBtn.disabled = true;
+        if (revertBtn) revertBtn.disabled = true;
+        return;
+      }
+
+      if (contextPanelState.loading && !data) {
+        statusEl.textContent = 'Resolving context…';
+        listEl.innerHTML = '<div class="context-status">Collecting document, links, runtime state, and notes…</div>';
+        if (revertBtn) revertBtn.disabled = !effective || effective.source !== 'document';
+        return;
+      }
+
+      if (!data && !contextPanelState.error) {
+        const sourceText = effective?.source === 'document' ? 'Using a document-specific context file.' : (effective?.source === 'default' ? 'Using the project default context file.' : 'Context is managed in <code>_assets/context/</code>.');
+        const pathText = effective?.path?.startsWith(`${state.project?.root}/`) ? effective.path.slice(state.project.root.length + 1) : (effective?.path || '_assets/context/');
+        statusEl.innerHTML = `${sourceText}<div class="context-path">${escapeHtml(pathText)}</div>`;
+        listEl.innerHTML = '<div class="context-status">No resolved context yet for this document. Open the panel or click Refresh to resolve document, links, runtime state, and notes.</div>';
+        totalEl.textContent = '0 tokens';
+        fillEl.style.width = '0%';
+        imgEl.textContent = '';
+        if (previewEl) previewEl.value = '';
+        if (materializeBtn) materializeBtn.disabled = !state.currentFile || contextIsInfraDocument() || effective?.source === 'document';
+        if (openRawBtn) openRawBtn.disabled = !state.currentFile || contextIsInfraDocument();
+        if (revertBtn) revertBtn.disabled = !effective || effective.source !== 'document';
+        return;
+      }
+
+      if (contextPanelState.error) {
+        statusEl.textContent = `Failed to resolve context: ${contextPanelState.error}`;
+      } else if (data) {
+        statusEl.innerHTML = `${data.usingDefault ? 'Using project default context' : 'Using document-specific context'}<div class="context-path">${escapeHtml(data.contextFilePath || '')}</div>`;
+      }
+
+      const sources = data?.sources || [];
+      listEl.innerHTML = sources.map(source => `
+        <div class="context-source-card">
+          <div class="context-source-header">
+            <div class="context-source-title">${escapeHtml(contextTitleForSource(source))}</div>
+            <div class="context-token-pill">${escapeHtml(String(source.tokens || 0))} tok</div>
+          </div>
+          ${contextMetaForSource(source) ? `<div class="context-source-meta">${escapeHtml(contextMetaForSource(source))}</div>` : ''}
+        </div>
+      `).join('');
+      if (!sources.length) {
+        listEl.innerHTML = '<div class="context-status">No context sources resolved yet.</div>';
+      }
+
+      const total = Number(data?.tokenEstimate || 0);
+      totalEl.textContent = `${total} tokens`;
+      fillEl.style.width = `${Math.max(0, Math.min(100, (total / 8000) * 100))}%`;
+      imgEl.textContent = data?.images?.length ? `${data.images.length} image reference${data.images.length === 1 ? '' : 's'} resolved` : '';
+      if (materializeBtn) materializeBtn.disabled = !state.currentFile || contextIsInfraDocument() || effective?.source === 'document';
+      if (openRawBtn) openRawBtn.disabled = !state.currentFile || contextIsInfraDocument();
+      if (revertBtn) revertBtn.disabled = !effective || effective.source !== 'document';
+    }
+
+    async function refreshContextPanel(options = {}) {
+      const { silent = false } = options;
+      if (!silent) contextPanelState.loading = true;
+      contextPanelState.error = null;
+      if (!contextPanelState.config || !contextPanelState.effective) {
+        await ensureContextEditorState();
+      }
+      renderContextPanel();
+      try {
+        contextPanelState.data = await resolveContextForCurrentDocument();
+      } catch (e) {
+        contextPanelState.error = e?.message || String(e);
+      } finally {
+        contextPanelState.loading = false;
+        renderContextPanel();
+      }
+    }
+
+    async function openRawContextForCurrentDoc() {
+      if (!state.currentFile || contextIsInfraDocument()) return;
+      const { effective } = await ensureContextEditorState();
+      const target = contextPathForCurrentDoc();
+      if (!effective.exists) {
+        await writeTextFileSafe(target, effective.content);
+      }
+      await openFile(target);
+    }
+
+    async function materializeCurrentContext() {
+      if (!state.currentFile || contextIsInfraDocument()) return;
+      await loadContextEditorState({ materialize: true });
+      renderContextPanel();
+      await refreshContextPanel({ silent: true });
+    }
+
+    async function revertCurrentContextToDefault() {
+      if (!state.currentFile || contextIsInfraDocument()) return;
+      const target = contextPathForCurrentDoc();
+      if (!target) return;
+      const effective = await getEffectiveContextMarkdownForCurrentDoc();
+      if (effective.source !== 'document') return;
+      if (!confirm('Delete the local context file and return to the project default?')) return;
+      try {
+        await electronAPI.file.delete(target);
+      } catch (e) {
+        console.warn('[context] Failed to delete local context file:', e?.message || e);
+      }
+      contextPanelState.data = null;
+      await loadContextEditorState({ force: true });
+      renderContextPanel();
+      await refreshContextPanel({ silent: true });
+    }
+
+    async function openDefaultContextFile() {
+      if (!state.project?.root) return;
+      const target = contextDefaultPath();
+      const current = await readTextFileSafe(target);
+      if (current == null) {
+        await writeTextFileSafe(target, CONTEXT_DEFAULT_TEMPLATE);
+      }
+      await openFile(target);
+    }
+
+    async function promptForContextItem(section) {
+      if (section === 'links') {
+        return requestTextInput({ title: 'Add linked page', label: 'Wiki-link or markdown path', placeholder: '[[setup]] or docs/api-reference.md', confirmText: 'Add' });
+      }
+      if (section === 'images') {
+        return requestTextInput({ title: 'Add image reference', label: 'Image path or URL', placeholder: 'diagram.png or https://…', confirmText: 'Add' });
+      }
+      if (section === 'runtime-docstrings' || section === 'runtime-paths' || section === 'runtime-source') {
+        return requestTextInput({ title: 'Add runtime symbol', label: 'Symbol name', placeholder: 'process_data', confirmText: 'Add' });
+      }
+      if (section === 'files') {
+        return requestTextInput({ title: 'Add pinned file', label: 'Path relative to project root or absolute path', placeholder: 'src/utils.py', confirmText: 'Add' });
+      }
+      if (section === 'urls') {
+        return requestTextInput({ title: 'Add web page', label: 'URL', placeholder: 'https://docs.python.org/…', confirmText: 'Add' });
+      }
+      return null;
+    }
+
+    async function handleContextEditorClick(event) {
+      const actionEl = event.target.closest('[data-action]');
+      if (!actionEl) return;
+      const action = actionEl.dataset.action;
+      const section = actionEl.dataset.section;
+      const index = Number(actionEl.dataset.index);
+
+      if (action === 'add-item') {
+        event.preventDefault();
+        const value = await promptForContextItem(section);
+        if (!value || !String(value).trim()) return;
+        await mutateCurrentContextConfig((config) => {
+          const bucket = config[section];
+          if (!bucket.items) bucket.items = [];
+          if (!bucket.items.some(item => String(item.value || '').trim() === String(value).trim())) {
+            bucket.items.push({ value: String(value).trim(), enabled: true });
+          }
+          bucket.enabled = true;
+          if (section.startsWith('runtime-')) config.runtime.enabled = true;
+        });
+        return;
+      }
+
+      if (action === 'remove-item') {
+        event.preventDefault();
+        await mutateCurrentContextConfig((config) => {
+          if (!Array.isArray(config[section]?.items)) return;
+          config[section].items.splice(index, 1);
+        });
+        return;
+      }
+
+      if (action === 'open-item') {
+        event.preventDefault();
+        const { config } = await ensureContextEditorState();
+        const item = config?.[section]?.items?.[index];
+        if (!item) return;
+        await contextOpenItem(section, item.value);
+        return;
+      }
+
+      if (action === 'save-notes') {
+        event.preventDefault();
+        const value = document.getElementById('context-notes-input')?.value ?? '';
+        await mutateCurrentContextConfig((config) => {
+          config.notes.content = String(value || '').trim();
+        });
+        return;
+      }
+
+      if (action === 'clear-budget') {
+        event.preventDefault();
+        await mutateCurrentContextConfig((config) => {
+          config.document.budget = null;
+        });
+      }
+    }
+
+    async function handleContextEditorChange(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const action = target.dataset?.action;
+      const section = target.dataset?.section;
+      const field = target.dataset?.field;
+      const index = Number(target.dataset?.index);
+
+      if (action === 'toggle-section') {
+        await mutateCurrentContextConfig((config) => {
+          config[section].enabled = !!target.checked;
+          if (section === 'runtime' && !target.checked) {
+            config['runtime-variables'].enabled = false;
+            config['runtime-docstrings'].enabled = false;
+            config['runtime-paths'].enabled = false;
+            config['runtime-source'].enabled = false;
+          }
+          if (section.startsWith('runtime-') && target.checked) {
+            config.runtime.enabled = true;
+          }
+        });
+        return;
+      }
+
+      if (action === 'toggle-item') {
+        await mutateCurrentContextConfig((config) => {
+          if (!config[section]?.items?.[index]) return;
+          config[section].items[index].enabled = !!target.checked;
+        });
+        return;
+      }
+
+      if (action === 'set-field') {
+        await mutateCurrentContextConfig((config) => {
+          let value = target.value;
+          if (section === 'document' && field === 'budget') {
+            value = String(value || '').trim();
+            config.document.budget = value ? Number(value) : null;
+            return;
+          }
+          if (section === 'links' && field === 'depth') {
+            config.links.depth = Number(value || 0);
+            return;
+          }
+          config[section][field] = value;
+        });
+      }
+    }
+
+    function initContextPanel() {
+      if (!openPanel._contextWrapped) {
+        const originalOpenPanel = openPanel;
+        openPanel = function(panelId) {
+          originalOpenPanel(panelId);
+          if (panelId === 'context') {
+            renderContextPanel();
+            setTimeout(async () => {
+              try {
+                await ensureContextEditorState({ force: true });
+                renderContextPanel();
+                await refreshContextPanel({ silent: false });
+              } catch (e) {
+                console.warn('[context] lazy refresh failed:', e?.message || e);
+              }
+            }, 0);
+          }
+        };
+        openPanel._contextWrapped = true;
+      }
+
+      document.getElementById('context-refresh')?.addEventListener('click', () => refreshContextPanel());
+      document.getElementById('context-open-raw')?.addEventListener('click', () => openRawContextForCurrentDoc());
+      document.getElementById('context-materialize')?.addEventListener('click', () => materializeCurrentContext());
+      document.getElementById('context-open-default')?.addEventListener('click', () => openDefaultContextFile());
+      document.getElementById('context-revert-default')?.addEventListener('click', () => revertCurrentContextToDefault());
+      document.getElementById('context-copy-resolved')?.addEventListener('click', async () => {
+        const text = String(contextPanelState.data?.contextText || '');
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (e) {
+          console.warn('[context] Failed to copy resolved payload:', e?.message || e);
+        }
+      });
+      document.getElementById('context-config-editor')?.addEventListener('click', (e) => { handleContextEditorClick(e); });
+      document.getElementById('context-config-editor')?.addEventListener('change', (e) => { handleContextEditorChange(e); });
+      renderContextPanel();
+    }
 
     /**
      * Connect to AI server
@@ -18869,7 +21565,30 @@ session:
       if (cmd.codeOnly) {
         language = detectCodeLanguageAtCursor(view);
       }
-      const runtimeAwareContext = withRuntimeHintContext(context, language);
+      let runtimeAwareContext = withRuntimeHintContext(context, language);
+      try {
+        const resolvedContext = await resolveContextForCurrentDocument({ baseContext: runtimeAwareContext });
+        if (resolvedContext?.contextText) {
+          runtimeAwareContext = {
+            ...runtimeAwareContext,
+            documentContext: resolvedContext.contextText,
+          };
+          contextPanelState.lastSent = {
+            at: Date.now(),
+            command: cmdId,
+            tokens: Number(resolvedContext.tokenEstimate || 0),
+            contextText: resolvedContext.contextText,
+          };
+        }
+        if (document.getElementById('panel-context')?.classList.contains('open')) {
+          contextPanelState.data = resolvedContext;
+          contextPanelState.error = null;
+          contextPanelState.loading = false;
+          renderContextPanel();
+        }
+      } catch (e) {
+        console.warn('[AI] Failed to resolve managed context, falling back to document only:', e?.message || e);
+      }
 
       const juiceLevel = currentJuiceLevel;
       const reasoningLevel = currentReasoningLevel;
@@ -24264,6 +26983,45 @@ session:
       { label: 'all lowercase', value: 'lowercase' },
     ];
 
+    const PADDING_OPTIONS = [
+      { value: '', label: 'Default' },
+      { value: '0', label: 'None' },
+      { value: '4px', label: 'Tight (4px)' },
+      { value: '8px', label: 'Small (8px)' },
+      { value: '8px 12px', label: 'Small (8px 12px)' },
+      { value: '12px', label: 'Medium (12px)' },
+      { value: '12px 16px', label: 'Medium (12px 16px)' },
+      { value: '16px', label: 'Comfortable (16px)' },
+      { value: '16px 20px', label: 'Comfortable (16px 20px)' },
+      { value: '20px', label: 'Roomy (20px)' },
+      { value: '24px', label: 'Spacious (24px)' },
+      { value: '24px 32px', label: 'Spacious (24px 32px)' },
+      { value: '1em', label: '1em' },
+      { value: '1.5em', label: '1.5em' },
+    ];
+
+    const BORDER_RADIUS_OPTIONS = [
+      { value: '', label: 'Default' },
+      { value: '0', label: 'None (square)' },
+      { value: '2px', label: 'Subtle (2px)' },
+      { value: '4px', label: 'Small (4px)' },
+      { value: '6px', label: 'Medium (6px)' },
+      { value: '8px', label: 'Rounded (8px)' },
+      { value: '12px', label: 'Large (12px)' },
+      { value: '16px', label: 'Extra-large (16px)' },
+      { value: '9999px', label: 'Pill' },
+    ];
+
+    const CELL_PADDING_OPTIONS = [
+      { value: '', label: 'Default' },
+      { value: '4px 8px', label: 'Compact (4px 8px)' },
+      { value: '6px 10px', label: 'Tight (6px 10px)' },
+      { value: '8px 12px', label: 'Normal (8px 12px)' },
+      { value: '10px 14px', label: 'Comfortable (10px 14px)' },
+      { value: '12px 16px', label: 'Roomy (12px 16px)' },
+      { value: '14px 20px', label: 'Spacious (14px 20px)' },
+    ];
+
     function normalizeFontOptionKey(value) {
       return String(value || '')
         .split(',')[0]
@@ -24764,9 +27522,9 @@ session:
           { path: 'code.block.background', label: 'Background', type: 'color', fallback: '#111827' },
           { path: 'code.block.color', label: 'Text Color', type: 'color', fallback: '#e5e7eb' },
           { path: 'code.block.lineHeight', label: 'Line Height', type: 'range', min: 1.2, max: 2.2, step: 0.05, unit: '', fallback: '1.5' },
-          { path: 'code.block.borderRadius', label: 'Border Radius', type: 'text', fallback: '' },
+          { path: 'code.block.borderRadius', label: 'Border Radius', type: 'select', options: BORDER_RADIUS_OPTIONS, fallback: '' },
           { path: 'code.block.borderColor', label: 'Border Color', type: 'color', fallback: '' },
-          { path: 'code.block.padding', label: 'Padding', type: 'text', fallback: '' },
+          { path: 'code.block.padding', label: 'Padding', type: 'select', options: PADDING_OPTIONS, fallback: '' },
         ],
       },
       {
@@ -24779,6 +27537,14 @@ session:
           { path: 'code.cell.outputBackground', label: 'Output Background', type: 'color', fallback: '' },
           { path: 'code.cell.outputColor', label: 'Output Text', type: 'color', fallback: '' },
           { path: 'code.cell.outputBorderColor', label: 'Output Border', type: 'color', fallback: '' },
+          { path: 'code.cell.outputFontFamily', label: 'Output Font', type: 'font', fallback: '', options: [
+            { label: 'JetBrains Mono', value: 'JetBrains Mono, monospace' },
+            { label: 'SF Mono', value: 'SF Mono, monospace' },
+            { label: 'Cascadia Code', value: 'Cascadia Code, monospace' },
+            { label: 'Inherited / default', value: '' },
+          ] },
+          { path: 'code.cell.outputFontSize', label: 'Output Font Size', type: 'range', min: 0.7, max: 1.2, step: 0.01, unit: 'em', fallback: '' },
+          { path: 'code.cell.outputLineHeight', label: 'Output Line Height', type: 'range', min: 1.0, max: 2.2, step: 0.05, unit: '', fallback: '' },
         ],
       },
       {
@@ -24948,8 +27714,37 @@ session:
       {
         title: 'Tables',
         fields: [
+          { path: 'table.fontFamily', label: 'Font', type: 'font', fallback: '', options: DOCUMENT_FONT_OPTIONS },
+          { path: 'table.fontSize', label: 'Size', type: 'range', min: 0.7, max: 1.3, step: 0.01, unit: 'em', fallback: '' },
+          { path: 'table.color', label: 'Text Color', type: 'color', fallback: '' },
           { path: 'table.borderColor', label: 'Border', type: 'color', fallback: '#d1d5db' },
           { path: 'table.headerBackground', label: 'Header Background', type: 'color', fallback: '#f9fafb' },
+          { path: 'table.headerColor', label: 'Header Text Color', type: 'color', fallback: '' },
+          { path: 'table.headerFontWeight', label: 'Header Weight', type: 'select', options: [
+            { value: '', label: 'Default' },
+            { value: '400', label: '400 (Normal)' },
+            { value: '600', label: '600 (Semi-bold)' },
+            { value: '700', label: '700 (Bold)' },
+            { value: '800', label: '800 (Extra-bold)' },
+          ], fallback: '' },
+          { path: 'table.cellPadding', label: 'Cell Padding', type: 'select', options: CELL_PADDING_OPTIONS, fallback: '' },
+          { path: 'table.stripedRows', label: 'Striped Rows', type: 'select', options: [
+            { value: '', label: 'None' },
+            { value: 'even', label: 'Even rows' },
+            { value: 'odd', label: 'Odd rows' },
+          ], fallback: '' },
+          { path: 'table.stripedColor', label: 'Stripe Color', type: 'color', fallback: '' },
+        ],
+      },
+      {
+        title: 'Math / Formulas',
+        collapsed: true,
+        fields: [
+          { path: 'math.color', label: 'Math Color', type: 'color', fallback: '' },
+          { path: 'math.fontSize', label: 'Math Size', type: 'range', min: 0.8, max: 1.5, step: 0.05, unit: 'em', fallback: '' },
+          { path: 'math.displayBackground', label: 'Display Background', type: 'color', fallback: '' },
+          { path: 'math.displayPadding', label: 'Display Padding', type: 'select', options: PADDING_OPTIONS, fallback: '' },
+          { path: 'math.displayBorderRadius', label: 'Display Border Radius', type: 'select', options: BORDER_RADIUS_OPTIONS, fallback: '' },
         ],
       },
       {
@@ -25014,7 +27809,7 @@ session:
         fields: [
           { path: 'image.captionFontSize', label: 'Caption Size', type: 'text', fallback: '' },
           { path: 'image.captionColor', label: 'Caption Color', type: 'color', fallback: '#6b7280' },
-          { path: 'image.borderRadius', label: 'Border Radius', type: 'text', fallback: '' },
+          { path: 'image.borderRadius', label: 'Border Radius', type: 'select', options: BORDER_RADIUS_OPTIONS, fallback: '' },
           { path: 'image.maxWidth', label: 'Max Width', type: 'text', fallback: '' },
         ],
       },
@@ -25522,6 +28317,81 @@ session:
       if (group) group.classList.toggle('collapsed');
     }
 
+    function setAllDocumentStyleGroupsCollapsed(collapsed) {
+      const root = document.getElementById('document-style-grid');
+      if (!root) return;
+      root.querySelectorAll('.document-style-group[data-style-group]').forEach((group) => {
+        group.classList.toggle('collapsed', !!collapsed);
+      });
+    }
+
+    function collapseAllDocumentStyleGroups() {
+      setAllDocumentStyleGroupsCollapsed(true);
+    }
+
+    function expandAllDocumentStyleGroups() {
+      setAllDocumentStyleGroupsCollapsed(false);
+    }
+
+    function initDocumentStyleSearch() {
+      const input = document.getElementById('document-style-search');
+      const panel = document.getElementById('document-style-panel-content');
+      const root = document.getElementById('document-style-grid');
+      if (!input || !panel || !root) return;
+
+      input._documentStyleHandler && input.removeEventListener('input', input._documentStyleHandler);
+
+      const handler = () => {
+        const query = input.value.trim().toLowerCase();
+        const isSearching = query.length > 0;
+        const noResults = document.getElementById('document-style-no-results');
+
+        panel.classList.toggle('document-style-search-active', isSearching);
+
+        if (!isSearching) {
+          root.querySelectorAll('.search-hidden').forEach((el) => el.classList.remove('search-hidden'));
+          if (noResults) noResults.classList.remove('visible');
+          return;
+        }
+
+        let totalVisible = 0;
+        root.querySelectorAll('.document-style-group').forEach((group) => {
+          let groupVisible = 0;
+          const groupTitle = (group.querySelector('.document-style-group-title')?.textContent || '').toLowerCase();
+          const groupMatches = groupTitle.includes(query);
+
+          group.querySelectorAll('.document-style-field').forEach((field) => {
+            const searchText = ((field.dataset.search || '') + ' ' + field.textContent).toLowerCase();
+            const matches = groupMatches || searchText.includes(query);
+            field.classList.toggle('search-hidden', !matches);
+            if (matches) groupVisible++;
+          });
+
+          group.classList.toggle('search-hidden', groupVisible === 0 && !groupMatches);
+          totalVisible += groupVisible;
+        });
+
+        if (noResults) noResults.classList.toggle('visible', totalVisible === 0);
+      };
+
+      input._documentStyleHandler = handler;
+      input.addEventListener('input', handler);
+      handler();
+    }
+
+    function onDocumentStylePanelOpen() {
+      const input = document.getElementById('document-style-search');
+      const panel = document.getElementById('document-style-panel-content');
+      if (input) input.value = '';
+      if (panel) {
+        panel.classList.remove('document-style-search-active');
+        panel.querySelectorAll('.search-hidden').forEach((el) => el.classList.remove('search-hidden'));
+      }
+      const noResults = document.getElementById('document-style-no-results');
+      if (noResults) noResults.classList.remove('visible');
+      initDocumentStyleSearch();
+    }
+
     function renderDocumentStylePanel() {
       const root = document.getElementById('document-style-grid');
       if (!root) return;
@@ -25542,23 +28412,24 @@ session:
       const groupsHtml = getDocumentStylePanelGroups().map((group) => {
         const fieldsHtml = group.fields.map((field) => {
           const value = getByPath(draft, field.path, field.fallback || '');
+          const fieldSearch = `${group.title} ${field.label} ${field.path}`.toLowerCase().replace(/"/g, '&quot;');
           if (field.type === 'select') {
             const options = (field.options || []).map((opt) => `<option value="${String(opt.value).replace(/"/g, '&quot;')}" ${String(opt.value) === String(value) ? 'selected' : ''}>${opt.label}</option>`).join('');
-            return `<div class="document-style-field"><label>${field.label}</label><div class="document-style-field-controls"><select class="document-style-select" data-docstyle-path="${field.path}" data-docstyle-type="select">${options}</select></div></div>`;
+            return `<div class="document-style-field" data-search="${fieldSearch}"><label>${field.label}</label><div class="document-style-field-controls"><select class="document-style-select" data-docstyle-path="${field.path}" data-docstyle-type="select">${options}</select></div></div>`;
           }
           if (field.type === 'range') {
             const num = parseNumericValue(value, parseNumericValue(field.fallback || field.min || 0));
-            return `<div class="document-style-field"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><input class="document-style-range" type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${num}" data-docstyle-path="${field.path}" data-docstyle-type="range" data-docstyle-unit="${field.unit || ''}"><div class="document-style-value" data-docstyle-value-for="${field.path}">${num}${field.unit || ''}</div></div></div></div>`;
+            return `<div class="document-style-field" data-search="${fieldSearch}"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><input class="document-style-range" type="range" min="${field.min}" max="${field.max}" step="${field.step}" value="${num}" data-docstyle-path="${field.path}" data-docstyle-type="range" data-docstyle-unit="${field.unit || ''}"><div class="document-style-value" data-docstyle-value-for="${field.path}">${num}${field.unit || ''}</div></div></div></div>`;
           }
           if (field.type === 'font') {
             const options = (field.options || DOCUMENT_FONT_OPTIONS).map((opt) => `<option value="${String(opt.value).replace(/"/g, '&quot;')}" ${String(opt.value) === String(value) ? 'selected' : ''}>${opt.label}</option>`).join('');
-            return `<div class="document-style-field"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><select class="document-style-select" data-docstyle-path="${field.path}" data-docstyle-type="font-select">${options}<option value="__custom">Custom…</option></select><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" data-docstyle-path="${field.path}" data-docstyle-type="font-text"></div></div></div>`;
+            return `<div class="document-style-field" data-search="${fieldSearch}"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><select class="document-style-select" data-docstyle-path="${field.path}" data-docstyle-type="font-select">${options}<option value="__custom">Custom…</option></select><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" data-docstyle-path="${field.path}" data-docstyle-type="font-text"></div></div></div>`;
           }
           if (field.type === 'color') {
             const colorValue = isHexColor(value) ? value : field.fallback || '#000000';
-            return `<div class="document-style-field"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><input class="document-style-color" type="color" value="${colorValue}" data-docstyle-path="${field.path}" data-docstyle-type="color-picker"><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" placeholder="${field.fallback || '#000000'}" data-docstyle-path="${field.path}" data-docstyle-type="color-text"><button class="document-style-action-btn" type="button" data-docstyle-path="${field.path}" data-docstyle-type="color-clear">Default</button></div></div></div>`;
+            return `<div class="document-style-field" data-search="${fieldSearch}"><label>${field.label}</label><div class="document-style-field-controls"><div class="document-style-control-row"><input class="document-style-color" type="color" value="${colorValue}" data-docstyle-path="${field.path}" data-docstyle-type="color-picker"><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" placeholder="${field.fallback || '#000000'}" data-docstyle-path="${field.path}" data-docstyle-type="color-text"><button class="document-style-action-btn" type="button" data-docstyle-path="${field.path}" data-docstyle-type="color-clear">Default</button></div></div></div>`;
           }
-          return `<div class="document-style-field"><label>${field.label}</label><div class="document-style-field-controls"><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" data-docstyle-path="${field.path}" data-docstyle-type="text"></div></div>`;
+          return `<div class="document-style-field" data-search="${fieldSearch}"><label>${field.label}</label><div class="document-style-field-controls"><input class="document-style-input" type="text" value="${String(value || '').replace(/"/g, '&quot;')}" data-docstyle-path="${field.path}" data-docstyle-type="text"></div></div>`;
         }).join('');
         const isCollapsed = collapsedState.has(group.title) ? collapsedState.get(group.title) : !!group.collapsed;
         const collapsedClass = isCollapsed ? ' collapsed' : '';
@@ -25567,6 +28438,7 @@ session:
 
       root.innerHTML = groupsHtml;
       setDocumentStyleDraft(draft);
+      initDocumentStyleSearch();
       // Sync page view controls state
       syncPageViewClasses();
     }
@@ -26181,6 +29053,28 @@ session:
           }
         });
       } catch { /* ignore */ }
+    }
+
+    function setAllSettingsGroupsCollapsed(collapsed) {
+      const panel = document.getElementById('settings-panel-content');
+      if (!panel) return;
+      const stored = {};
+      panel.querySelectorAll('.settings-group[data-group]').forEach(group => {
+        const name = group.dataset.group;
+        group.classList.toggle('collapsed', !!collapsed);
+        if (name) stored[name] = !!collapsed;
+      });
+      try {
+        localStorage.setItem('mrmd-settings-collapsed', JSON.stringify(stored));
+      } catch { /* ignore */ }
+    }
+
+    function collapseAllSettingsGroups() {
+      setAllSettingsGroupsCollapsed(true);
+    }
+
+    function expandAllSettingsGroups() {
+      setAllSettingsGroupsCollapsed(false);
     }
 
     /**
@@ -29351,12 +32245,15 @@ _ = await globalThis.loadPkg('lodash', 'https://cdn.skypack.dev/lodash');`;
     }
 
     function formatTimeAgo(date) {
-      const seconds = Math.floor((new Date() - date) / 1000);
+      if (!date) return '';
+      const d = (date instanceof Date) ? date : new Date(date);
+      if (isNaN(d.getTime())) return '';
+      const seconds = Math.floor((new Date() - d) / 1000);
       if (seconds < 60) return 'just now';
       if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
       if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
       if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
-      return date.toLocaleDateString();
+      return d.toLocaleDateString();
     }
 
     // =========================================================================

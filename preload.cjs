@@ -32,6 +32,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Recent files/venvs
   getRecent: () => ipcRenderer.invoke('get-recent'),
+  getRecentFiles: () => ipcRenderer.invoke('get-recent-files'),
+  getRecentProjects: () => ipcRenderer.invoke('get-recent-projects'),
 
   // File scanning
   scanFiles: (searchDir) => ipcRenderer.invoke('scan-files', { searchDir }),
@@ -221,6 +223,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     orphans: (projectRoot) => ipcRenderer.invoke('asset:orphans', { projectRoot }),
     delete: (projectRoot, assetPath) =>
       ipcRenderer.invoke('asset:delete', { projectRoot, assetPath }),
+  },
+
+  // ==========================================================================
+  // LINKED TABLE HOST API
+  // ==========================================================================
+
+  table: {
+    filters: () => ipcRenderer.invoke('table:filters'),
+    importDelimited: (options) => ipcRenderer.invoke('table:importDelimited', options || {}),
+    resolvePaths: (options) => ipcRenderer.invoke('table:resolvePaths', options || {}),
   },
 
   // ==========================================================================

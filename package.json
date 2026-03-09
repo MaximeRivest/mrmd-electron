@@ -23,7 +23,8 @@
     "build:linux": "electron-builder --linux --config electron-builder.config.cjs",
     "build:mac": "electron-builder --mac --config electron-builder.config.cjs",
     "build:win": "electron-builder --win --config electron-builder.config.cjs",
-    "build:dir": "electron-builder --dir --config electron-builder.config.cjs"
+    "build:dir": "electron-builder --dir --config electron-builder.config.cjs",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "chokidar": "^5.0.0",

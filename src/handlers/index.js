@@ -24,6 +24,7 @@ import { bashHandlers } from './bash.js';
 import { fileHandlers } from './file.js';
 import { assetHandlers } from './asset.js';
 import { systemHandlers } from './system.js';
+import { tableHandlers } from './table.js';
 
 export const handlers = {
   project: projectHandlers,
@@ -32,6 +33,7 @@ export const handlers = {
   file: fileHandlers,
   asset: assetHandlers,
   system: systemHandlers,
+  table: tableHandlers,
 };
 
 /**

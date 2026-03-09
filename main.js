@@ -26,6 +26,7 @@ import { ProjectService, RuntimeService, FileService, AssetService, SettingsServ
 import { findFreePort, waitForPort, isPortInUse } from './src/utils/index.js';
 import { getEnvInfo, installMrmdPython, createVenv, ensureUv, getUvVersion } from './src/utils/index.js';
 import { walkDir, findDirs, getVenvPython, getVenvExecutable, isProcessAlive, killProcessTree } from './src/utils/index.js';
+import { buildMonitorCliArgs } from './src/tables/runtime-host.js';
 import {
   CONFIG_DIR,
   RECENT_FILE,
@@ -539,7 +540,7 @@ function loadRecent() {
   } catch (e) {
     console.warn('[recent] Failed to load:', e.message);
   }
-  return { files: [], venvs: [] };
+  return { files: [], venvs: [], projects: [] };
 }
 
 function saveRecent(data) {
@@ -558,6 +559,20 @@ function addRecentFile(filePath) {
   // Remove if exists, add to front
   data.files = data.files.filter(f => f.path !== filePath);
   data.files.unshift({ path: filePath, opened: new Date().toISOString() });
+  saveRecent(data);
+}
+
+function addRecentProject(projectDir) {
+  const data = loadRecent();
+  if (!data.projects) data.projects = [];
+  data.projects = data.projects.filter(p => p.path !== projectDir);
+  data.projects.unshift({
+    path: projectDir,
+    name: path.basename(projectDir),
+    opened: new Date().toISOString(),
+  });
+  // Keep max 20 recent projects
+  data.projects = data.projects.slice(0, 20);
   saveRecent(data);
 }
 
@@ -953,21 +968,28 @@ function releaseSyncServer(projectDir) {
 // MONITOR
 // ============================================================================
 
-function startMonitor(docName, syncPort) {
+function startMonitor(docName, syncPort, projectRoot = null) {
   console.log(`[monitor] Starting for ${docName}...`);
 
   const monitorCliPath = resolvePackageBin('mrmd-monitor', 'bin/cli.js');
   const nodeArgs = [
     monitorCliPath,
-    '--doc', docName,
-    `ws://${DEFAULT_HOST}:${syncPort}`,
+    ...buildMonitorCliArgs({
+      docPath: docName,
+      syncUrl: `ws://${DEFAULT_HOST}:${syncPort}`,
+      projectRoot,
+    }),
   ];
   const proc = isPackaged()
     ? spawn(process.execPath, nodeArgs, {
+        cwd: projectRoot || undefined,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
       })
-    : spawn('node', nodeArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+    : spawn('node', nodeArgs, {
+        cwd: projectRoot || undefined,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
 
   proc.stdout.on('data', (d) => console.log(`[monitor:${docName}]`, d.toString().trim()));
   proc.stderr.on('data', (d) => console.error(`[monitor:${docName}]`, d.toString().trim()));
@@ -1244,6 +1266,47 @@ ipcMain.handle('get-recent', () => {
   return loadRecent();
 });
 
+// Get recent files (formatted for Home view)
+ipcMain.handle('get-recent-files', () => {
+  try {
+    const data = loadRecent();
+    const files = (data.files || []).map(f => ({
+      path: f.path,
+      name: f.path ? f.path.split('/').pop() : 'untitled',
+      lastOpened: f.opened,
+    }));
+    console.log(`[recent] get-recent-files returning ${files.length} files`);
+    return files;
+  } catch (e) {
+    console.error('[recent] get-recent-files error:', e);
+    return [];
+  }
+});
+
+// Get recent projects (formatted for Home view)
+ipcMain.handle('get-recent-projects', () => {
+  const data = loadRecent();
+  let projects = data.projects || [];
+
+  // If no tracked projects yet, derive from recent files
+  if (projects.length === 0 && data.files && data.files.length > 0) {
+    const seen = new Map();
+    for (const f of data.files) {
+      const dir = path.dirname(f.path);
+      if (!seen.has(dir)) {
+        seen.set(dir, { path: dir, name: path.basename(dir), opened: f.opened });
+      }
+    }
+    projects = [...seen.values()];
+  }
+
+  return projects.map(p => ({
+    path: p.path,
+    name: p.name || path.basename(p.path),
+    lastOpened: p.opened,
+  }));
+});
+
 // Scan for files (LEGACY - use file:scan for projects)
 ipcMain.handle('scan-files', (event, { searchDir }) => {
   logDeprecation('scan-files', 'file:scan');
@@ -1417,7 +1480,7 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
     state.projectDir = projectDir;
 
     if (!state.monitors.has(docName)) {
-      const monitor = startMonitor(docName, sync.port);
+      const monitor = startMonitor(docName, sync.port, projectDir);
       state.monitors.set(docName, monitor);
     }
 
@@ -1427,6 +1490,7 @@ ipcMain.handle('open-file', async (event, { filePath }) => {
     }
 
     addRecentFile(filePath);
+    addRecentProject(projectDir);
 
     return {
       success: true,
@@ -2037,6 +2101,35 @@ ipcMain.handle('asset:delete', async (event, { projectRoot, assetPath }) => {
   } catch (e) {
     console.error('[asset:delete] Error:', e.message);
     return { success: false, error: e.message };
+  }
+});
+
+// ============================================================================
+// LINKED TABLE HOST IPC HANDLERS
+// ============================================================================
+
+ipcMain.handle('table:filters', async () => {
+  const { TABLE_SOURCE_FILTERS } = await import('./src/tables/file-picker-filters.js');
+  return { sourceFilters: TABLE_SOURCE_FILTERS };
+});
+
+ipcMain.handle('table:importDelimited', async (event, args = {}) => {
+  try {
+    const { importLinkedTableFile } = await import('./src/tables/asset-import.js');
+    return await importLinkedTableFile(args);
+  } catch (e) {
+    console.error('[table:importDelimited] Error:', e.message);
+    throw e;
+  }
+});
+
+ipcMain.handle('table:resolvePaths', async (event, args = {}) => {
+  try {
+    const { resolveLinkedTablePaths } = await import('./src/tables/source-open.js');
+    return resolveLinkedTablePaths(args);
+  } catch (e) {
+    console.error('[table:resolvePaths] Error:', e.message);
+    throw e;
   }
 });
 
