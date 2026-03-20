@@ -308,6 +308,7 @@ async function getSpellcheckStateForWindow(win, { documentPath, projectRoot = nu
 
 import { CloudAuth } from './src/cloud-auth.js';
 import { CloudSync } from './src/cloud-sync.js';
+import { startAgentBridge } from './src/agent-bridge.js';
 
 const cloudAuth = new CloudAuth(settingsService);
 let cloudSync = null; // Initialized after sign-in
@@ -1002,6 +1003,7 @@ function startMonitor(docName, syncPort, projectRoot = null) {
 // ============================================================================
 
 let aiServer = null;
+let agentBridge = null;
 
 let _aiServerPromise = null;
 async function ensureAiServer() {
@@ -2888,6 +2890,16 @@ app.whenReady().then(async () => {
 
   const win = createWindow();
 
+  try {
+    agentBridge = await startAgentBridge({
+      configDir: CONFIG_DIR,
+      getWindows: () => Array.from(windows),
+    });
+    console.log(`[agent] Bridge ready at ${agentBridge.url}`);
+  } catch (e) {
+    console.error('[agent] Failed to start bridge:', e.message);
+  }
+
   // Process any pending files once the window is ready to receive them
   win.webContents.once('did-finish-load', () => {
     // Small delay to ensure renderer is fully initialized
@@ -3159,6 +3171,11 @@ app.on('window-all-closed', () => {
 
   if (aiServer?.proc) {
     aiServer.proc.kill('SIGTERM');
+  }
+
+  if (agentBridge) {
+    agentBridge.close().catch(() => {});
+    agentBridge = null;
   }
 
   languageToolService.stop().catch(() => {});

@@ -103,6 +103,19 @@ function getPlatformPaths(fnName) {
   }
 }
 
+function sanitizeLegacyPythonRuntimeId(runtimeId) {
+  return runtimeId.replace(/[:<>|]/g, '_');
+}
+
+function getLegacyPythonRuntimePaths(runtimeId) {
+  const runtimesDir = path.join(os.homedir(), '.mrmd', 'runtimes');
+  const candidates = [
+    path.join(runtimesDir, `${sanitizeLegacyPythonRuntimeId(runtimeId)}.json`),
+    path.join(runtimesDir, `${runtimeId}.json`),
+  ];
+  return [...new Set(candidates)];
+}
+
 const LANGUAGE_REGISTRY = {
   // ── Python ──────────────────────────────────────────────────────────────
   python: {
@@ -117,21 +130,24 @@ const LANGUAGE_REGISTRY = {
       return fs.existsSync(p) ? p : null;
     },
 
-    buildArgs(exe, port, config) {
+    buildArgs(exe, port, config, service) {
       // Use --foreground so the process stays attached to RuntimeService.
       // RuntimeService already spawns with detached:true + unref(), so the
       // runtime survives app restarts.
       //
-      // IMPORTANT: do not pass --managed here.
-      // Some published mrmd-python builds do not support that flag yet,
-      // which causes immediate CLI exit and a misleading port timeout.
-      return [
+      // Prefer --managed when supported so mrmd-python skips the legacy
+      // ~/.mrmd/runtimes registry and doesn't self-reject on stale entries.
+      const args = [
         '--id', config.name,
         '--foreground',
         '--port', port.toString(),
         '--venv', config.venv,
         '--cwd', config.cwd,
       ];
+      if (service?._supportsPythonManagedFlag(exe)) {
+        args.push('--managed');
+      }
+      return args;
     },
 
     buildEnv(config) {
@@ -481,6 +497,9 @@ class RuntimeService {
     /** @type {Set<string>} session names currently being explicitly stopped */
     this._stopping = new Set();
 
+    /** @type {Map<string, boolean>} executable path -> supports --managed */
+    this._pythonManagedSupport = new Map();
+
     this._loadRegistry();
   }
 
@@ -618,6 +637,7 @@ class RuntimeService {
     console.log(`[runtime] Spawn stdio mode for ${name}: ${usePipedLogs ? 'pipe' : 'ignore'}`);
 
     let proc;
+    let managed = false;
     if (typeof descriptor.buildSpawnArgs === 'function') {
       const spawn_info = descriptor.buildSpawnArgs(port, config);
       proc = spawn(spawn_info.command, spawn_info.args, {
@@ -633,6 +653,7 @@ class RuntimeService {
         throw new Error(`No executable found for ${language}. Is it installed?`);
       }
 
+      managed = language === 'python' && this._supportsPythonManagedFlag(exe);
       const args = descriptor.buildArgs(exe, port, config, this);
       const env = descriptor.buildEnv ? descriptor.buildEnv(config, this) : process.env;
       const spawnCwd = descriptor.spawnCwd ? descriptor.spawnCwd() : cwd;
@@ -696,6 +717,7 @@ class RuntimeService {
       cwd,
       venv: venv || null,
       daemonized: false,
+      managed,
       startedAt: new Date().toISOString(),
       alive: true,
       ...(descriptor.extraInfo ? descriptor.extraInfo(port, config) : {}),
@@ -737,15 +759,16 @@ class RuntimeService {
     }
     try {
       const hasManagedProcessHandle = this.processes.has(sessionName);
+      const killSignal = session.language === 'python' && session.managed ? 'SIGKILL' : 'SIGTERM';
 
       // Safety: never kill an unverified recovered PID blindly.
       // PID reuse can target unrelated processes after crashes/reboots.
       if (session.pid && hasManagedProcessHandle) {
-        await killProcessTree(session.pid, 'SIGTERM');
+        await killProcessTree(session.pid, killSignal);
       } else if (session.pid) {
         const reachable = await this._verifySession(sessionName);
         if (reachable) {
-          await killProcessTree(session.pid, 'SIGTERM');
+          await killProcessTree(session.pid, killSignal);
         } else {
           console.warn(`[runtime] Skip PID kill for unverified session "${sessionName}" (pid=${session.pid})`);
         }
@@ -756,9 +779,9 @@ class RuntimeService {
 
     // Also clean any legacy daemon entry for this name
     try {
-      const runtimesDir = path.join(os.homedir(), '.mrmd', 'runtimes');
-      const legacyPath = path.join(runtimesDir, `${sessionName}.json`);
-      if (fs.existsSync(legacyPath)) fs.unlinkSync(legacyPath);
+      for (const legacyPath of getLegacyPythonRuntimePaths(sessionName)) {
+        if (fs.existsSync(legacyPath)) fs.unlinkSync(legacyPath);
+      }
     } catch {}
 
     this.sessions.delete(sessionName);
@@ -864,64 +887,66 @@ class RuntimeService {
    */
   async _maybeReuseLegacyPythonRuntime(config) {
     const { name, cwd, venv } = config;
-    const runtimesDir = path.join(os.homedir(), '.mrmd', 'runtimes');
-    const legacyPath = path.join(runtimesDir, `${name}.json`);
 
-    if (!fs.existsSync(legacyPath)) return null;
+    for (const legacyPath of getLegacyPythonRuntimePaths(name)) {
+      if (!fs.existsSync(legacyPath)) continue;
 
-    try {
-      const info = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
-      const pidAlive = info?.pid && isProcessAlive(info.pid);
-      if (!pidAlive) {
-        try { fs.unlinkSync(legacyPath); } catch {}
-        return null;
-      }
-
-      const port = Number(info.port);
-      if (!port) return null;
-
-      // Verify MRP endpoint is reachable
-      let res = null;
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 2500);
-        res = await fetch(`http://127.0.0.1:${port}/mrp/v1/capabilities`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
-      } catch {
-        res = null;
+        const info = JSON.parse(fs.readFileSync(legacyPath, 'utf8'));
+        const pidAlive = info?.pid && isProcessAlive(info.pid);
+        if (!pidAlive) {
+          try { fs.unlinkSync(legacyPath); } catch {}
+          continue;
+        }
+
+        const port = Number(info.port);
+        if (!port) continue;
+
+        // Verify MRP endpoint is reachable
+        let res = null;
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500);
+          res = await fetch(`http://127.0.0.1:${port}/mrp/v1/capabilities`, {
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+        } catch {
+          res = null;
+        }
+
+        // If a legacy daemon PID is alive but not serving MRP, treat it as stale.
+        // Safety: do NOT kill blindly here (PID reuse can target unrelated processes).
+        if (!res?.ok) {
+          console.log(`[runtime:legacy] Ignoring stale legacy entry PID=${info.pid} port=${info.port} for "${name}" (capabilities probe failed)`);
+          try { fs.unlinkSync(legacyPath); } catch {}
+          continue;
+        }
+
+        const sessionInfo = {
+          name,
+          language: 'python',
+          pid: info.pid,
+          port,
+          url: `http://127.0.0.1:${port}/mrp/v1`,
+          cwd: cwd || info.cwd || null,
+          venv: venv || info.venv || null,
+          startedAt: info.created || new Date().toISOString(),
+          alive: true,
+          managed: false,
+          reusedLegacy: true,
+        };
+
+        this.sessions.set(name, sessionInfo);
+        this._saveRegistry(sessionInfo);
+        console.log(`[runtime] Reusing existing python daemon for "${name}" on port ${port}`);
+        return sessionInfo;
+      } catch (e) {
+        console.warn(`[runtime] Failed to reuse legacy python runtime ${name}:`, e.message);
       }
-
-      // If a legacy daemon PID is alive but not serving MRP, treat it as stale.
-      // Safety: do NOT kill blindly here (PID reuse can target unrelated processes).
-      if (!res?.ok) {
-        console.log(`[runtime:legacy] Ignoring stale legacy entry PID=${info.pid} port=${info.port} for "${name}" (capabilities probe failed)`);
-        try { fs.unlinkSync(legacyPath); } catch {}
-        return null;
-      }
-
-      const sessionInfo = {
-        name,
-        language: 'python',
-        pid: info.pid,
-        port,
-        url: `http://127.0.0.1:${port}/mrp/v1`,
-        cwd: cwd || info.cwd || null,
-        venv: venv || info.venv || null,
-        startedAt: info.created || new Date().toISOString(),
-        alive: true,
-        reusedLegacy: true,
-      };
-
-      this.sessions.set(name, sessionInfo);
-      this._saveRegistry(sessionInfo);
-      console.log(`[runtime] Reusing existing python daemon for "${name}" on port ${port}`);
-      return sessionInfo;
-    } catch (e) {
-      console.warn(`[runtime] Failed to reuse legacy python runtime ${name}:`, e.message);
-      return null;
     }
+
+    return null;
   }
 
   _getDescriptor(language) {
@@ -933,6 +958,32 @@ class RuntimeService {
       if (desc.aliases.includes(lang)) return LANGUAGE_REGISTRY[key];
     }
     throw new Error(`No runtime descriptor for language: ${language}`);
+  }
+
+  _supportsPythonManagedFlag(exe) {
+    if (!exe) return false;
+    if (this._pythonManagedSupport.has(exe)) {
+      return this._pythonManagedSupport.get(exe);
+    }
+
+    let supported = false;
+    try {
+      const output = execFileSync(exe, ['--help'], {
+        encoding: 'utf8',
+        timeout: 5000,
+        windowsHide: true,
+      });
+      supported = output.includes('--managed');
+    } catch (e) {
+      const output = `${e?.stdout || ''}\n${e?.stderr || ''}`;
+      supported = output.includes('--managed');
+    }
+
+    this._pythonManagedSupport.set(exe, supported);
+    if (supported) {
+      console.log(`[runtime] Python executable supports --managed: ${exe}`);
+    }
+    return supported;
   }
 
   _loadRegistry() {
